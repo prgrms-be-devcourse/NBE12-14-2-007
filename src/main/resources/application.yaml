@@ -30,3 +30,9 @@ app:
     secure: ${COOKIE_SECURE:false}
     same-site: ${COOKIE_SAME_SITE:Lax}
     path: ${COOKIE_PATH:/api/v1/auth}
+
+public-api:
+  festival:
+    url: https://openapi.gg.go.kr/GGCULTUREVENTSTUS #API 서버 주소
+    service-key: ${PUBLIC_FESTIVAL_SERVICE_KEY:}
+    sync-cron: "0 0 6,14,22 * * *"  #배치 실행 주기 6/14/22시 (임의..)
