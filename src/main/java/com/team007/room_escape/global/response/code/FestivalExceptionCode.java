@@ -7,9 +7,8 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum PostExceptionCode implements ExceptionCode {
-
-    POST_NOT_FOUND("POST000", HttpStatus.NOT_FOUND, "존재하지 않는 후기입니다.");
+public enum FestivalExceptionCode implements ExceptionCode {
+    FESTIVAL_NOT_FOUND("FESTIVAL001", HttpStatus.NOT_FOUND, "존재하지 않는 행사입니다.");
 
     private final String code;
     private final HttpStatus status;

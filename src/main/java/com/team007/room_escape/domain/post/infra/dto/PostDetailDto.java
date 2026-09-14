@@ -12,7 +12,7 @@ public record PostDetailDto(
         String festivalTitle,
         String title,
         String content,
-        LocalDateTime Date
+        LocalDateTime date
 ) {
     public static PostDetailDto from(Post post) {
         return new PostDetailDto(

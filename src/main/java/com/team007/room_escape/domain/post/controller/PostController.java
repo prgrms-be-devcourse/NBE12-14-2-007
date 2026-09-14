@@ -1,25 +1,41 @@
 package com.team007.room_escape.domain.post.controller;
 
+import com.team007.room_escape.domain.post.infra.dto.PostCreateRequest;
+import com.team007.room_escape.domain.post.infra.dto.PostCreateResponse;
 import com.team007.room_escape.domain.post.infra.dto.PostDetailDto;
 import com.team007.room_escape.domain.post.service.PostService;
 import com.team007.room_escape.global.response.ApiResponse;
+import com.team007.room_escape.global.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/posts")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class PostController {
 
 	private final PostService postService;
 
-	@GetMapping("/{id}")
+	@PostMapping("/festivals/{id}/posts")
+	public ResponseEntity<ApiResponse<PostCreateResponse>> createPost(
+			@PathVariable Long id,
+			@Valid @RequestBody PostCreateRequest request,
+			Authentication authentication
+			) {
+		CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+
+
+		PostCreateResponse response = postService.createPost(id, request, user.getId());
+
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@GetMapping("/posts/{id}")
 	public ResponseEntity<ApiResponse<PostDetailDto>> getPostDetail(@PathVariable UUID id) {
 
 		PostDetailDto postDetailDto = postService.findPostDetailById(id);

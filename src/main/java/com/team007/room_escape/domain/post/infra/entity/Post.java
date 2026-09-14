@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -45,4 +46,20 @@ public class Post extends SoftDeletableEntity {
 
 	@Column(length = 2048)
 	private String thumbnail;
+
+	@Builder
+	public Post(
+			Member member,
+			Festival festival,
+			String title,
+			String content,
+			String thumbnail
+	) {
+		this.member = member;
+		this.festival = festival;
+		this.title = title;
+		this.content = content;
+		this.thumbnail = thumbnail;
+	}
 }
+
