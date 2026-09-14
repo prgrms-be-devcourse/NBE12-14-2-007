@@ -56,13 +56,13 @@ public class Festival {
 	@Column(name = "img_url", length = 2048)
 	private String imgUrl;
 
-	@Column(name = "begin_de", nullable = false)
+	@Column(name = "begin_de")
 	private LocalDateTime beginDe;
 
-	@Column(name = "end_de", nullable = false)
+	@Column(name = "end_de")
 	private LocalDateTime endDe;
 
-	@Column(name = "event_tm_info", nullable = false)
+	@Column(name = "event_tm_info")
 	private String eventTmInfo;
 
 	@Column(name = "partcpt_expn_info")
