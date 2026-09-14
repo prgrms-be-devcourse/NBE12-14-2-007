@@ -8,4 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MemberRepository extends JpaRepository<Member, UUID> {
 
 	Optional<Member> findByEmailAndDeletedAtIsNull(String email);
+
+	boolean existsByEmailAndDeletedAtIsNull(String email);
+
+	boolean existsByNicknameAndDeletedAtIsNull(String nickname);
 }
