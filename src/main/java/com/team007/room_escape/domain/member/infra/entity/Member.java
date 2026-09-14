@@ -9,6 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
@@ -16,7 +18,9 @@ import org.hibernate.annotations.UuidGenerator;
 @Entity
 @Table(name = "member")
 @Getter
+@Builder 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends SoftDeletableEntity {
 
 	@Id
@@ -41,17 +45,19 @@ public class Member extends SoftDeletableEntity {
 
 	private String phone;
 
-	public static Member signUp(String email, String encodedPassword, String nickname, String phone) {
-		Member member = new Member();
-		member.email = email;
-		member.password = encodedPassword;
-		member.role = MemberRole.ROLE_USER;
-		member.nickname = nickname;
-		member.phone = phone;
-		return member;
-	}
-
 	public String authority() {
 		return role.name();
+	}
+
+	public boolean hasManagerPrivilege() {
+		return role == MemberRole.ROLE_MANAGER || role == MemberRole.ROLE_ADMIN;
+	}
+
+	public void promoteToManager() {
+		this.role = MemberRole.ROLE_MANAGER;
+	}
+
+	public void demoteToUser() {
+		this.role = MemberRole.ROLE_USER;
 	}
 }

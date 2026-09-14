@@ -14,7 +14,11 @@ import org.springframework.http.HttpStatus;
 public enum MemberExceptionCode implements ExceptionCode {
 
 	/** 해당 id/이메일 회원이 없거나 이미 소프트 삭제된 경우 */
-	MEMBER_NOT_FOUND("MEMBER000", HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다.");
+	MEMBER_NOT_FOUND("MEMBER000", HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
+	/** 탈퇴하지 않은 계정이 같은 이메일을 이미 사용 중 */
+	EMAIL_DUPLICATED("MEMBER001", HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+	/** 탈퇴하지 않은 계정이 같은 닉네임을 이미 사용 중 */
+	NICKNAME_DUPLICATED("MEMBER002", HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
 
 	private final String code;
 	private final HttpStatus status;

@@ -1,12 +1,15 @@
 package com.team007.room_escape.domain.auth.service;
 
+import com.team007.room_escape.domain.auth.dto.SignupRequest;
 import com.team007.room_escape.domain.auth.dto.TokenPair;
 import com.team007.room_escape.domain.member.infra.entity.Member;
+import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.jwt.JwtProperties;
 import com.team007.room_escape.global.jwt.JwtProvider;
 import com.team007.room_escape.global.response.code.AuthExceptionCode;
+import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import io.jsonwebtoken.Claims;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -26,26 +29,35 @@ public class AuthService {
 	private final RefreshTokenService refreshTokenService;
 
 	@Transactional
+	public void signup(SignupRequest request) {
+		if (memberRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
+			throw new BusinessException(MemberExceptionCode.EMAIL_DUPLICATED);
+		}
+		if (memberRepository.existsByNicknameAndDeletedAtIsNull(request.nickname())) {
+			throw new BusinessException(MemberExceptionCode.NICKNAME_DUPLICATED);
+		}
+
+		memberRepository.save(
+			Member.builder()
+				.email(request.email())
+				.password(passwordEncoder.encode(request.password()))
+				.nickname(request.nickname())
+				.phone(request.phone())
+				.role(MemberRole.ROLE_USER)
+				.build()
+		);
+	}
+
+	@Transactional
 	public TokenPair login(String email, String password) {
 		Member member = memberRepository.findByEmailAndDeletedAtIsNull(email)
 			.filter(found -> passwordEncoder.matches(password, found.getPassword()))
 			.orElseThrow(() -> new BusinessException(AuthExceptionCode.INVALID_CREDENTIALS));
-
-		String accessToken = jwtProvider.createAccessToken(
-			member.getId(), member.getNickname(), member.authority(), member.getProfileImg());
-		String refreshToken = jwtProvider.createRefreshToken(
-			member.getId(), member.getNickname(), member.authority(), member.getProfileImg());
-
-		refreshTokenService.save(
-			member,
-			refreshToken,
-			LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenValiditySeconds())
-		);
-		return new TokenPair(accessToken, refreshToken, true);
+		return issueTokens(member);
 	}
 
 	@Transactional
-	public TokenPair refresh(String refreshToken) {
+	public String refresh(String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank()) {
 			throw new BusinessException(AuthExceptionCode.TOKEN_MISSING);
 		}
@@ -58,20 +70,7 @@ public class AuthService {
 
 		refreshTokenService.verify(memberId, refreshToken);
 
-		String newAccess = jwtProvider.createAccessToken(memberId, nickname, role, profileImg);
-
-		if (!jwtProperties.refreshRotation()) {
-			return new TokenPair(newAccess, refreshToken, false);
-		}
-
-		String newRefresh = jwtProvider.createRefreshToken(memberId, nickname, role, profileImg);
-		Member member = memberRepository.getReferenceById(memberId);
-		refreshTokenService.save(
-			member,
-			newRefresh,
-			LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenValiditySeconds())
-		);
-		return new TokenPair(newAccess, newRefresh, true);
+		return jwtProvider.createAccessToken(memberId, nickname, role, profileImg);
 	}
 
 	@Transactional
@@ -85,5 +84,19 @@ public class AuthService {
 		} catch (RuntimeException ignored) {
 			// 만료·위조된 쿠키면 DB에 지울 행이 없을 수 있다
 		}
+	}
+
+	private TokenPair issueTokens(Member member) {
+		String accessToken = jwtProvider.createAccessToken(
+			member.getId(), member.getNickname(), member.authority(), member.getProfileImg());
+		String refreshToken = jwtProvider.createRefreshToken(
+			member.getId(), member.getNickname(), member.authority(), member.getProfileImg());
+
+		refreshTokenService.save(
+			member,
+			refreshToken,
+			LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenValiditySeconds())
+		);
+		return new TokenPair(accessToken, refreshToken);
 	}
 }

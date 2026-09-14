@@ -22,7 +22,6 @@ jwt:
   access-token-validity-seconds: 1800
   refresh-secret: ${JWT_REFRESH_SECRET:change-this-dev-only-REFRESH-secret-please-override-0123456789}
   refresh-token-validity-seconds: 1209600
-  refresh-rotation: ${JWT_REFRESH_ROTATION:false}
   refresh-cleanup-cron: "0 0 4 * * *"
 
 app:

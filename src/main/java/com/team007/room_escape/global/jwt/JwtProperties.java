@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * application.yaml의 jwt.* 설정 바인딩.
- * Access/Refresh 서명 키, 만료 시간, 리프레시 회전 여부를 담는다.
+ * Access/Refresh 서명 키와 만료 시간을 담는다.
  */
 @ConfigurationProperties(prefix = "jwt")
 public record JwtProperties(
@@ -12,7 +12,6 @@ public record JwtProperties(
 	String issuer,
 	long accessTokenValiditySeconds,
 	String refreshSecret,
-	long refreshTokenValiditySeconds,
-	boolean refreshRotation
+	long refreshTokenValiditySeconds
 ) {
 }
