@@ -4,9 +4,8 @@ import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
-import com.team007.room_escape.domain.post.infra.dto.PostCreateRequest;
-import com.team007.room_escape.domain.post.infra.dto.PostCreateResponse;
-import com.team007.room_escape.domain.post.infra.dto.PostDetailDto;
+import com.team007.room_escape.domain.post.infra.dto.PostRequest;
+import com.team007.room_escape.domain.post.infra.dto.PostResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
@@ -29,9 +28,9 @@ public class PostService {
 
 
 	@Transactional
-	public PostCreateResponse createPost(
+	public PostResponse.CreateResponse createPost(
 			Long festivalId,
-			PostCreateRequest request,
+			PostRequest.PostCreateRequest request,
 			UUID memberId
 	) {
 		Member member = memberRepository.findById(memberId)
@@ -48,18 +47,18 @@ public class PostService {
 				.thumbnail(request.thumbnail())
 				.build();
 
-		Post savePost = postRepository.save(post);
+		postRepository.save(post);
 
-		return PostCreateResponse.from(savePost);
+		return PostResponse.CreateResponse.from(post);
 	}
 
 
 	@Transactional(readOnly = true)
-	public PostDetailDto findPostDetailById(UUID id) {
+	public PostResponse.DetailResponse findPostDetailById(UUID id) {
 
 		Post post = postRepository.findById(id)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
-		return PostDetailDto.from(post);
+		return PostResponse.DetailResponse.from(post);
 	}
 }
