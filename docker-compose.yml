@@ -1,0 +1,24 @@
+# 로컬 개발용 PostgreSQL. 볼륨 없음 → 컨테이너 삭제 시 데이터도 삭제.
+#   docker compose up -d
+#   docker compose down
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: roomescape-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Seoul
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

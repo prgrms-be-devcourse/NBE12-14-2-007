@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: roomescape
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/roomescape}
+    username: ${DATASOURCE_USERNAME:roomescape}
+    password: ${DATASOURCE_PASSWORD:roomescape}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+jwt:
+  secret: ${JWT_SECRET:change-this-dev-only-ACCESS-secret-please-override-0123456789}
+  issuer: roomescape
+  access-token-validity-seconds: 1800
+  refresh-secret: ${JWT_REFRESH_SECRET:change-this-dev-only-REFRESH-secret-please-override-0123456789}
+  refresh-token-validity-seconds: 1209600
+  refresh-rotation: ${JWT_REFRESH_ROTATION:false}
+  refresh-cleanup-cron: "0 0 4 * * *"
+
+app:
+  cookie:
+    secure: ${COOKIE_SECURE:false}
+    same-site: ${COOKIE_SAME_SITE:Lax}
+    path: ${COOKIE_PATH:/api/v1/auth}
