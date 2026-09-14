@@ -8,6 +8,7 @@ CREATE TABLE manager (
     revoke_reason TEXT,
     created_at    TIMESTAMP(6) NOT NULL,
     updated_at    TIMESTAMP(6) NOT NULL,
+    deleted_at  TIMESTAMP(6),
     CONSTRAINT pk_manager PRIMARY KEY (id)
 );
 

@@ -84,6 +84,7 @@ com.team007.room_escape
 
 | 메서드  | 경로                     | 설명                                             |
 | ---- | ---------------------- | ---------------------------------------------- |
+| POST | `/api/v1/auth/signup`  | 이메일 회원가입. 성공 시 로그인과 같이 Access + Refresh 발급 |
 | POST | `/api/v1/auth/login`   | 이메일 + 비밀번호. Access는 body, Refresh는 HttpOnly 쿠키 |
 | POST | `/api/v1/auth/refresh` | 쿠키의 Refresh로 Access 재발급                        |
 | POST | `/api/v1/auth/logout`  | Refresh 삭제 + 쿠키 제거                             |
@@ -110,12 +111,25 @@ Authorization: Bearer {accessToken}
 
 Swagger에서는 우측 상단 **Authorize**에 Access Token만 넣으면 됩니다. `Bearer ` 접두사는 자동으로 붙습니다.
 
-**아직 회원가입 API는 없습니다.**  
-로그인하려면 DB `member`에 행이 있어야 하고, `password`는 BCrypt 해시여야 합니다. 평문 `password`를 넣으면 로그인이 실패합니다.
+회원가입 예시:
+
+```http
+POST http://localhost:8080/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password1!",
+  "nickname": "닉네임",
+  "phone": "01012345678"
+}
+```
+
+`phone`은 생략 가능합니다. 권한은 `ROLE_USER`로 저장되고, 비밀번호는 BCrypt로 해시합니다. 이미 있는 이메일이면 `409` (`MEMBER001`).
 
 ## 권한
 
-- DB `member.role`: `USER` 또는 `ADMIN`
+- DB `member.role`: `ROLE_USER`, `ROLE_MANAGER`, `ROLE_ADMIN`
 - 시큐리티에서는 `ROLE_USER`, `ROLE_ADMIN`으로 봅니다.
 - 로그인만 되면 되는 API는 `SecurityConfig`에서 이미 막고 있습니다.
 - **중요!!!!!!!!!!!!!!!!**
@@ -168,7 +182,6 @@ Swagger에서는 우측 상단 **Authorize**에 Access Token만 넣으면 됩니
 
 ## 아직 안 된 것
 
-- 회원가입
 - 소셜 로그인
 - 행사/후기/댓글 등 실제 비즈니스 API (컨트롤러 토대만 있음)
 - 프로필 수정 후 토큰 재발급
