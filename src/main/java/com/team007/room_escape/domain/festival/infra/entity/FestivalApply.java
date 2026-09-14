@@ -5,7 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
+
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
@@ -14,6 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "festival_apply")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class FestivalApply {
 
     @Id
@@ -26,6 +30,7 @@ public class FestivalApply {
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 
+    @Builder
     public static FestivalApply create(Long festivalId, String content) {
         FestivalApply festivalApply = new FestivalApply();
         festivalApply.festivalId = festivalId;
