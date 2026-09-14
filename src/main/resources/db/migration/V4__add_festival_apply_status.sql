@@ -1,0 +1,2 @@
+ALTER TABLE festival_apply
+    ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'PENDING';
