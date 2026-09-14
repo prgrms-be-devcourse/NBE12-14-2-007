@@ -23,13 +23,13 @@ public class FestivalApply {
     @Column(name = "festival_id", nullable = false)
     private Long festivalId;
 
-    @Column(name = "content", nullable = false, columnDefinition = "text")
-    private String requestNote;
+    @Column(nullable = false, columnDefinition = "text")
+    private String content;
 
-    public static FestivalApply create(Long festivalId, String requestNote) {
+    public static FestivalApply create(Long festivalId, String content) {
         FestivalApply festivalApply = new FestivalApply();
         festivalApply.festivalId = festivalId;
-        festivalApply.requestNote = requestNote;
+        festivalApply.content = content;
         return festivalApply;
     }
 }
