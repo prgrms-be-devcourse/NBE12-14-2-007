@@ -83,4 +83,8 @@ public class Festival {
 	@Enumerated(EnumType.STRING)
 	@Column(length = 32)
 	private FestivalStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "apply", nullable = false, length = 32)
+    private FestivalApplyStatus applyStatus = FestivalApplyStatus.PENDING;
 }
