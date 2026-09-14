@@ -43,6 +43,6 @@ public class Member extends SoftDeletableEntity {
 	private String phone;
 
 	public String authority() {
-		return "ROLE_" + role.name();
+		return role.name();
 	}
 }

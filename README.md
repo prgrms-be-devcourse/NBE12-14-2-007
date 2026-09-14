@@ -108,7 +108,7 @@ Content-Type: application/json
 Authorization: Bearer {accessToken}
 ```
 
-Swagger에서는 **Authorize**에 토큰을 넣고 호출하면 됩니다.
+Swagger에서는 우측 상단 **Authorize**에 Access Token만 넣으면 됩니다. `Bearer ` 접두사는 자동으로 붙습니다.
 
 **아직 회원가입 API는 없습니다.**  
 로그인하려면 DB `member`에 행이 있어야 하고, `password`는 BCrypt 해시여야 합니다. 평문 `password`를 넣으면 로그인이 실패합니다.

@@ -7,6 +7,7 @@ import com.team007.room_escape.domain.auth.service.AuthService;
 import com.team007.room_escape.global.jwt.JwtProperties;
 import com.team007.room_escape.global.response.ApiResponse;
 import com.team007.room_escape.global.util.CookieUtil;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@SecurityRequirements
 @RequiredArgsConstructor
 public class AuthController {
 
