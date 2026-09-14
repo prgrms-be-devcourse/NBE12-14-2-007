@@ -7,26 +7,22 @@ import java.util.UUID;
 
 public record PostDetailDto(
         UUID id,
-        UUID memberId,
-        Long puFevId,
+        String nickname,
+        Long festivalId,
+        String festivalTitle,
         String title,
         String content,
-        String thumbnail,
-        LocalDateTime createDate,
-        LocalDateTime modifyDate,
-        LocalDateTime deleteDate
+        LocalDateTime Date
 ) {
     public static PostDetailDto from(Post post) {
         return new PostDetailDto(
                 post.getId(),
-                post.getMember().getId(),
+                post.getMember().getNickname(),
                 post.getFestival().getId(),
+                post.getFestival().getTitle(),
                 post.getTitle(),
                 post.getContent(),
-                post.getThumbnail(),
-                post.getCreatedAt(),
-                post.getUpdatedAt(),
-                post.getDeletedAt()
+                post.getUpdatedAt()
         );
     }
 }

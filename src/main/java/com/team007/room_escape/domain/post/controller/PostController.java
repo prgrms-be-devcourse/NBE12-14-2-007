@@ -20,14 +20,11 @@ public class PostController {
 	private final PostService postService;
 
 	@GetMapping("/{id}")
-	public ResponseEntity<ApiResponse<PostDetailDto>> getPostDetail(
-			@PathVariable UUID id
-	) {
+	public ResponseEntity<ApiResponse<PostDetailDto>> getPostDetail(@PathVariable UUID id) {
+
 		PostDetailDto postDetailDto = postService.findPostDetailById(id);
 
-		return ResponseEntity.ok(
-				ApiResponse.success(postDetailDto)
-		);
+		return ResponseEntity.ok(ApiResponse.success(postDetailDto));
 	}
 
 }

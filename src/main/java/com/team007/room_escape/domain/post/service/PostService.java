@@ -21,9 +21,7 @@ public class PostService {
 	public PostDetailDto findPostDetailById(UUID id) {
 
 		Post post = postRepository.findById(id)
-				.orElseThrow(() ->
-						new BusinessException(PostExceptionCode.POST_NOT_FOUND)
-				);
+				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		return PostDetailDto.from(post);
 	}
