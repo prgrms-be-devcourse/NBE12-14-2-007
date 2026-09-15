@@ -68,4 +68,21 @@ public class PostService {
 
 		return PostResponse.DetailResponse.from(post);
 	}
+
+	@Transactional
+	public PostResponse.DetailResponse updatePost(
+			UUID postId,
+			PostRequest.PostUpdateRequest request,
+			UUID memberId
+	) {
+		Post post = postRepository.findById(postId).orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
+
+		if(!post.getMember().getId().equals(memberId)) {
+			throw new BusinessException(PostExceptionCode.POST_UPDATE_FORBIDDEN);
+
+		}
+		post.update(request.title(), request.content());
+
+		return PostResponse.DetailResponse.from(post);
+	}
 }

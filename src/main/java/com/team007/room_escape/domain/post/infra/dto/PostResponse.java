@@ -5,6 +5,8 @@ import com.team007.room_escape.domain.post.infra.entity.Post;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+// TODO 추후 Builder 방식으로 Refactor
+
 public class PostResponse {
 
     public record CreateResponse(
