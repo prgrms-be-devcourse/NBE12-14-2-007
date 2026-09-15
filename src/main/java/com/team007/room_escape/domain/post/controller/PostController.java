@@ -67,4 +67,16 @@ public class PostController {
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
+
+	@Operation(summary = "후기 삭제", description = "본인이 작성한 후기를 삭제합니다")
+	@DeleteMapping("/posts/{id}")
+	public ResponseEntity<ApiResponse<Void>> deletePost(
+			@PathVariable UUID id,
+			@AuthenticationPrincipal CustomUserDetails user
+	) {
+		postService.deletePost(id, user.getId());
+
+		return ResponseEntity.ok(ApiResponse.success(null));
+	}
+
 }

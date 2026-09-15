@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum PostExceptionCode implements ExceptionCode {
 
     POST_NOT_FOUND("POST000", HttpStatus.NOT_FOUND, "존재하지 않는 후기입니다."),
-    POST_UPDATE_FORBIDDEN("POST001", HttpStatus.FORBIDDEN, "해당 후기를 수정할 권한이 없습니다.");
+    POST_UPDATE_FORBIDDEN("POST001", HttpStatus.FORBIDDEN, "해당 후기를 수정할 권한이 없습니다."),
+    POST_DELETE_FORBIDDEN("POST002", HttpStatus.FORBIDDEN, "해당 후기를 삭제할 권한이 없습니다.");
 
     private final String code;
     private final HttpStatus status;
