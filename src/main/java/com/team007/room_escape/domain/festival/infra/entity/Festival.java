@@ -13,16 +13,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "festival")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Festival {
 
 	@Id
@@ -84,6 +85,7 @@ public class Festival {
 	@Column(length = 32)
 	private FestivalStatus status;
 
+	@Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "apply", nullable = false, length = 32)
     private FestivalApplyStatus applyStatus = FestivalApplyStatus.PENDING;
