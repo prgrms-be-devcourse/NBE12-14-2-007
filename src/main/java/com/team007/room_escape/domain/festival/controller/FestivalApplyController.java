@@ -11,11 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/v1/festival/submissions")
@@ -25,15 +22,17 @@ public class FestivalApplyController {
     private final FestivalApplyService festivalApplyService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "민간행사 신청", description = "민간행사 정보와 행사 신청 내용을 등록합니다."
     )
-    public ApiResponse<CreateFestivalApplyResponse> create(
+    public ResponseEntity<ApiResponse<CreateFestivalApplyResponse>> create(
             @AuthenticationPrincipal CustomUserDetails principal,
             @Valid @RequestBody CreateFestivalApplyRequest request) {
-        CreateFestivalApplyResponse response = festivalApplyService.create(principal.getId(), request);
+        CreateFestivalApplyResponse response =
+                festivalApplyService.create(principal.getId(), request);
 
-        return ApiResponse.success(response);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
     }
 }
