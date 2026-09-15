@@ -3,6 +3,7 @@ package com.team007.room_escape.domain.post.service;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
+import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.domain.post.infra.dto.PostRequest;
 import com.team007.room_escape.domain.post.infra.dto.PostResponse;
@@ -75,7 +76,8 @@ public class PostService {
 			PostRequest.PostUpdateRequest request,
 			UUID memberId
 	) {
-		Post post = postRepository.findById(postId).orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
+		Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		if(!post.getMember().getId().equals(memberId)) {
 			throw new BusinessException(PostExceptionCode.POST_UPDATE_FORBIDDEN);
@@ -84,5 +86,19 @@ public class PostService {
 		post.update(request.title(), request.content());
 
 		return PostResponse.DetailResponse.from(post);
+	}
+
+	@Transactional
+	public void deletePost(UUID postId, UUID memberId, boolean isAdmin) {
+		Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
+
+		boolean isAuthor = post.getMember().getId().equals(memberId);
+
+		if(!isAuthor && !isAdmin) {
+			throw new BusinessException(PostExceptionCode.POST_DELETE_FORBIDDEN);
+		}
+
+		post.delete();
 	}
 }
