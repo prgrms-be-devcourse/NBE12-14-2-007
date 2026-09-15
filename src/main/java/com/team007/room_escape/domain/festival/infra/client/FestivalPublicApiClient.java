@@ -8,12 +8,17 @@ import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * 경기 문화행사 공공 API(GGCULTUREVENTSTUS) 호출 및 응답 파싱 담당.
+ * 스케줄러(배치)에서 순차 호출만 하면 되는 동기 흐름이라 WebClient 대신 RestClient를 사용한다.
+ */
 @Slf4j
 @Component
 @EnableConfigurationProperties(FestivalPublicApiProperties.class)
@@ -22,21 +27,38 @@ public class FestivalPublicApiClient {
     /** 30초 안에 응답 X -> 실패처리 */
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
-    private final WebClient webClient = WebClient.builder().build();
+    private final RestClient restClient;
     private final FestivalPublicApiProperties properties;
     private final ObjectMapper objectMapper;
 
     /** API 호출 담당*/
     public FestivalPublicApiClient(FestivalPublicApiProperties properties, ObjectMapper objectMapper) {
-        this.properties = properties; //URL, 인증키, cron 값이 담긴 설정 객체
+        this.properties = properties; /**URL, 인증키, cron 값이 담긴 설정 객체**/
         this.objectMapper = objectMapper; //JSON 문자열을 자바 객체로 변경
+        /**RestClient는 타임아웃 설정용 requestFactory를 먼저 조립해야 해서 필드 초기화가 아니라 생성자 안에서 만든다**/
+        this.restClient = RestClient.builder()
+            .requestFactory(timeoutRequestFactory())
+            .build();
+    }
+
+    /**
+     * RestClient는 WebClient의 .timeout() 같은 체이닝 연산자가 없어서,
+     * 연결/응답 타임아웃을 HTTP 요청 자체를 담당하는 ClientHttpRequestFactory에 미리 설정해둔다.
+     */
+    private SimpleClientHttpRequestFactory timeoutRequestFactory() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout((int) REQUEST_TIMEOUT.toMillis());
+        requestFactory.setReadTimeout((int) REQUEST_TIMEOUT.toMillis());
+        return requestFactory;
     }
 
     /** pIndex (페이지), pSize (건 수)만큼 행사 데이터 요청*/
     public FestivalApiResult fetch(int pIndex, int pSize) {
         String body;
         try {
-            body = webClient.get()
+            body = restClient.get()
+                /** uri: 실제로 요청을 보낼 주소(URL). base path + 쿼리 파라미터(KEY, Type, pIndex, pSize)를 조립해서
+                 * "https://openapi.gg.go.kr/GGCULTUREVENTSTUS?KEY=...&Type=json&pIndex=1&pSize=100" 형태로 완성한다**/
                 .uri(uriBuilder -> uriBuilder
                     .path(properties.url())
                     .queryParam("KEY", properties.serviceKey())
@@ -45,9 +67,7 @@ public class FestivalPublicApiClient {
                     .queryParam("pSize", pSize)
                     .build())
                 .retrieve()
-                .bodyToMono(String.class)
-                .timeout(REQUEST_TIMEOUT)
-                .block();
+                .body(String.class);
         }  catch (Exception e) {
             log.error("[{}] 공공 API 호출 실패", FestivalExceptionCode.PUBLIC_API_CALL_FAILED.getCode(), e);
             throw new BusinessException(FestivalExceptionCode.PUBLIC_API_CALL_FAILED);
