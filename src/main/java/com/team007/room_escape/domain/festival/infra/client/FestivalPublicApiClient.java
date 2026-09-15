@@ -49,8 +49,8 @@ public class FestivalPublicApiClient {
                 .timeout(REQUEST_TIMEOUT)
                 .block();
         }  catch (Exception e) {
-            log.error("[{}] 공공 API 응답 파싱 실패", FestivalExceptionCode.PUBLIC_API_PARSE_FAILED.getCode(), e);
-            throw new BusinessException(FestivalExceptionCode.PUBLIC_API_PARSE_FAILED);
+            log.error("[{}] 공공 API 호출 실패", FestivalExceptionCode.PUBLIC_API_CALL_FAILED.getCode(), e);
+            throw new BusinessException(FestivalExceptionCode.PUBLIC_API_CALL_FAILED);
         }
         return parse(body);
     }
@@ -78,6 +78,7 @@ public class FestivalPublicApiClient {
                 }
             }return new FestivalApiResult(totalCount, rows);
         } catch (Exception e) {
+            log.error("[{}] 공공 API 응답 파싱 실패", FestivalExceptionCode.PUBLIC_API_PARSE_FAILED.getCode(), e);
             throw new BusinessException(FestivalExceptionCode.PUBLIC_API_PARSE_FAILED);
         }
     }
