@@ -12,8 +12,13 @@ import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
+import com.team007.room_escape.domain.festival.dto.FestivalApplyResponse.FindAllFestivalApplyResponse;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,5 +71,37 @@ public class FestivalApplyService {
                 savedFestival,
                 savedFestivalApply
         );
+    }
+    @Transactional(readOnly = true)
+    public List<FindAllFestivalApplyResponse> findAllByMemberId(UUID memberId) {
+        List<Festival> festivals =
+                festivalRepository.findAllByMember_IdAndProviderTypeOrderByWritngDeDesc(
+                        memberId,
+                        ProviderType.MEMBER
+                );
+
+        if (festivals.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> festivalIds = festivals.stream()
+                .map(Festival::getId)
+                .toList();
+
+        Map<Long, FestivalApply> festivalApplyMap =
+                festivalApplyRepository.findAllByFestivalIdIn(festivalIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                FestivalApply::getFestivalId,
+                                Function.identity()
+                        ));
+
+        return festivals.stream()
+                .filter(festival -> festivalApplyMap.containsKey(festival.getId()))
+                .map(festival -> FindAllFestivalApplyResponse.from(
+                        festival,
+                        festivalApplyMap.get(festival.getId())
+                ))
+                .toList();
     }
 }
