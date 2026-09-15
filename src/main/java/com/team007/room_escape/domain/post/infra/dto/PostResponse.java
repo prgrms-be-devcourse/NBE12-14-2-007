@@ -36,4 +36,25 @@ public class PostResponse {
             );
         }
     }
+
+    public record ListResponse(
+            UUID id,
+            String nickname,
+            Long festivalId,
+            String festivalTitle,
+            String title,
+            LocalDateTime date
+    ) {
+        public static ListResponse from(Post post) {
+            return new ListResponse(
+                    post.getId(),
+                    post.getMember().getNickname(),
+                    post.getFestival().getId(),
+                    post.getFestival().getTitle(),
+                    post.getTitle(),
+                    post.getUpdatedAt()
+            );
+        }
+    }
+
 }
