@@ -77,6 +77,6 @@ public class PostController {
 	) {
 		postService.deletePost(id, user.getId(), user.isAdmin());
 
-		return ResponseEntity.ok(ApiResponse.success(null));
+		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 }
