@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.auth.service;
 
-import com.team007.room_escape.domain.auth.dto.SignupRequest;
+import com.team007.room_escape.domain.auth.dto.AuthRequest.Signup;
 import com.team007.room_escape.domain.auth.dto.TokenPair;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
@@ -29,7 +29,7 @@ public class AuthService {
 	private final RefreshTokenService refreshTokenService;
 
 	@Transactional
-	public void signup(SignupRequest request) {
+	public void signup(Signup request) {
 		if (memberRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
 			throw new BusinessException(MemberExceptionCode.EMAIL_DUPLICATED);
 		}

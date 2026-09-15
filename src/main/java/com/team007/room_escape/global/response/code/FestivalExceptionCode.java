@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum FestivalExceptionCode implements ExceptionCode {
+    FESTIVAL_NOT_FOUND("FESTIVAL001", HttpStatus.NOT_FOUND, "존재하지 않는 행사입니다.");
 
     /** 공공 API 호출 자체가 실패 (네트워크 오류, 타임아웃, 4xx/5xx 응답 등) */
     PUBLIC_API_CALL_FAILED("FESTIVAL001", HttpStatus.SERVICE_UNAVAILABLE, "공공 API 호출에 실패했습니다."),
@@ -20,4 +21,6 @@ public enum FestivalExceptionCode implements ExceptionCode {
 
     private final String code;
     private final HttpStatus status;
-    private final String message;}
+    private final String message;
+}
+

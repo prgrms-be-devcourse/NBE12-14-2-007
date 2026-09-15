@@ -11,9 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -22,6 +21,8 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "post")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Post extends SoftDeletableEntity {
 
 	@Id
@@ -45,4 +46,10 @@ public class Post extends SoftDeletableEntity {
 
 	@Column(length = 2048)
 	private String thumbnail;
+
+	public void update(String title, String content) {
+		this.title = title;
+		this.content = content;
+	}
 }
+
