@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +32,16 @@ public class PostController {
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
+
+	@GetMapping("/festivals/{id}/posts")
+	public ResponseEntity<ApiResponse<List<PostResponse.ListResponse>>> getPosts() {
+
+		List<PostResponse.ListResponse> posts = postService.getPosts();
+
+		return ResponseEntity.ok(ApiResponse.success(posts));
+	}
+
+
 
 	@GetMapping("/posts/{id}")
 	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(@PathVariable UUID id) {
