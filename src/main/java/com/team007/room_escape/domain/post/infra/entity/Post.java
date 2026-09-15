@@ -46,5 +46,10 @@ public class Post extends SoftDeletableEntity {
 
 	@Column(length = 2048)
 	private String thumbnail;
+
+	public void update(String title, String content) {
+		this.title = title;
+		this.content = content;
+	}
 }
 
