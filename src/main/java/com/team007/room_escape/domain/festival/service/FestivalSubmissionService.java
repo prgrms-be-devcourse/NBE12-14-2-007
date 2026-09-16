@@ -1,18 +1,20 @@
 package com.team007.room_escape.domain.festival.service;
 
-import com.team007.room_escape.domain.festival.dto.FestivalApplyRequest.CreateFestivalApplyRequest;
-import com.team007.room_escape.domain.festival.dto.FestivalApplyResponse.CreateFestivalApplyResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateFestivalSubmissionRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalApply;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalApplyStatus;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
-import com.team007.room_escape.domain.festival.infra.repository.FestivalApplyRepository;
+import com.team007.room_escape.domain.festival.infra.repository.FestivalSubmissionRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,14 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class FestivalApplyService {
+public class FestivalSubmissionService {
 
     private final FestivalRepository festivalRepository;
-    private final FestivalApplyRepository festivalApplyRepository;
+    private final FestivalSubmissionRepository festivalSubmissionRepository;
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CreateFestivalApplyResponse create(UUID memberId, CreateFestivalApplyRequest request) {
+    public CreateFestivalSubmissionResponse create(UUID memberId, CreateFestivalSubmissionRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
@@ -36,7 +38,6 @@ public class FestivalApplyService {
                 .providerType(ProviderType.MEMBER)
                 .instNm(request.instNm())
                 .title(request.title())
-                .category(request.category())
                 .manager(request.manager())
                 .content(request.festivalContent())
                 .url(request.url())
@@ -54,17 +55,28 @@ public class FestivalApplyService {
 
         Festival savedFestival = festivalRepository.save(festival);
 
-        FestivalApply festivalApply = FestivalApply.builder()
-                .festivalId(savedFestival.getId())
-                .content(request.applyContent())
+        FestivalSubmission festivalSubmission = FestivalSubmission.builder()
+                .festival(savedFestival)
+                .category(request.category())
+                .content(request.submissionContent())
                 .build();
 
-        FestivalApply savedFestivalApply =
-                festivalApplyRepository.save(festivalApply);
+        FestivalSubmission savedFestivalSubmission =
+                festivalSubmissionRepository.save(festivalSubmission);
 
-        return CreateFestivalApplyResponse.from(
+        return CreateFestivalSubmissionResponse.from(
                 savedFestival,
-                savedFestivalApply
+                savedFestivalSubmission
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<FindAllFestivalSubmissionResponse> findAllByMemberId(UUID memberId) {
+        return festivalSubmissionRepository
+                .findAllByFestival_Member_IdAndFestival_ProviderTypeOrderByFestival_WritngDeDesc
+                        (memberId, ProviderType.MEMBER)
+                .stream()
+                .map(FindAllFestivalSubmissionResponse::from)
+                .toList();
     }
 }
