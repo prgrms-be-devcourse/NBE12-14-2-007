@@ -1,10 +1,16 @@
 spring:
+  # 프로젝트 루트의 .env를 properties 파일로 읽어들인다.
+  # 아래 플레이스홀더에 기본값이 없으므로 .env가 없으면 앱이 뜨지 않는다.
+  # 실행 위치(작업 디렉터리)가 프로젝트 루트여야 .env를 찾는다.
+  # OS 환경변수가 있으면 .env 값보다 우선한다.
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: roomescape
   datasource:
-    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/roomescape}
-    username: ${DATASOURCE_USERNAME:roomescape}
-    password: ${DATASOURCE_PASSWORD:roomescape}
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
@@ -17,15 +23,15 @@ spring:
     locations: classpath:db/migration
 
 jwt:
-  secret: ${JWT_SECRET:change-this-dev-only-ACCESS-secret-please-override-0123456789}
+  secret: ${JWT_SECRET}
   issuer: roomescape
   access-token-validity-seconds: 1800
-  refresh-secret: ${JWT_REFRESH_SECRET:change-this-dev-only-REFRESH-secret-please-override-0123456789}
+  refresh-secret: ${JWT_REFRESH_SECRET}
   refresh-token-validity-seconds: 1209600
   refresh-cleanup-cron: "0 0 4 * * *"
 
 app:
   cookie:
-    secure: ${COOKIE_SECURE:false}
-    same-site: ${COOKIE_SAME_SITE:Lax}
-    path: ${COOKIE_PATH:/api/v1/auth}
+    secure: ${COOKIE_SECURE}
+    same-site: ${COOKIE_SAME_SITE}
+    path: ${COOKIE_PATH}
