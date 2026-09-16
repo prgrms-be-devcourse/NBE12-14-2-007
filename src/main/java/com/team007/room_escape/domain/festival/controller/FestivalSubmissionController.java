@@ -5,7 +5,6 @@ import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.Cr
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.service.FestivalSubmissionService;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
-import java.util.UUID;
 
 import com.team007.room_escape.global.response.ApiResponse;
 import com.team007.room_escape.global.security.CustomUserDetails;
@@ -32,7 +31,7 @@ public class FestivalSubmissionController {
     private final FestivalSubmissionService festivalSubmissionService;
 
     @PostMapping("/festivals/submissions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('UNVERIFIED')")
     @Operation(summary = "행사 정보 등록",
             description = "로그인한 사용자가 행사 내용을 제보합니다."
     )
@@ -49,7 +48,7 @@ public class FestivalSubmissionController {
     }
 
     @GetMapping("/members/me/submissions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('UNVERIFIED')")
     @Operation(summary = "사용자가 등록한 행사 목록 조회",
             description = "로그인한 사용자가 제보한 행사 목록을 조회합니다."
     )
@@ -62,19 +61,19 @@ public class FestivalSubmissionController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @GetMapping("/members/me/submissions/{submissionId}")
-    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/members/me/submissions/{festivalId}")
+    @PreAuthorize("hasRole('UNVERIFIED')")
     @Operation(summary = "사용자가 등록한 행사 상세 조회",
             description = "로그인한 사용자가 자신이 제보한 행사 정보를 상세 조회합니다."
     )
     public ResponseEntity<ApiResponse<FindFestivalSubmissionResponse>> findMine(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable UUID submissionId
+            @PathVariable Long festivalId
     ) {
         FindFestivalSubmissionResponse response =
-                festivalSubmissionService.findById(
+                festivalSubmissionService.findByFestivalId(
                         principal.getId(),
-                        submissionId
+                        festivalId
                 );
 
         return ResponseEntity.ok(ApiResponse.success(response));

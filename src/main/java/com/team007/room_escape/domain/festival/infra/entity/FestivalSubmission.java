@@ -31,9 +31,6 @@ public class FestivalSubmission {
     @JoinColumn(name = "festival_id", nullable = false)
     private Festival festival;
 
-    @Column(nullable = false, length = 50)
-    private String category;
-
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 }

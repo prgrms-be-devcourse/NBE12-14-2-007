@@ -40,6 +40,7 @@ public class FestivalSubmissionService {
                 .providerType(ProviderType.MEMBER)
                 .instNm(request.instNm())
                 .title(request.title())
+                .category(request.category())
                 .manager(request.manager())
                 .content(request.festivalContent())
                 .url(request.url())
@@ -59,7 +60,6 @@ public class FestivalSubmissionService {
 
         FestivalSubmission festivalSubmission = FestivalSubmission.builder()
                 .festival(savedFestival)
-                .category(request.category())
                 .content(request.submissionContent())
                 .build();
 
@@ -82,14 +82,14 @@ public class FestivalSubmissionService {
                 .toList();
     }
     @Transactional(readOnly = true)
-    public FindFestivalSubmissionResponse findById(
+    public FindFestivalSubmissionResponse findByFestivalId(
             UUID memberId,
-            UUID submissionId
+            Long festivalId
     ) {
         FestivalSubmission festivalSubmission =
                 festivalSubmissionRepository
-                        .findByIdAndFestival_Member_Id(
-                                submissionId,
+                        .findByFestival_IdAndFestival_Member_Id(
+                                festivalId,
                                 memberId
                         )
                         .orElseThrow(() -> new BusinessException(
