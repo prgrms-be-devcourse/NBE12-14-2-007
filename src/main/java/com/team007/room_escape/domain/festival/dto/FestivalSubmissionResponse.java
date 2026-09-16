@@ -1,49 +1,48 @@
 package com.team007.room_escape.domain.festival.dto;
 
-
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalApply;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalApplyStatus;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Builder;
 
-public class FestivalApplyResponse {
+public class FestivalSubmissionResponse {
 
-    private FestivalApplyResponse() {
+    private FestivalSubmissionResponse() {
     }
 
     @Builder
-    @Schema(description = "민간행사 신청 결과")
-    public record CreateFestivalApplyResponse(
+    @Schema(description = "행사 제보 결과")
+    public record CreateFestivalSubmissionResponse(
             @Schema(description = "생성된 행사 번호")
             Long festivalId,
 
-            @Schema(description = "생성된 행사 신청 번호")
-            UUID festivalApplyId,
+            @Schema(description = "생성된 행사 제보 번호")
+            UUID festivalSubmissionId,
 
-            @Schema(description = "행사 신청 검수 상태")
+            @Schema(description = "행사 제보 상태")
             FestivalApplyStatus applyStatus
     ) {
 
-        public static CreateFestivalApplyResponse from(
+        public static CreateFestivalSubmissionResponse from(
                 Festival festival,
-                FestivalApply festivalApply
+                FestivalSubmission festivalSubmission
         ) {
-            return CreateFestivalApplyResponse.builder()
+            return CreateFestivalSubmissionResponse.builder()
                     .festivalId(festival.getId())
-                    .festivalApplyId(festivalApply.getId())
+                    .festivalSubmissionId(festivalSubmission.getId())
                     .applyStatus(festival.getApplyStatus())
                     .build();
         }
     }
 
     @Builder
-    @Schema(description = "민간행사 신청 목록 응답")
-    public record FindAllFestivalApplyResponse(
-            @Schema(description = "행사 신청 번호")
-            UUID festivalApplyId,
+    @Schema(description = "행사 제보 목록 응답")
+    public record FindAllFestivalSubmissionResponse(
+            @Schema(description = "행사 제보 번호")
+            UUID festivalSubmissionId,
 
             @Schema(description = "행사 제목")
             String title,
@@ -54,19 +53,19 @@ public class FestivalApplyResponse {
             @Schema(description = "행사 종료 일시")
             LocalDateTime endDe,
 
-            @Schema(description = "행사 신청 검수 상태")
+            @Schema(description = "행사 제보 상태")
             FestivalApplyStatus applyStatus,
 
-            @Schema(description = "행사 신청 일시")
+            @Schema(description = "행사 제보 일시")
             LocalDateTime writngDe
     ) {
 
-        public static FindAllFestivalApplyResponse from(
-                Festival festival,
-                FestivalApply festivalApply
+        public static FindAllFestivalSubmissionResponse from(FestivalSubmission festivalSubmission
         ) {
-            return FindAllFestivalApplyResponse.builder()
-                    .festivalApplyId(festivalApply.getId())
+            Festival festival = festivalSubmission.getFestival();
+
+            return FindAllFestivalSubmissionResponse.builder()
+                    .festivalSubmissionId(festivalSubmission.getId())
                     .title(festival.getTitle())
                     .beginDe(festival.getBeginDe())
                     .endDe(festival.getEndDe())
