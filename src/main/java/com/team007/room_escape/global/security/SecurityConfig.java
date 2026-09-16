@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -58,6 +60,20 @@ public class SecurityConfig {
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
+	}
+
+	/**
+	 * 권한 계층. MemberRole enum의 선언 순서와 항상 동일하게 유지할 것.
+	 * 상위 등급은 하위 등급의 권한을 모두 포함한다.
+	 */
+	@Bean
+	static RoleHierarchy roleHierarchy() {
+		return RoleHierarchyImpl.withDefaultRolePrefix()
+				.role("ADMIN").implies("TRUSTED")
+				.role("TRUSTED").implies("NORMAL")
+				.role("NORMAL").implies("UNVERIFIED")
+				.role("UNVERIFIED").implies("WARNING")
+				.build();
 	}
 
 	@Bean

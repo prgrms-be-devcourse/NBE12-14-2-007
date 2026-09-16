@@ -125,18 +125,85 @@ Content-Type: application/json
 }
 ```
 
-`phone`은 생략 가능합니다. 권한은 `ROLE_USER`로 저장되고, 비밀번호는 BCrypt로 해시합니다. 이미 있는 이메일이면 `409` (`MEMBER001`).
+`phone`은 생략 가능합니다. 권한은 `ROLE_UNVERIFIED`로 저장되고, 비밀번호는 BCrypt로 해시합니다. 이미 있는 이메일이면 `409` (`MEMBER001`).
 
 ## 권한
 
-- DB `member.role`: `ROLE_USER`, `ROLE_MANAGER`, `ROLE_ADMIN`
-- 시큐리티에서는 `ROLE_USER`, `ROLE_ADMIN`으로 봅니다.
-- 로그인만 되면 되는 API는 `SecurityConfig`에서 이미 막고 있습니다.
-- **중요!!!!!!!!!!!!!!!!**
-- 관리자만 되면 컨트롤러에 `@PreAuthorize("hasRole('ADMIN')")` 을 붙입니다.
-- 로그인한 사람 정보: `@AuthenticationPrincipal CustomUserDetails principal` → `principal.getId()` 등
+권한은 `member.role` 컬럼 하나로 관리합니다. **신뢰 등급과 시큐리티 권한을 겸하며**, 위 등급은 아래 등급의 권한을 모두 포함합니다.
 
+```
+ROLE_ADMIN        관리자
+    ↑
+ROLE_TRUSTED      여러 차례 정상 개최
+    ↑
+ROLE_NORMAL       정상적인 행사 개최 이력
+    ↑
+ROLE_UNVERIFIED   신규 주최자 (가입 기본값)
+    ↑
+ROLE_WARNING      허위/미개최/중대한 신고
+```
 
+| 등급 | 의미 | 부여 방식 |
+| --- | --- | --- |
+| `ROLE_WARNING` | 허위/미개최/중대한 신고 누적 | 자동 (제재) |
+| `ROLE_UNVERIFIED` | 신규 주최자 — **가입 시 기본값** | 자동 |
+| `ROLE_NORMAL` | 정상적인 행사 개최 이력 보유 | 자동 |
+| `ROLE_TRUSTED` | 여러 차례 정상 개최 | 자동 |
+| `ROLE_ADMIN` | 관리자 | 수동 (DB 직접 변경) |
+
+### 컨트롤러에 거는 법
+
+```java
+@PreAuthorize("hasRole('ADMIN')")     // ADMIN만
+@PreAuthorize("hasRole('TRUSTED')")   // TRUSTED, ADMIN
+@PreAuthorize("hasRole('NORMAL')")    // NORMAL, TRUSTED, ADMIN
+```
+
+- 계층이 `SecurityConfig.roleHierarchy()`에 선언돼 있어서 **상위 등급을 일일이 나열할 필요가 없습니다.** `hasAnyRole('TRUSTED', 'ADMIN')` 대신 `hasRole('TRUSTED')` 하나면 됩니다.
+- `hasRole`에는 `ROLE_` 접두사를 **빼고** 씁니다. `hasRole('ROLE_ADMIN')`으로 쓰면 `ROLE_ROLE_ADMIN`을 찾아서 **항상 실패**합니다.
+- 로그인만 필요한 API는 따로 붙일 게 없습니다. `SecurityConfig`의 `anyRequest().authenticated()`가 이미 막고 있습니다.
+- 권한 부족이면 `403` + `AUTH100`이 내려갑니다.
+
+### ⚠️ `ROLE_WARNING`은 게이트로 쓰면 안 됩니다
+
+최하위 등급이라 `hasRole('WARNING')`은 **로그인한 모두가 통과**합니다. 제재는 반대로 최소 등급을 요구하는 방식으로 겁니다.
+
+```java
+@PreAuthorize("hasRole('WARNING')")   // ❌ 전원 통과 (의미 없음)
+@PreAuthorize("hasRole('NORMAL')")    // ✅ WARNING, UNVERIFIED 차단
+```
+
+### 서비스 코드에서 등급 비교
+
+`RoleHierarchy`는 시큐리티 표현식에만 적용됩니다. 자바 코드에서는 아래를 쓰세요.
+
+```java
+member.hasPrivilegeOf(MemberRole.ROLE_TRUSTED);  // 계층 반영 (TRUSTED 이상이면 true)
+MemberRole.ROLE_ADMIN.includes(MemberRole.ROLE_NORMAL);  // enum 직접 비교
+principal.isAdmin();                             // ROLE_ADMIN 정확히 일치할 때만 true
+```
+
+### 등급 변경
+
+```java
+member.applyTrustGrade(MemberRole.ROLE_NORMAL);  // 자동 재계산용. ADMIN은 보호되어 안 바뀜
+member.changeRole(MemberRole.ROLE_ADMIN);        // 관리자가 직접 지정할 때만
+```
+
+### 로그인한 사용자 정보
+
+```java
+@AuthenticationPrincipal CustomUserDetails principal
+// principal.getId(), principal.getNickname(), principal.getRole()
+```
+
+### 등급을 추가하거나 순서를 바꿀 때
+
+**아래 세 곳을 반드시 함께** 고쳐야 합니다. 하나라도 빠지면 컴파일은 되는데 권한만 조용히 어긋납니다.
+
+1. `MemberRole` enum — **선언 순서가 곧 계층 순서**입니다
+2. `SecurityConfig.roleHierarchy()` — enum 순서와 동일하게
+3. `member` 테이블의 `ck_member_role` 제약 — 새 마이그레이션 파일로 (`V9` 참고)
 
 ## 응답 형식
 
@@ -174,6 +241,7 @@ Content-Type: application/json
 | Lombok 빨간 줄          | IDE Lombok 플러그인 + Annotation Processing 켜기                            |
 | 로그인 401 `AUTH001`    | 회원이 없거나, 비밀번호가 BCrypt가 아님                                             |
 | 다른 API 401 `AUTH200` | `Authorization: Bearer ...` 없음                                        |
+| API 403 `AUTH100`    | 등급이 부족함. `member.role` 확인. 계층은 `SecurityConfig.roleHierarchy()` 참고            |
 | Flyway checksum      | 이미 실행된 마이그레이션 파일을 수정함. 로컬이면 `docker compose down` 후 다시 `up` (데이터 삭제됨) |
 | Java 버전 오류           | JDK 25가 아님. `java -version` 확인                                        |
 
@@ -185,4 +253,5 @@ Content-Type: application/json
 - 소셜 로그인
 - 행사/후기/댓글 등 실제 비즈니스 API (컨트롤러 토대만 있음)
 - 프로필 수정 후 토큰 재발급
+- 신뢰 등급 자동 승강 (현재는 전원 `ROLE_UNVERIFIED`로 가입, 변경은 수동)
 
