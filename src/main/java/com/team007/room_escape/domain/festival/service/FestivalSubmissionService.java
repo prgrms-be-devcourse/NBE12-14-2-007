@@ -12,7 +12,9 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalReposito
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +40,7 @@ public class FestivalSubmissionService {
                 .providerType(ProviderType.MEMBER)
                 .instNm(request.instNm())
                 .title(request.title())
+                .category(request.category())
                 .manager(request.manager())
                 .content(request.festivalContent())
                 .url(request.url())
@@ -57,7 +60,6 @@ public class FestivalSubmissionService {
 
         FestivalSubmission festivalSubmission = FestivalSubmission.builder()
                 .festival(savedFestival)
-                .category(request.category())
                 .content(request.submissionContent())
                 .build();
 
@@ -78,5 +80,22 @@ public class FestivalSubmissionService {
                 .stream()
                 .map(FindAllFestivalSubmissionResponse::from)
                 .toList();
+    }
+    @Transactional(readOnly = true)
+    public FindFestivalSubmissionResponse findByFestivalId(
+            UUID memberId,
+            Long festivalId
+    ) {
+        FestivalSubmission festivalSubmission =
+                festivalSubmissionRepository
+                        .findByFestival_IdAndFestival_Member_Id(
+                                festivalId,
+                                memberId
+                        )
+                        .orElseThrow(() -> new BusinessException(
+                                FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+                        ));
+
+        return FindFestivalSubmissionResponse.from(festivalSubmission);
     }
 }
