@@ -26,7 +26,7 @@ public class CommentService {
 	private final PostRepository postRepository;
 
 	@Transactional
-	public CommentResponse.CommentCreateResponse createComment(
+	public CommentResponse.CommentInfo createComment(
 			UUID postId,
 			CommentRequest.CommentCreateRequest request,
 			UUID memberId
@@ -45,6 +45,6 @@ public class CommentService {
 
 		commentRepository.save(comment);
 
-		return CommentResponse.CommentCreateResponse.from(comment);
+		return CommentResponse.CommentInfo.from(comment);
 	}
 }

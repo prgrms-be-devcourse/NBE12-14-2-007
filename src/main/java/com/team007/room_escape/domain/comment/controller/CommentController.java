@@ -23,13 +23,13 @@ public class CommentController {
 
 	@Operation(summary = "댓글 작성", description = "특정 후기에 댓글을 작성합니다.")
 	@PostMapping("/posts/{id}/comments")
-	public ResponseEntity<ApiResponse<CommentResponse.CommentCreateResponse>> createComment(
+	public ResponseEntity<ApiResponse<CommentResponse.CommentInfo>> createComment(
 			@PathVariable UUID id,
 			@Valid @RequestBody CommentRequest.CommentCreateRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 			) {
 
-		CommentResponse.CommentCreateResponse response = commentService.createComment(id, request, user.getId());
+		CommentResponse.CommentInfo response = commentService.createComment(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
