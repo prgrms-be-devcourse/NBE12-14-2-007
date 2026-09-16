@@ -12,7 +12,9 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalReposito
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -78,5 +80,22 @@ public class FestivalSubmissionService {
                 .stream()
                 .map(FindAllFestivalSubmissionResponse::from)
                 .toList();
+    }
+    @Transactional(readOnly = true)
+    public FindFestivalSubmissionResponse findById(
+            UUID memberId,
+            UUID submissionId
+    ) {
+        FestivalSubmission festivalSubmission =
+                festivalSubmissionRepository
+                        .findByIdAndFestival_Member_Id(
+                                submissionId,
+                                memberId
+                        )
+                        .orElseThrow(() -> new BusinessException(
+                                FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+                        ));
+
+        return FindFestivalSubmissionResponse.from(festivalSubmission);
     }
 }
