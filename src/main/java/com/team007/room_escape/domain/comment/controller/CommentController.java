@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +31,15 @@ public class CommentController {
 			) {
 
 		CommentResponse.CommentInfo response = commentService.createComment(id, request, user.getId());
+
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@Operation(summary = "댓글 목록", description = "특정 후기에 댓글 목록을 조회합니다.")
+	@GetMapping("/posts/{id}/comments")
+	public ResponseEntity<ApiResponse<List<CommentResponse.CommentInfo>>> getComments(@PathVariable UUID id) {
+
+		List<CommentResponse.CommentInfo> response = commentService.getComments(id);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
