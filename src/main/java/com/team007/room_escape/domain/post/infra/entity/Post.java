@@ -41,7 +41,7 @@ public class Post extends SoftDeletableEntity {
 	private String title;
 
 	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(nullable = false, columnDefinition = "jsonb")
+	@Column(nullable = false, columnDefinition = "text")
 	private String content;
 
 	@Column(length = 2048)
