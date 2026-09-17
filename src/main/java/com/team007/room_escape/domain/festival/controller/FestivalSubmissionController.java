@@ -45,9 +45,7 @@ public class FestivalSubmissionController {
 
     @GetMapping("/members/me/submissions")
     @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "사용자가 등록한 행사 목록 조회",
-            description = "로그인한 사용자가 제보한 행사 목록을 조회합니다."
-    )
+    @Operation(summary = "사용자가 등록한 행사 목록 조회", description = "로그인한 사용자가 제보한 행사 목록을 조회합니다.")
     public ResponseEntity<ApiResponse<List<FindAllFestivalSubmissionResponse>>> findAllMine(
             @AuthenticationPrincipal CustomUserDetails principal
     ) {
@@ -59,9 +57,7 @@ public class FestivalSubmissionController {
 
     @GetMapping("/members/me/submissions/{submissionId}")
     @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "사용자가 등록한 행사 상세 조회",
-            description = "로그인한 사용자가 자신이 제보한 행사 정보를 상세 조회합니다."
-    )
+    @Operation(summary = "사용자가 등록한 행사 상세 조회", description = "로그인한 사용자가 자신이 제보한 행사 정보를 상세 조회합니다.")
     public ResponseEntity<ApiResponse<FindFestivalSubmissionResponse>> findMine(
             @AuthenticationPrincipal CustomUserDetails principal,
             @PathVariable UUID submissionId
@@ -77,9 +73,7 @@ public class FestivalSubmissionController {
 
     @PatchMapping("/members/me/submissions/{submissionId}")
     @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "내 행사 제보 수정",
-            description = "로그인한 사용자가 본인이 등록한 행사 정보와 제보 내용을 수정합니다."
-    )
+    @Operation(summary = "내 행사 제보 수정", description = "로그인한 사용자가 본인이 등록한 행사 정보와 제보 내용을 수정합니다.")
     public ResponseEntity<ApiResponse<FindFestivalSubmissionResponse>> update(
             @AuthenticationPrincipal CustomUserDetails principal,
             @PathVariable UUID submissionId,
@@ -93,5 +87,20 @@ public class FestivalSubmissionController {
                 );
 
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @DeleteMapping("/members/me/submissions/{submissionId}")
+    @PreAuthorize("hasRole('UNVERIFIED')")
+    @Operation(summary = "내 행사 제보 삭제", description = "로그인한 사용자가 본인이 등록한 행사 제보를 삭제합니다.")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable UUID submissionId
+    ) {
+        festivalSubmissionService.delete(
+                principal.getId(),
+                submissionId
+        );
+
+        return ResponseEntity.ok(ApiResponse.noContentSuccess());
     }
 }

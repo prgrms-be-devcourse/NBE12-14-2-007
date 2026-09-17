@@ -79,10 +79,7 @@ public class FestivalSubmissionService {
                 .toList();
     }
     @Transactional(readOnly = true)
-    public FindFestivalSubmissionResponse findById(
-            UUID memberId,
-            UUID submissionId
-    ) {
+    public FindFestivalSubmissionResponse findById(UUID memberId, UUID submissionId) {
         FestivalSubmission festivalSubmission =
                 festivalSubmissionRepository
                         .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
@@ -93,11 +90,8 @@ public class FestivalSubmissionService {
         return FindFestivalSubmissionResponse.from(festivalSubmission);
     }
     @Transactional
-    public FindFestivalSubmissionResponse update(
-            UUID memberId,
-            UUID submissionId,
-            CreateOrUpdateFestivalSubmissionRequest request
-    ) {
+    public FindFestivalSubmissionResponse update(UUID memberId, UUID submissionId,
+                                                 CreateOrUpdateFestivalSubmissionRequest request) {
         FestivalSubmission submission = festivalSubmissionRepository
                 .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
                 .orElseThrow(() -> new BusinessException(
@@ -123,5 +117,16 @@ public class FestivalSubmissionService {
         submission.updateContent(request.submissionContent());
 
         return FindFestivalSubmissionResponse.from(submission);
+    }
+    @Transactional
+    public void delete(UUID memberId, UUID submissionId) {
+        FestivalSubmission submission = festivalSubmissionRepository
+
+    .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+                .orElseThrow(() -> new BusinessException(
+                        FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+                ));
+
+        submission.delete();
     }
 }
