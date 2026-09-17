@@ -12,6 +12,7 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommentExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
+import com.team007.room_escape.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,5 +75,19 @@ public class CommentService {
 		comment.update(request.content());
 
 		return CommentResponse.CommentInfo.from(comment);
+	}
+
+	@Transactional
+	public void deleteComment(Long id, UUID memberId, boolean isAdmin) {
+		Comment comment = commentRepository.findById(id)
+				.orElseThrow(() -> new BusinessException(CommentExceptionCode.COMMENT_NOT_FOUND));
+
+		boolean isAuthor = comment.getMember().getId().equals(memberId);
+
+		if(!isAuthor && !isAdmin) {
+			throw new BusinessException(CommentExceptionCode.COMMENT_FORBIDDEN);
+		}
+
+		comment.delete();
 	}
 }
