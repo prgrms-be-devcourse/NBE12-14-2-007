@@ -17,23 +17,39 @@ public class PostResponse {
         }
     }
 
-    public record DetailResponse(
+    public record MemberInfo(
             UUID id,
             String nickname,
+            String profileImg
+    ) {
+        public static MemberInfo from(Post post) {
+            return new MemberInfo(
+                    post.getMember().getId(),
+                    post.getMember().getNickname(),
+                    post.getMember().getProfileImg()
+            );
+        }
+    }
+
+    public record DetailResponse(
+            UUID id,
+            MemberInfo member,
             Long festivalId,
             String festivalTitle,
             String title,
             String content,
+            String thumbnail,
             LocalDateTime date
     ) {
         public static DetailResponse from(Post post) {
             return new DetailResponse(
                     post.getId(),
-                    post.getMember().getNickname(),
+                    MemberInfo.from(post),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
                     post.getContent(),
+                    post.getThumbnail(),
                     post.getUpdatedAt()
             );
         }
@@ -41,19 +57,21 @@ public class PostResponse {
 
     public record ListResponse(
             UUID id,
-            String nickname,
+            MemberInfo member,
             Long festivalId,
             String festivalTitle,
             String title,
+            String thumbnail,
             LocalDateTime date
     ) {
         public static ListResponse from(Post post) {
             return new ListResponse(
                     post.getId(),
-                    post.getMember().getNickname(),
+                    MemberInfo.from(post),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
+                    post.getThumbnail(),
                     post.getUpdatedAt()
             );
         }
