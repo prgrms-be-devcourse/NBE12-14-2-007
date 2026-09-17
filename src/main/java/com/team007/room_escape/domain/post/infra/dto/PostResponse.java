@@ -24,6 +24,7 @@ public class PostResponse {
             String festivalTitle,
             String title,
             String content,
+            String thumbnail,
             LocalDateTime date
     ) {
         public static DetailResponse from(Post post) {
@@ -34,6 +35,7 @@ public class PostResponse {
                     post.getFestival().getTitle(),
                     post.getTitle(),
                     post.getContent(),
+                    post.getThumbnail(),
                     post.getUpdatedAt()
             );
         }
@@ -45,6 +47,7 @@ public class PostResponse {
             Long festivalId,
             String festivalTitle,
             String title,
+            String thumbnail,
             LocalDateTime date
     ) {
         public static ListResponse from(Post post) {
@@ -54,6 +57,7 @@ public class PostResponse {
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
+                    post.getThumbnail(),
                     post.getUpdatedAt()
             );
         }

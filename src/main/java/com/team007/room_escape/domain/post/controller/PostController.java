@@ -1,6 +1,5 @@
 package com.team007.room_escape.domain.post.controller;
 
-import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.post.infra.dto.PostRequest;
 import com.team007.room_escape.domain.post.infra.dto.PostResponse;
 import com.team007.room_escape.domain.post.service.PostService;
@@ -10,11 +9,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Post", description = "행사 후기 API")
@@ -29,7 +31,7 @@ public class PostController {
 	@PostMapping("/festivals/{id}/posts")
 	public ResponseEntity<ApiResponse<PostResponse.CreateResponse>> createPost(
 			@PathVariable Long id,
-			@Valid @RequestBody PostRequest.PostCreateRequest request,
+			@Valid @RequestBody PostRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 			) {
 
@@ -40,9 +42,12 @@ public class PostController {
 
 	@Operation(summary = "후기 다건 조회", description = "후기 목록을 조회합니다.")
 	@GetMapping("/festivals/{id}/posts")
-	public ResponseEntity<ApiResponse<List<PostResponse.ListResponse>>> getPosts() {
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPosts(
+			@PathVariable Long id,
+			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
+			Pageable page) {
 
-		List<PostResponse.ListResponse> posts = postService.getPosts();
+		Page<PostResponse.ListResponse> posts = postService.getPosts(id, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
@@ -51,7 +56,7 @@ public class PostController {
 	@GetMapping("/posts/{id}")
 	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(@PathVariable UUID id) {
 
-		PostResponse.DetailResponse postDetailDto = postService.findPostDetailById(id);
+		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(id);
 
 		return ResponseEntity.ok(ApiResponse.success(postDetailDto));
 	}
@@ -60,7 +65,7 @@ public class PostController {
 	@PatchMapping("/posts/{id}")
 	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> updatePost(
 			@PathVariable UUID id,
-			@Valid @RequestBody PostRequest.PostUpdateRequest request,
+			@Valid @RequestBody PostRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
