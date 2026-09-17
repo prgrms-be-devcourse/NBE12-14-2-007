@@ -88,11 +88,6 @@ public class Festival extends SoftDeletableEntity {
 	@Column(length = 32)
 	private FestivalStatus status;
 
-	@Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "apply", nullable = false, length = 32)
-    private FestivalApplyStatus applyStatus = FestivalApplyStatus.PENDING;
-
 	//TODO 로 나중에 코드를 좀더 이쁘게 해봅시다
 	public void updateDetails(
 			String instNm, String title, String category,

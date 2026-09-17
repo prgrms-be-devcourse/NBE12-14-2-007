@@ -4,7 +4,6 @@ import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.Cre
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalApplyStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalSubmissionRepository;
@@ -53,7 +52,6 @@ public class FestivalSubmissionService {
                 .hostInstNm(request.hostInstNm())
                 .hmpgUrl(request.hmpgUrl())
                 .writngDe(LocalDateTime.now())
-                .applyStatus(FestivalApplyStatus.PENDING)
                 .build();
 
         Festival savedFestival = festivalRepository.save(festival);
@@ -78,6 +76,7 @@ public class FestivalSubmissionService {
                 .map(FindAllFestivalSubmissionResponse::from)
                 .toList();
     }
+
     @Transactional(readOnly = true)
     public FindFestivalSubmissionResponse findById(
             UUID memberId,
@@ -92,6 +91,7 @@ public class FestivalSubmissionService {
 
         return FindFestivalSubmissionResponse.from(festivalSubmission);
     }
+
     @Transactional
     public FindFestivalSubmissionResponse update(
             UUID memberId,
@@ -123,5 +123,16 @@ public class FestivalSubmissionService {
         submission.updateContent(request.submissionContent());
 
         return FindFestivalSubmissionResponse.from(submission);
+    }
+
+    @Transactional
+    public void delete(UUID memberId, UUID submissionId) {
+        FestivalSubmission submission = festivalSubmissionRepository
+                .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+                .orElseThrow(() -> new BusinessException(
+                        FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+                ));
+
+        submission.delete();
     }
 }

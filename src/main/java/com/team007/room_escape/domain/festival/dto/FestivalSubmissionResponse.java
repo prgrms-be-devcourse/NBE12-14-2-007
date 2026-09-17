@@ -1,7 +1,6 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalApplyStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -20,10 +19,7 @@ public class FestivalSubmissionResponse {
             Long festivalId,
 
             @Schema(description = "생성된 행사 제보 번호")
-            UUID festivalSubmissionId,
-
-            @Schema(description = "행사 제보 상태")
-            FestivalApplyStatus applyStatus
+            UUID festivalSubmissionId
     ) {
 
         public static CreateFestivalSubmissionResponse from(
@@ -33,7 +29,6 @@ public class FestivalSubmissionResponse {
             return CreateFestivalSubmissionResponse.builder()
                     .festivalId(festival.getId())
                     .festivalSubmissionId(festivalSubmission.getId())
-                    .applyStatus(festival.getApplyStatus())
                     .build();
         }
     }
@@ -56,9 +51,6 @@ public class FestivalSubmissionResponse {
             @Schema(description = "행사 종료 일시")
             LocalDateTime endDe,
 
-            @Schema(description = "행사 제보 상태")
-            FestivalApplyStatus applyStatus,
-
             @Schema(description = "행사 제보 일시")
             LocalDateTime createdAt
     ) {
@@ -73,7 +65,6 @@ public class FestivalSubmissionResponse {
                     .festivalId(festival.getId())
                     .beginDe(festival.getBeginDe())
                     .endDe(festival.getEndDe())
-                    .applyStatus(festival.getApplyStatus())
                     .createdAt(festivalSubmission.getCreatedAt())
                     .build();
         }
