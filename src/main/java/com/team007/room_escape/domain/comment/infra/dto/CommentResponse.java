@@ -14,6 +14,10 @@ public class CommentResponse {
             UUID postId,
             @Schema(description = "작성자 ID")
             UUID memberId,
+            @Schema(description = "작성자 닉네임")
+            String nickname,
+            @Schema(description = "작성자 프로필")
+            String profile_img,
             @Schema(description = "댓글 내용", example = "행사 정말 재미있었어요!")
             String content,
             @Schema(description = "댓글 작성 일시", example = "2026-09-16T12:30:00")
@@ -24,6 +28,8 @@ public class CommentResponse {
                     comment.getId(),
                     comment.getPost().getId(),
                     comment.getMember().getId(),
+                    comment.getMember().getNickname(),
+                    comment.getMember().getProfileImg(),
                     comment.getContent(),
                     comment.getUpdatedAt()
             );

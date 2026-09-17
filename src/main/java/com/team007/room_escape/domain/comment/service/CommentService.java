@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -46,5 +47,13 @@ public class CommentService {
 		commentRepository.save(comment);
 
 		return CommentResponse.CommentInfo.from(comment);
+	}
+
+	@Transactional(readOnly = true)
+	public List<CommentResponse.CommentInfo> getComments(UUID postId) {
+
+		return commentRepository.findAllByPostId(postId).stream()
+				.map(CommentResponse.CommentInfo::from)
+				.toList();
 	}
 }
