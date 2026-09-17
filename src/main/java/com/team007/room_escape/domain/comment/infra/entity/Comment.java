@@ -36,4 +36,8 @@ public class Comment extends SoftDeletableEntity {
 
 	@Column(nullable = false, columnDefinition = "text")
 	private String content;
+
+	public void update(String content) {
+		this.content = content;
+	}
 }

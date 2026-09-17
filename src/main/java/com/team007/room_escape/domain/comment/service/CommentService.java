@@ -9,6 +9,7 @@ import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.CommentExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class CommentService {
 	@Transactional
 	public CommentResponse.CommentInfo createComment(
 			UUID postId,
-			CommentRequest.CommentCreateRequest request,
+			CommentRequest request,
 			UUID memberId
 	) {
 		Member member = memberRepository.findById(memberId)
@@ -55,5 +56,23 @@ public class CommentService {
 		return commentRepository.findAllByPostId(postId).stream()
 				.map(CommentResponse.CommentInfo::from)
 				.toList();
+	}
+
+	@Transactional
+	public CommentResponse.CommentInfo updateComment(
+			Long id,
+			CommentRequest request,
+			UUID memberId
+	) {
+		Comment comment = commentRepository.findById(id)
+				.orElseThrow(() -> new BusinessException(CommentExceptionCode.COMMENT_NOT_FOUND));
+
+		if(!comment.getMember().getId().equals(memberId)) {
+			throw new BusinessException(CommentExceptionCode.COMMENT_FORBIDDEN);
+		}
+
+		comment.update(request.content());
+
+		return CommentResponse.CommentInfo.from(comment);
 	}
 }
