@@ -26,7 +26,7 @@ public class CommentController {
 	@PostMapping("/posts/{id}/comments")
 	public ResponseEntity<ApiResponse<CommentResponse.CommentInfo>> createComment(
 			@PathVariable UUID id,
-			@Valid @RequestBody CommentRequest.CommentCreateRequest request,
+			@Valid @RequestBody CommentRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 			) {
 
@@ -40,6 +40,19 @@ public class CommentController {
 	public ResponseEntity<ApiResponse<List<CommentResponse.CommentInfo>>> getComments(@PathVariable UUID id) {
 
 		List<CommentResponse.CommentInfo> response = commentService.getComments(id);
+
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@Operation(summary = "댓글 수정", description = "댓글을 수정합니다.")
+	@PatchMapping("/comments/{id}")
+	public ResponseEntity<ApiResponse<CommentResponse.CommentInfo>> updateComment(
+			@PathVariable Long id,
+			@Valid @RequestBody CommentRequest request,
+			@AuthenticationPrincipal CustomUserDetails user
+			) {
+
+		CommentResponse.CommentInfo response = commentService.updateComment(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
