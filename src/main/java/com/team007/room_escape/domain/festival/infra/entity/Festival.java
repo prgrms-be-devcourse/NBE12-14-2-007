@@ -15,8 +15,6 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "festival")
@@ -47,8 +45,7 @@ public class Festival {
 
 	private String manager;
 
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
+	@Column(columnDefinition = "text")
 	private String content;
 
 	@Column(length = 2048)
@@ -89,4 +86,27 @@ public class Festival {
     @Enumerated(EnumType.STRING)
     @Column(name = "apply", nullable = false, length = 32)
     private FestivalApplyStatus applyStatus = FestivalApplyStatus.PENDING;
+
+	public void updateDetails(
+			String instNm, String title, String category,
+			String manager, String content, String url, String imgUrl,
+			LocalDateTime beginDe, LocalDateTime endDe,
+			String eventTmInfo, String partcptExpnInfo,
+			String telnoInfo, String hostInstNm, String hmpgUrl
+	) {
+		this.instNm = instNm;
+		this.title = title;
+		this.category = category;
+		this.manager = manager;
+		this.content = content;
+		this.url = url;
+		this.imgUrl = imgUrl;
+		this.beginDe = beginDe;
+		this.endDe = endDe;
+		this.eventTmInfo = eventTmInfo;
+		this.partcptExpnInfo = partcptExpnInfo;
+		this.telnoInfo = telnoInfo;
+		this.hostInstNm = hostInstNm;
+		this.hmpgUrl = hmpgUrl;
+	}
 }

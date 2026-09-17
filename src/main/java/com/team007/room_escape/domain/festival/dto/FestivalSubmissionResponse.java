@@ -96,6 +96,7 @@ public class FestivalSubmissionResponse {
                             FestivalSubmissionDetail.builder()
                                     .festivalSubmissionId(festivalSubmission.getId())
                                     .submissionContent(festivalSubmission.getContent())
+                                    .updatedAt(festivalSubmission.getUpdatedAt())
                                     .festival(
                                             FestivalDetail.builder()
                                                     .festivalId(festival.getId())
@@ -130,6 +131,9 @@ public class FestivalSubmissionResponse {
 
             @Schema(description = "행사 제보 내용")
             String submissionContent,
+
+            @Schema(description = "마지막 수정 일시. 수정 전에는 null")
+            LocalDateTime updatedAt,
 
             @Schema(description = "행사 정보")
             FestivalDetail festival

@@ -14,8 +14,8 @@ public interface FestivalSubmissionRepository extends JpaRepository<FestivalSubm
             UUID memberId,
             ProviderType providerType
     );
-    Optional<FestivalSubmission> findByFestival_IdAndFestival_Member_Id(
-            Long festivalId,
+    Optional<FestivalSubmission> findByIdAndFestival_Member_Id(
+            UUID submissionId,
             UUID memberId
     );
 }

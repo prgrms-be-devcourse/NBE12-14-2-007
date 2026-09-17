@@ -14,8 +14,8 @@ public class FestivalSubmissionRequest {
     }
 
     @Builder
-    @Schema(description = "행사 제보 요청")
-    public record CreateFestivalSubmissionRequest(
+    @Schema(description = "행사 제보 등록·수정 요청")
+    public record SaveFestivalSubmissionRequest(
             @Schema(description = "기관명", example = "방구석탈출")
             String instNm,
 
