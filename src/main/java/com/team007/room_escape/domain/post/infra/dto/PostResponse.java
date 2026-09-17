@@ -17,6 +17,7 @@ public class PostResponse {
         }
     }
 
+    // TODO 나중에 Member에서 DTO로 만들어서 사용 (현재 Post, Comment에서 공통적으로 사용중)
     public record MemberInfo(
             UUID id,
             String nickname,
