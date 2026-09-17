@@ -103,7 +103,8 @@ public class FestivalService {
 		try {
 			String json = objectMapper.writeValueAsString(rows);
 			publicFestivalSourceRepository.deleteAll();
-			publicFestivalSourceRepository.save(new PublicFestivalSource(json));
+			// 몇 건 받아왔는지 확인하려고 source(jsonb)를 매번 파싱하지 않도록, 건수를 별도 컬럼에 같이 저장
+			publicFestivalSourceRepository.save(new PublicFestivalSource(json, rows.size()));
 		} catch (Exception e) {
 			// 원본 저장은 부가 기능이라, 실패해도 배치 본 로직(신규 행사 저장)까지 막으면 안 된다
 			log.warn("원본 데이터 저장 실패, 배치는 계속 진행", e);
