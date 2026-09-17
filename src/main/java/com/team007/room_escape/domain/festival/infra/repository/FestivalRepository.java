@@ -17,11 +17,4 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	/** 연도 범위(yearStart 이상 ~ yearEnd 미만)에 해당하는 저장 건수 조회 */
 	long countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
 		ProviderType providerType, LocalDateTime yearStart, LocalDateTime yearEnd);
-
-
-    List<Festival> findAllByMember_IdAndProviderTypeOrderByWritngDeDesc(
-            UUID memberId,
-            ProviderType providerType
-    );
-
 }
