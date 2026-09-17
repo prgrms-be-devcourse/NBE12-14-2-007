@@ -87,6 +87,7 @@ public class Festival {
     @Column(name = "apply", nullable = false, length = 32)
     private FestivalApplyStatus applyStatus = FestivalApplyStatus.PENDING;
 
+	//TODO 로 나중에 코드를 좀더 이쁘게 해봅시다
 	public void updateDetails(
 			String instNm, String title, String category,
 			String manager, String content, String url, String imgUrl,
