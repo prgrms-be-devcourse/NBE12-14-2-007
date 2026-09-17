@@ -60,7 +60,7 @@ public class FestivalSubmissionResponse {
             FestivalApplyStatus applyStatus,
 
             @Schema(description = "행사 제보 일시")
-            LocalDateTime writngDe
+            LocalDateTime createdAt
     ) {
 
         public static FindAllFestivalSubmissionResponse from(FestivalSubmission festivalSubmission
@@ -74,7 +74,7 @@ public class FestivalSubmissionResponse {
                     .beginDe(festival.getBeginDe())
                     .endDe(festival.getEndDe())
                     .applyStatus(festival.getApplyStatus())
-                    .writngDe(festival.getWritngDe())
+                    .createdAt(festivalSubmission.getCreatedAt())
                     .build();
         }
     }
@@ -96,6 +96,8 @@ public class FestivalSubmissionResponse {
                             FestivalSubmissionDetail.builder()
                                     .festivalSubmissionId(festivalSubmission.getId())
                                     .submissionContent(festivalSubmission.getContent())
+                                    .createdAt(festivalSubmission.getCreatedAt())
+                                    .updatedAt(festivalSubmission.getUpdatedAt())
                                     .festival(
                                             FestivalDetail.builder()
                                                     .festivalId(festival.getId())
@@ -130,6 +132,12 @@ public class FestivalSubmissionResponse {
 
             @Schema(description = "행사 제보 내용")
             String submissionContent,
+
+            @Schema(description = "행사 제보 일시")
+            LocalDateTime createdAt,
+
+            @Schema(description = "마지막 수정 일시")
+            LocalDateTime updatedAt,
 
             @Schema(description = "행사 정보")
             FestivalDetail festival
