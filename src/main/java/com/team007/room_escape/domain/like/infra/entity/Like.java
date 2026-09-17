@@ -2,6 +2,8 @@ package com.team007.room_escape.domain.like.infra.entity;
 
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.post.infra.entity.Post;
+import com.team007.room_escape.global.entity.BaseTimeEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -19,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "`like`")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Like {
+public class Like extends BaseTimeEntity{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
