@@ -15,10 +15,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
+// Post, Comment, Like 가 이 엔티티를 @ManyToOne 으로 참조한다.
+// @SQLRestriction 을 걸면 탈퇴한 회원이 쓴 글·댓글을 조회할 때 예외가 나므로 걸지 않는다.
+// 로그인/가입 경로는 MemberRepository 의 deletedAtIsNull 메서드로 거른다.
+//TODO : 탈퇴시 "탈퇴한 사용자입니다" 로 응답에 표시하기
 @Entity
 @Table(name = "member")
 @Getter
-@Builder 
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends SoftDeletableEntity {

@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.festival.infra.entity;
 
 import com.team007.room_escape.domain.member.infra.entity.Member;
+import com.team007.room_escape.global.entity.SoftDeletableEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,13 +18,17 @@ import java.time.LocalDateTime;
 
 import lombok.*;
 
+// Post, FestivalSubmission 이 이 엔티티를 @ManyToOne 으로 참조한다.
+// @SQLRestriction 을 걸면 삭제된 행사를 참조하는 후기·제보를 조회할 때 예외가 나므로 걸지 않는다.
+// 목록/상세 조회는 리포지토리에서 deletedAtIsNull 로 직접 걸러야 한다.
+//TODO : 삭제시 "삭제된 행사입니다" 로 응답에 표시하기
 @Entity
 @Table(name = "festival")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Festival {
+public class Festival extends SoftDeletableEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
