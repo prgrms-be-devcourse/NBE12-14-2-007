@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.festival.controller;
 
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateFestivalSubmissionRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateOrUpdateFestivalSubmissionRequest;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.service.FestivalSubmissionService;
@@ -11,17 +11,13 @@ import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -37,7 +33,7 @@ public class FestivalSubmissionController {
     )
     public ResponseEntity<ApiResponse<CreateFestivalSubmissionResponse>> create(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @Valid @RequestBody CreateFestivalSubmissionRequest request
+            @Valid @RequestBody CreateOrUpdateFestivalSubmissionRequest request
     ) {
         CreateFestivalSubmissionResponse response =
                 festivalSubmissionService.create(principal.getId(), request);
@@ -61,19 +57,39 @@ public class FestivalSubmissionController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @GetMapping("/members/me/submissions/{festivalId}")
+    @GetMapping("/members/me/submissions/{submissionId}")
     @PreAuthorize("hasRole('UNVERIFIED')")
     @Operation(summary = "사용자가 등록한 행사 상세 조회",
             description = "로그인한 사용자가 자신이 제보한 행사 정보를 상세 조회합니다."
     )
     public ResponseEntity<ApiResponse<FindFestivalSubmissionResponse>> findMine(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable Long festivalId
+            @PathVariable UUID submissionId
     ) {
         FindFestivalSubmissionResponse response =
-                festivalSubmissionService.findByFestivalId(
+                festivalSubmissionService.findById(
                         principal.getId(),
-                        festivalId
+                        submissionId
+                );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PatchMapping("/members/me/submissions/{submissionId}")
+    @PreAuthorize("hasRole('UNVERIFIED')")
+    @Operation(summary = "내 행사 제보 수정",
+            description = "로그인한 사용자가 본인이 등록한 행사 정보와 제보 내용을 수정합니다."
+    )
+    public ResponseEntity<ApiResponse<FindFestivalSubmissionResponse>> update(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody CreateOrUpdateFestivalSubmissionRequest request
+    ) {
+        FindFestivalSubmissionResponse response =
+                festivalSubmissionService.update(
+                        principal.getId(),
+                        submissionId,
+                        request
                 );
 
         return ResponseEntity.ok(ApiResponse.success(response));
