@@ -44,7 +44,7 @@ public class CommentController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "댓글 수정", description = "댓글을 수정합니다.")
+	@Operation(summary = "댓글 수정", description = "본인이 작성한 댓글을 수정합니다.")
 	@PatchMapping("/comments/{id}")
 	public ResponseEntity<ApiResponse<CommentResponse.CommentInfo>> updateComment(
 			@PathVariable Long id,
@@ -55,5 +55,16 @@ public class CommentController {
 		CommentResponse.CommentInfo response = commentService.updateComment(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@Operation(summary = "댓글 삭제", description = "작성자 본인 또는 관리자가 댓글을 삭제합니다.")
+	@DeleteMapping("/comments/{id}")
+	public ResponseEntity<ApiResponse<Void>> deleteComment(
+			@PathVariable Long id,
+			@AuthenticationPrincipal CustomUserDetails user
+	) {
+		commentService.deleteComment(id, user.getId(), user.isAdmin());
+
+		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 }
