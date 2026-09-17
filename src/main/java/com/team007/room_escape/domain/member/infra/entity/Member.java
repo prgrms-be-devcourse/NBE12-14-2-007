@@ -49,15 +49,20 @@ public class Member extends SoftDeletableEntity {
 		return role.name();
 	}
 
-	public boolean hasManagerPrivilege() {
-		return role == MemberRole.ROLE_MANAGER || role == MemberRole.ROLE_ADMIN;
+	public boolean hasPrivilegeOf(MemberRole required) {
+		return role.includes(required);
 	}
 
-	public void promoteToManager() {
-		this.role = MemberRole.ROLE_MANAGER;
+	/** 신뢰 등급 재계산 배치용. 관리자 권한은 자동 계산으로 덮어쓰지 않는다. */
+	public void applyTrustGrade(MemberRole grade) {
+		if (role == MemberRole.ROLE_ADMIN || grade == MemberRole.ROLE_ADMIN) {
+			return;
+		}
+		this.role = grade;
 	}
 
-	public void demoteToUser() {
-		this.role = MemberRole.ROLE_USER;
+	/** 관리자가 직접 권한을 바꿀 때만 사용한다. */
+	public void changeRole(MemberRole role) {
+		this.role = role;
 	}
 }

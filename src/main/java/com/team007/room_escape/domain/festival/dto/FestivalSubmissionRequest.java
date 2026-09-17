@@ -8,14 +8,14 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import lombok.Builder;
 
-public class FestivalApplyRequest {
+public class FestivalSubmissionRequest {
 
-    private FestivalApplyRequest() {
+    private FestivalSubmissionRequest() {
     }
 
     @Builder
-    @Schema(description = "민간행사 신청 요청")
-    public record CreateFestivalApplyRequest(
+    @Schema(description = "행사 제보 등록·수정 요청")
+    public record CreateOrUpdateFestivalSubmissionRequest(
             @Schema(description = "기관명", example = "방구석탈출")
             String instNm,
 
@@ -23,8 +23,9 @@ public class FestivalApplyRequest {
             @Schema(description = "행사 제목", example = "성수 독립 플리마켓")
             String title,
 
-            @NotBlank(message = "카테고리는 필수입니다.")
-            @Schema(description = "행사 카테고리", example = "플리마켓")
+            @NotBlank(message = "제보 행사 카테고리는 필수입니다.")
+            @Size(max = 50, message = "제보 행사 카테고리는 50자 이하여야 합니다.")
+            @Schema(description = "제보 행사 카테고리", example = "플리마켓")
             String category,
 
             @NotBlank(message = "관리자 정보는 필수입니다.")
@@ -69,9 +70,9 @@ public class FestivalApplyRequest {
             @Schema(description = "행사 홈페이지 URL")
             String hmpgUrl,
 
-            @NotBlank(message = "행사 신청 내용은 필수입니다.")
-            @Schema(description = "관리자에게 전달할 행사 신청 내용")
-            String applyContent
+            @NotBlank(message = "행사 제보 내용은 필수입니다.")
+            @Schema(description = "행사 제보 내용")
+            String submissionContent
     ) {
 
         @AssertTrue(message = "행사 종료 일시는 시작 일시보다 빠를 수 없습니다.")
