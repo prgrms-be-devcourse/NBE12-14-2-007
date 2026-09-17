@@ -25,4 +25,8 @@ public class PublicFestivalSource {
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "jsonb")
 	private String source;
+
+	public PublicFestivalSource(String source) {
+		this.source = source;
+	}
 }
