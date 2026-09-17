@@ -21,6 +21,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 jwt:
   secret: ${JWT_SECRET}
@@ -35,6 +39,13 @@ app:
     secure: ${COOKIE_SECURE}
     same-site: ${COOKIE_SAME_SITE}
     path: ${COOKIE_PATH}
+
+r2:
+  account-id: ${R2_ACCOUNT_ID}
+  access-key: ${R2_ACCESS_KEY}
+  secret-key: ${R2_SECRET_KEY}
+  bucket: ${R2_BUCKET}
+  public-url: ${R2_PUBLIC_URL}
 
 public-api:
   festival:
