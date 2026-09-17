@@ -1,8 +1,10 @@
--- 사용자 행사 제보의 마지막 수정 시각을 기록
+-- 행사 제보의 생성일, 수정일, 삭제일을 관리한다.
 ALTER TABLE festival_submission
-    ADD COLUMN updated_at TIMESTAMP(6);
+    ADD COLUMN created_at TIMESTAMP(6) NOT NULL,
+    ADD COLUMN updated_at TIMESTAMP(6) NOT NULL,
+    ADD COLUMN deleted_at TIMESTAMP(6);
 
--- 행사 내용을 JSONB에서 TEXT로 변경
+-- 행사 내용을 JSONB에서 TEXT로 변경한다.
 ALTER TABLE festival
 ALTER COLUMN content TYPE TEXT
     USING content::text;

@@ -10,11 +10,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface FestivalSubmissionRepository extends JpaRepository<FestivalSubmission, UUID> {
 
     List<FestivalSubmission>
-    findAllByFestival_Member_IdAndFestival_ProviderTypeOrderByFestival_WritngDeDesc(
+
+    findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc(
             UUID memberId,
             ProviderType providerType
     );
-    Optional<FestivalSubmission> findByIdAndFestival_Member_Id(
+
+    Optional<FestivalSubmission>
+    findByIdAndFestival_Member_IdAndDeletedAtIsNull(
             UUID submissionId,
             UUID memberId
     );

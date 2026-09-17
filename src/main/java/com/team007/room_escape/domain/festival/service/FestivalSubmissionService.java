@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.festival.service;
 
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.SaveFestivalSubmissionRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateOrUpdateFestivalSubmissionRequest;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
@@ -31,7 +31,7 @@ public class FestivalSubmissionService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CreateFestivalSubmissionResponse create(UUID memberId, SaveFestivalSubmissionRequest request) {
+    public CreateFestivalSubmissionResponse create(UUID memberId, CreateOrUpdateFestivalSubmissionRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
@@ -66,16 +66,13 @@ public class FestivalSubmissionService {
         FestivalSubmission savedFestivalSubmission =
                 festivalSubmissionRepository.save(festivalSubmission);
 
-        return CreateFestivalSubmissionResponse.from(
-                savedFestival,
-                savedFestivalSubmission
-        );
+        return CreateFestivalSubmissionResponse.from(savedFestival, savedFestivalSubmission);
     }
 
     @Transactional(readOnly = true)
     public List<FindAllFestivalSubmissionResponse> findAllByMemberId(UUID memberId) {
         return festivalSubmissionRepository
-                .findAllByFestival_Member_IdAndFestival_ProviderTypeOrderByFestival_WritngDeDesc
+                .findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc
                         (memberId, ProviderType.MEMBER)
                 .stream()
                 .map(FindAllFestivalSubmissionResponse::from)
@@ -88,10 +85,7 @@ public class FestivalSubmissionService {
     ) {
         FestivalSubmission festivalSubmission =
                 festivalSubmissionRepository
-                        .findByIdAndFestival_Member_Id(
-                                submissionId,
-                                memberId
-                        )
+                        .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
                         .orElseThrow(() -> new BusinessException(
                                 FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
                         ));
@@ -102,10 +96,10 @@ public class FestivalSubmissionService {
     public FindFestivalSubmissionResponse update(
             UUID memberId,
             UUID submissionId,
-            SaveFestivalSubmissionRequest request
+            CreateOrUpdateFestivalSubmissionRequest request
     ) {
         FestivalSubmission submission = festivalSubmissionRepository
-                .findByIdAndFestival_Member_Id(submissionId, memberId)
+                .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
                 .orElseThrow(() -> new BusinessException(
                         FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
                 ));

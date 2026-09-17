@@ -1,5 +1,6 @@
 package com.team007.room_escape.domain.festival.infra.entity;
 
+import com.team007.room_escape.global.entity.SoftDeletableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -7,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -22,7 +22,7 @@ import org.hibernate.annotations.UuidGenerator;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class FestivalSubmission {
+public class FestivalSubmission extends SoftDeletableEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
@@ -35,11 +35,7 @@ public class FestivalSubmission {
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     public void updateContent(String content) {
         this.content = content;
-        this.updatedAt = LocalDateTime.now();
     }
 }

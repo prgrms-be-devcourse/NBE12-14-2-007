@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.festival.controller;
 
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.SaveFestivalSubmissionRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateOrUpdateFestivalSubmissionRequest;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.service.FestivalSubmissionService;
@@ -33,7 +33,7 @@ public class FestivalSubmissionController {
     )
     public ResponseEntity<ApiResponse<CreateFestivalSubmissionResponse>> create(
             @AuthenticationPrincipal CustomUserDetails principal,
-            @Valid @RequestBody SaveFestivalSubmissionRequest request
+            @Valid @RequestBody CreateOrUpdateFestivalSubmissionRequest request
     ) {
         CreateFestivalSubmissionResponse response =
                 festivalSubmissionService.create(principal.getId(), request);
@@ -83,7 +83,7 @@ public class FestivalSubmissionController {
     public ResponseEntity<ApiResponse<FindFestivalSubmissionResponse>> update(
             @AuthenticationPrincipal CustomUserDetails principal,
             @PathVariable UUID submissionId,
-            @Valid @RequestBody SaveFestivalSubmissionRequest request
+            @Valid @RequestBody CreateOrUpdateFestivalSubmissionRequest request
     ) {
         FindFestivalSubmissionResponse response =
                 festivalSubmissionService.update(
