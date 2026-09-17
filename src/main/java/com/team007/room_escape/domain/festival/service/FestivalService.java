@@ -21,16 +21,20 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FestivalService {
 
+	/** API가 날짜열"260916"형태로 넘겨줘서 해석하는 규칙**/
 	private static final DateTimeFormatter API_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
 	private final FestivalRepository festivalRepository;
-	private final PublicFestivalSourceRepository publicFestivalSourceRepository;
+	private final PublicFestivalSourceRepository publicFestivalSourceRepository; /** 원본 저장용 **/
 	private final FestivalPublicApiClient festivalPublicApiClient;
 
 	@Transactional
 	public void syncPublicFestivals() {
-		/** 1건만 요청해서 전체 건수(totalCount)만 먼저 확인 **/
+		/** fetch(1, 1) => 1건만 요청해서 전체 건수(totalCount)만 먼저 확인
+		 *  1건을 요청하면 head.list_total_count가 같이 오니까 이걸 확인하기 위해 1건을 불러온다 **/
 		int totalCount = festivalPublicApiClient.fetch(1, 1).totalCount();
+
+		/** 우리 DB에 저장된 PUBLIC 타입 건수 조회 **/
 		long dbCount = festivalRepository.countByProviderType(ProviderType.PUBLIC);
 
 		int n = (int) (totalCount - dbCount);
@@ -48,6 +52,7 @@ public class FestivalService {
 		log.info("공공 행사 {}건 저장 완료", festivals.size());
 	}
 
+	/** Dto -> Entity **/
 	private Festival toFestival(FestivalApiRow row) {
 		LocalDateTime beginDe = parseDate(row.beginDe());
 		LocalDateTime endDe = parseDate(row.endDe());
@@ -71,6 +76,7 @@ public class FestivalService {
 			.build();
 	}
 
+	/** 날짜 + 문자열 변환 + null 방어 **/
 	private LocalDateTime parseDate(String yyyyMMdd) {
 		if (yyyyMMdd == null || yyyyMMdd.isBlank()) {
 			return null;
