@@ -39,6 +39,10 @@ public class Inquiry extends SoftDeletableEntity {
 	@JoinColumn(name = "member_id")
 	private Member member;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private InquiryCategory category;
+
 	@Column(nullable = false)
 	private String title;
 
