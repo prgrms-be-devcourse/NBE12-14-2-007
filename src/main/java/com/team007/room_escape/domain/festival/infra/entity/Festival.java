@@ -88,6 +88,13 @@ public class Festival extends SoftDeletableEntity {
 	@Column(length = 32)
 	private FestivalStatus status;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "region", length = 32)
+	private FestivalRegion region;
+
+	@Column(name = "region_detail", length = 255)
+	private String regionDetail;
+
 	//TODO 로 나중에 코드를 좀더 이쁘게 해봅시다
 	public void updateDetails(
 			String instNm, String title, String category,
