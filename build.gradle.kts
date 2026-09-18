@@ -22,6 +22,9 @@ dependencies {
 	implementation(platform("software.amazon.awssdk:bom:2.35.0"))
 	implementation("software.amazon.awssdk:s3")
 
+	// 이메일 인증 코드를 담아두는 로컬 캐시. expireAfterWrite로 만료를 알아서 처리한다.
+	implementation("com.github.ben-manes.caffeine:caffeine")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-mail")
