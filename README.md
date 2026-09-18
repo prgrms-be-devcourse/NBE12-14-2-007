@@ -39,9 +39,30 @@ docker compose down
 
 ## 설정 (.env)
 
-`docker compose`는 같은 폴더의 `.env`를 읽습니다.  
-스프링 앱은 `.env`를 **자동으로 읽지 않습니다.** 로컬은 `application.yaml` 기본값으로 DB에 붙습니다. 값이 같게 맞춰 두었습니다.
+`.env` 파일 하나로 **`docker compose`와 스프링 앱이 모두** 설정을 읽습니다.
+`application.yaml` 맨 위의 이 설정 덕분입니다.
 
+```yaml
+spring:
+  config:
+    import: optional:file:.env[.properties]
+```
+
+> ⚠️ `.env`는 `.gitignore`에 있어서 **git으로 공유되지 않습니다.**
+> clone 후 직접 만들어야 앱이 뜹니다. (플레이스홀더에 기본값이 없어 `.env`가 없으면 기동 실패)
+
+### 필요한 키
+
+| 키 | 용도 |
+| --- | --- |
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_PORT` | docker compose가 사용 |
+| `DATASOURCE_URL` / `DATASOURCE_USERNAME` / `DATASOURCE_PASSWORD` | 스프링 DB 접속 |
+| `JWT_SECRET` / `JWT_REFRESH_SECRET` | 토큰 서명 키 |
+| `COOKIE_SECURE` / `COOKIE_SAME_SITE` / `COOKIE_PATH` | Refresh 쿠키 옵션 |
+| `PUBLIC_FESTIVAL_SERVICE_KEY` | 공공 행사 API 키 |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` / `R2_BUCKET` / `R2_PUBLIC_URL` | 이미지 저장소 (Cloudflare R2) |
+
+기본 DB 설정은 이렇습니다.
 
 | 항목        | 값                                             |
 | --------- | --------------------------------------------- |
@@ -50,8 +71,13 @@ docker compose down
 | 포트        | `5432`                                        |
 | JDBC      | `jdbc:postgresql://localhost:5432/roomescape` |
 
+### 작성 시 주의
 
-DB 계정이나 포트를 바꾸면 `.env`와 `application.yaml` **둘 다** 맞추거나, 실행 전에 환경 변수를 넣어야 합니다.
+- **따옴표를 쓰지 마세요.** properties 형식이라 `A="b"` 는 따옴표까지 값이 됩니다
+- `=` 앞뒤에 공백을 넣지 마세요
+- `R2_PUBLIC_URL` 끝에 슬래시(`/`)를 붙이지 마세요
+- **실행 위치가 프로젝트 루트여야** `.env`를 찾습니다. IDE에서 안 읽히면 Run Configuration의 Working directory를 확인하세요
+- OS 환경 변수가 있으면 `.env` 값보다 우선합니다
 
 ## 패키지 구조
 
@@ -221,6 +247,82 @@ member.changeRole(MemberRole.ROLE_ADMIN);        // 관리자가 직접 지정�
 실패 예: `success: false`, `code`: `AUTH001` (이메일/비밀번호 틀림).  
 코드 의미는 `global/response/code` 아래 enum 주석을 보면 됩니다.
 
+## 이미지 (Cloudflare R2)
+
+### 핵심 규칙 — DB엔 `key`, 응답엔 `url`
+
+| | 예시 | 어디에 |
+| --- | --- | --- |
+| `key` | `posts/0befc150-....png` | **DB에 저장** |
+| `url` | `https://pub-xxxx.r2.dev/posts/0befc150-....png` | **응답으로 내보냄** |
+
+```
+url = R2_PUBLIC_URL + "/" + key
+      └ 설정값 1곳 ┘   └ DB 저장 ┘
+```
+
+URL을 통째로 저장하면 도메인을 바꿀 때 **모든 테이블을 UPDATE** 해야 합니다.
+`key`만 저장하면 `.env` 한 줄만 고치면 되고, 로컬/운영이 같은 데이터로 각자 다른 URL을 씁니다.
+
+### 업로드 흐름
+
+```
+1) 프론트: POST /api/v1/images?type=POST   (multipart, 파트명 "file")
+          → { "key": "posts/abc.png", "url": "https://..." }
+
+2) 프론트: url 로 미리보기, key 는 들고 있기
+
+3) 프론트: 실제 등록 요청에 key 를 담아 전송
+          { "title": "...", "thumbnail": "posts/abc.png" }
+
+4) 서버:   받은 key 를 그대로 엔티티에 저장
+```
+
+`type` 은 `POST` / `PROFILE` / `INQUIRY` / `FESTIVAL` 중 하나이며, 버킷 안의 폴더가 됩니다.
+
+### 응답에 이미지를 담는 법
+
+`ImageUrlResolver` 를 주입해서 `key` 를 `url` 로 바꿔 내보냅니다.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class MemberService {
+
+	private final MemberRepository memberRepository;
+	private final ImageUrlResolver imageUrlResolver;   // ← 이것만 주입
+
+	@Transactional(readOnly = true)
+	public MemberResponse.MyPageInfo getMyPage(UUID memberId) {
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
+	}
+}
+```
+
+`resolve()` 는 `key` 가 `null` 이거나 비어 있으면 `null` 을 돌려줍니다. 이미지가 없는 경우를 따로 분기할 필요가 없습니다.
+
+### ⚠️ URL만 필요하면 `R2StorageService` 를 주입하지 마세요
+
+| 클래스 | 하는 일 | 부수효과 | 언제 |
+| --- | --- | --- | --- |
+| `ImageUrlResolver` | `key` → `url` | 없음 (순수 변환) | 이미지를 **보여줄 때** |
+| `R2StorageService` | `upload()` / `delete()` | R2 네트워크 호출 | 이미지를 **다룰 때** |
+
+`R2StorageService` 를 주입하면 `S3Client` 까지 딸려와서, 도메인 서비스가 인프라에 묶이고 테스트할 때 mock이 필요해집니다. 조회만 한다면 리졸버로 충분합니다.
+
+### 이미지를 교체·삭제할 때
+
+R2는 파일을 자동으로 지워주지 않습니다. **기존 `key` 로 직접 지워야** 쓰레기 파일이 안 쌓입니다.
+
+```java
+String oldKey = member.getProfileImg();
+member.changeProfileImg(newKey);
+r2StorageService.delete(oldKey);   // 삭제 실패는 로그만 남고 흐름을 막지 않는다
+```
+
 ## 스키마
 
 테이블은 Flyway가 만듭니다. (`src/main/resources/db/migration`)
@@ -237,6 +339,8 @@ member.changeRole(MemberRole.ROLE_ADMIN);        // 관리자가 직접 지정�
 
 | 증상                   | 원인 / 대처                                                               |
 | -------------------- | --------------------------------------------------------------------- |
+| 기동 즉시 `Could not resolve placeholder` | `.env` 가 없거나 키가 빠짐. 루트에 `.env` 생성 (git으로 공유 안 됨)             |
+| 이미지 URL이 `null`      | DB에 저장된 `key` 가 비어 있음. 업로드 응답의 `key` 를 저장했는지 확인            |
 | DB 연결 실패             | `docker compose up -d` 안 함. 또는 5432 포트가 이미 사용 중                       |
 | Lombok 빨간 줄          | IDE Lombok 플러그인 + Annotation Processing 켜기                            |
 | 로그인 401 `AUTH001`    | 회원이 없거나, 비밀번호가 BCrypt가 아님                                             |

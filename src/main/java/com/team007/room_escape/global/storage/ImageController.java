@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ImageController {
 
 	private final R2StorageService r2StorageService;
+	private final ImageUrlResolver imageUrlResolver;
 
 	@Operation(
 		summary = "이미지 업로드",
@@ -38,6 +39,6 @@ public class ImageController {
 		String key = r2StorageService.upload(file, type.getDirectory());
 
 		return ResponseEntity.ok(ApiResponse.success(
-			ImageUploadResponse.of(key, r2StorageService.toPublicUrl(key))));
+			ImageUploadResponse.of(key, imageUrlResolver.resolve(key))));
 	}
 }
