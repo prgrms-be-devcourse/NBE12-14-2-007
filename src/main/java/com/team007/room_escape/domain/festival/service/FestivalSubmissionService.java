@@ -14,6 +14,7 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +53,7 @@ public class FestivalSubmissionService {
                 .hostInstNm(request.hostInstNm())
                 .hmpgUrl(request.hmpgUrl())
                 .writngDe(LocalDateTime.now())
+                .status(FestivalStatus.from(request.endDe()))
                 .build();
 
         Festival savedFestival = festivalRepository.save(festival);
