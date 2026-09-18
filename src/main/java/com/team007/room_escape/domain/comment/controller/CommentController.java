@@ -8,6 +8,9 @@ import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -37,9 +40,12 @@ public class CommentController {
 
 	@Operation(summary = "댓글 목록", description = "특정 후기에 댓글 목록을 조회합니다.")
 	@GetMapping("/posts/{id}/comments")
-	public ResponseEntity<ApiResponse<List<CommentResponse.CommentInfo>>> getComments(@PathVariable UUID id) {
+	public ResponseEntity<ApiResponse<List<CommentResponse.CommentInfo>>> getComments(
+			@PathVariable UUID id,
+			@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+			Pageable page) {
 
-		List<CommentResponse.CommentInfo> response = commentService.getComments(id);
+		List<CommentResponse.CommentInfo> response = commentService.getComments(id, page);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}

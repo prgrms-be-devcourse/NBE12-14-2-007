@@ -12,8 +12,8 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommentExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
-import com.team007.room_escape.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,9 +52,9 @@ public class CommentService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<CommentResponse.CommentInfo> getComments(UUID postId) {
+	public List<CommentResponse.CommentInfo> getComments(UUID postId, Pageable page) {
 
-		return commentRepository.findAllByPostId(postId).stream()
+		return commentRepository.findAllByPostId(postId, page).stream()
 				.map(CommentResponse.CommentInfo::from)
 				.toList();
 	}
