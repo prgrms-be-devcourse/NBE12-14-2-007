@@ -36,6 +36,9 @@ public class FestivalService {
 
 	@Transactional
 	public void syncPublicFestivals() {
+		/** API 호출과 무관하게, 기존에 저장된 행사 중 종료일이 지난 건 먼저 CLOSED로 갱신 **/
+		closeExpiredFestivals();
+
 		List<FestivalApiRow> allRows = fetchAllRows();
 
 		/** 신규 저장이 실패해도 원본만큼은 남기고 싶어서, 필터링/비교보다 먼저 저장 **/
@@ -75,6 +78,12 @@ public class FestivalService {
 		}
 	}
 
+	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신 **/
+	private void closeExpiredFestivals() {
+		int closedCount = festivalRepository.closeExpiredFestivals(LocalDateTime.now());
+		log.info("종료된 행사 {}건 CLOSED로 갱신", closedCount);
+	}
+
 	/** API 1회 요청 최대 건수를 넘는 전체 데이터를,
 	 *  totalCount에 도달할 때까지 페이지를 넘겨가며 다 수..집? (한 번 요청 시 최대 값: 1000개)**/
 	private List<FestivalApiRow> fetchAllRows() {
@@ -103,7 +112,8 @@ public class FestivalService {
 		try {
 			String json = objectMapper.writeValueAsString(rows);
 			publicFestivalSourceRepository.deleteAll();
-			publicFestivalSourceRepository.save(new PublicFestivalSource(json));
+			// 몇 건 받아왔는지 확인하려고 source(jsonb)를 매번 파싱하지 않도록, 건수를 별도 컬럼에 같이 저장
+			publicFestivalSourceRepository.save(new PublicFestivalSource(json, rows.size()));
 		} catch (Exception e) {
 			// 원본 저장은 부가 기능이라, 실패해도 배치 본 로직(신규 행사 저장)까지 막으면 안 된다
 			log.warn("원본 데이터 저장 실패, 배치는 계속 진행", e);
