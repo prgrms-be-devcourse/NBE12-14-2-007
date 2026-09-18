@@ -43,7 +43,7 @@ public class AuthService {
 				.password(passwordEncoder.encode(request.password()))
 				.nickname(request.nickname())
 				.phone(request.phone())
-				.role(MemberRole.ROLE_USER)
+				.role(MemberRole.ROLE_UNVERIFIED)
 				.build()
 		);
 	}

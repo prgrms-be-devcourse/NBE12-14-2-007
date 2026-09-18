@@ -17,23 +17,40 @@ public class PostResponse {
         }
     }
 
-    public record DetailResponse(
+    // TODO 나중에 Member에서 DTO로 만들어서 사용 (현재 Post, Comment에서 공통적으로 사용중)
+    public record MemberInfo(
             UUID id,
             String nickname,
+            String profileImg
+    ) {
+        public static MemberInfo from(Post post) {
+            return new MemberInfo(
+                    post.getMember().getId(),
+                    post.getMember().getNickname(),
+                    post.getMember().getProfileImg()
+            );
+        }
+    }
+
+    public record DetailResponse(
+            UUID id,
+            MemberInfo member,
             Long festivalId,
             String festivalTitle,
             String title,
             String content,
+            String thumbnail,
             LocalDateTime date
     ) {
         public static DetailResponse from(Post post) {
             return new DetailResponse(
                     post.getId(),
-                    post.getMember().getNickname(),
+                    MemberInfo.from(post),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
                     post.getContent(),
+                    post.getThumbnail(),
                     post.getUpdatedAt()
             );
         }
@@ -41,19 +58,21 @@ public class PostResponse {
 
     public record ListResponse(
             UUID id,
-            String nickname,
+            MemberInfo member,
             Long festivalId,
             String festivalTitle,
             String title,
+            String thumbnail,
             LocalDateTime date
     ) {
         public static ListResponse from(Post post) {
             return new ListResponse(
                     post.getId(),
-                    post.getMember().getNickname(),
+                    MemberInfo.from(post),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
+                    post.getThumbnail(),
                     post.getUpdatedAt()
             );
         }

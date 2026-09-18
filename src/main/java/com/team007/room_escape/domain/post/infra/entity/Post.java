@@ -13,9 +13,7 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "post")
@@ -40,16 +38,16 @@ public class Post extends SoftDeletableEntity {
 	@Column(nullable = false)
 	private String title;
 
-	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, columnDefinition = "text")
 	private String content;
 
 	@Column(length = 2048)
 	private String thumbnail;
 
-	public void update(String title, String content) {
+	public void update(String title, String content, String thumbnail) {
 		this.title = title;
 		this.content = content;
+		this.thumbnail = thumbnail;
 	}
 }
 

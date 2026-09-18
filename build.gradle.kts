@@ -18,6 +18,10 @@ repositories {
 }
 
 dependencies {
+	// Cloudflare R2는 S3 호환이라 AWS S3 SDK를 엔드포인트만 바꿔서 사용한다.
+	implementation(platform("software.amazon.awssdk:bom:2.35.0"))
+	implementation("software.amazon.awssdk:s3")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-mail")

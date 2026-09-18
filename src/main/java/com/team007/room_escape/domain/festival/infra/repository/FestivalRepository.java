@@ -2,13 +2,18 @@ package com.team007.room_escape.domain.festival.infra.repository;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
+
 import java.time.LocalDateTime;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.util.List;
+import java.util.UUID;
 
 public interface FestivalRepository extends JpaRepository<Festival, Long> {
+
 /** 저장 건수 조회 메서드 **/
 	long countByProviderType(ProviderType providerType);
 

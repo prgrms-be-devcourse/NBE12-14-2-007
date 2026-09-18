@@ -15,10 +15,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
+// Post, Comment, Like 가 이 엔티티를 @ManyToOne 으로 참조한다.
+// @SQLRestriction 을 걸면 탈퇴한 회원이 쓴 글·댓글을 조회할 때 예외가 나므로 걸지 않는다.
+// 로그인/가입 경로는 MemberRepository 의 deletedAtIsNull 메서드로 거른다.
+//TODO : 탈퇴시 "탈퇴한 사용자입니다" 로 응답에 표시하기
 @Entity
 @Table(name = "member")
 @Getter
-@Builder 
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends SoftDeletableEntity {
@@ -49,15 +53,20 @@ public class Member extends SoftDeletableEntity {
 		return role.name();
 	}
 
-	public boolean hasManagerPrivilege() {
-		return role == MemberRole.ROLE_MANAGER || role == MemberRole.ROLE_ADMIN;
+	public boolean hasPrivilegeOf(MemberRole required) {
+		return role.includes(required);
 	}
 
-	public void promoteToManager() {
-		this.role = MemberRole.ROLE_MANAGER;
+	/** 신뢰 등급 재계산 배치용. 관리자 권한은 자동 계산으로 덮어쓰지 않는다. */
+	public void applyTrustGrade(MemberRole grade) {
+		if (role == MemberRole.ROLE_ADMIN || grade == MemberRole.ROLE_ADMIN) {
+			return;
+		}
+		this.role = grade;
 	}
 
-	public void demoteToUser() {
-		this.role = MemberRole.ROLE_USER;
+	/** 관리자가 직접 권한을 바꿀 때만 사용한다. */
+	public void changeRole(MemberRole role) {
+		this.role = role;
 	}
 }

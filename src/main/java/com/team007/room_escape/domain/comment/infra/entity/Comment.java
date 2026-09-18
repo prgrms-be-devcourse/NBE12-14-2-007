@@ -12,14 +12,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "`comment`")
+// 소프트 삭제된 댓글은 모든 조회(findById, findAll, JPQL, 연관관계 로딩)에서 자동으로 제외된다.
+@SQLRestriction("deleted_at is null")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Comment extends SoftDeletableEntity {
 
 	@Id
@@ -36,4 +39,10 @@ public class Comment extends SoftDeletableEntity {
 
 	@Column(nullable = false, columnDefinition = "text")
 	private String content;
+
+	//TODO : 별점과, 대댓글 생각해보기 ~ 
+
+	public void update(String content) {
+		this.content = content;
+	}
 }
