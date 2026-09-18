@@ -1,1 +1,23 @@
 @import 'tailwindcss';
+
+/*
+ * 화면정의서 기준 색상 토큰.
+ * 화면 코드에서 #F97316 같은 값을 직접 쓰지 말고 brand-*, sand-* 로 쓴다.
+ */
+@theme {
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+
+  /* 페이지 바탕에 쓰는 따뜻한 아이보리 */
+  --color-sand-50: #fdfaf6;
+  --color-sand-100: #f7f1e8;
+  --color-sand-200: #ece3d6;
+}
+
+body {
+  background-color: var(--color-sand-50);
+}

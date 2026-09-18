@@ -79,6 +79,14 @@ client.interceptors.response.use(
       }
     }
 
+    console.error('[API] 실패', {
+      method: config?.method?.toUpperCase(),
+      url: config?.url,
+      status,
+      code: body?.code,
+      message: body?.message ?? error.message,
+    })
+
     // 백엔드가 준 code/message 를 그대로 살려서 던진다.
     // 네트워크 오류처럼 응답 자체가 없으면 빈 코드로 채운다.
     throw new ApiError(body?.code ?? '', body?.message ?? error.message, status)
