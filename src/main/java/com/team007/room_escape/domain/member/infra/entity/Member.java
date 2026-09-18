@@ -57,6 +57,30 @@ public class Member extends SoftDeletableEntity {
 		return role.includes(required);
 	}
 
+	/** ROLE_WARNING(제재) 등급인지. 정보 수정 등 일부 기능을 막는 데 쓴다. */
+	public boolean isRestricted() {
+		return role == MemberRole.ROLE_WARNING;
+	}
+
+	/**
+	 * 마이페이지 정보 수정.
+	 * PATCH 의미에 맞춰 null인 값은 건드리지 않고, 빈 문자열이면 값을 지운다(null 저장).
+	 * nickname은 필수 컬럼이라 빈 문자열을 허용하지 않는다.
+	 *
+	 * @param profileImg R2 저장 key. 공개 URL이 아니다
+	 */
+	public void updateProfile(String nickname, String phone, String profileImg) {
+		if (nickname != null && !nickname.isBlank()) {
+			this.nickname = nickname;
+		}
+		if (phone != null) {
+			this.phone = phone.isBlank() ? null : phone;
+		}
+		if (profileImg != null) {
+			this.profileImg = profileImg.isBlank() ? null : profileImg;
+		}
+	}
+
 	/** 신뢰 등급 재계산 배치용. 관리자 권한은 자동 계산으로 덮어쓰지 않는다. */
 	public void applyTrustGrade(MemberRole grade) {
 		if (role == MemberRole.ROLE_ADMIN || grade == MemberRole.ROLE_ADMIN) {
