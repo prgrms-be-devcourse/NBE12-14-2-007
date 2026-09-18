@@ -81,6 +81,11 @@ public class Member extends SoftDeletableEntity {
 		}
 	}
 
+	/** @param encodedPassword 반드시 인코딩된 값이어야 한다. 평문을 넣으면 로그인이 깨진다. */
+	public void changePassword(String encodedPassword) {
+		this.password = encodedPassword;
+	}
+
 	/** 신뢰 등급 재계산 배치용. 관리자 권한은 자동 계산으로 덮어쓰지 않는다. */
 	public void applyTrustGrade(MemberRole grade) {
 		if (role == MemberRole.ROLE_ADMIN || grade == MemberRole.ROLE_ADMIN) {

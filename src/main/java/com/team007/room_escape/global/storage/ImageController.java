@@ -3,6 +3,8 @@ package com.team007.room_escape.global.storage;
 import com.team007.room_escape.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,31 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class ImageController {
 
+	/**
+	 * 업로드 대상 구분. 버킷 안에서 어느 폴더에 저장할지를 정한다.
+	 * 클라이언트가 임의 경로를 넘기지 못하도록 enum으로 고정한다.
+	 */
+	@Getter
+	@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+	public enum ImageType {
+
+		POST("posts"),
+		PROFILE("profiles"),
+		INQUIRY("inquiries"),
+		FESTIVAL("festivals");
+
+		private final String directory;
+	}
+
+	/**
+	 * 업로드 결과.
+	 *
+	 * @param key DB에 저장할 값. URL이 아니라 이 key를 저장한다
+	 * @param url 화면에서 바로 쓸 수 있는 공개 URL
+	 */
+	public record UploadInfo(String key, String url) {
+	}
+
 	private final R2StorageService r2StorageService;
 	private final ImageUrlResolver imageUrlResolver;
 
@@ -32,13 +59,13 @@ public class ImageController {
 			+ "DB에는 URL이 아니라 key를 저장한다. jpeg/png/webp만 허용하며 최대 5MB."
 	)
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ApiResponse<ImageUploadResponse>> upload(
+	public ResponseEntity<ApiResponse<UploadInfo>> upload(
 		@RequestParam ImageType type,
 		@RequestPart("file") MultipartFile file
 	) {
 		String key = r2StorageService.upload(file, type.getDirectory());
 
 		return ResponseEntity.ok(ApiResponse.success(
-			ImageUploadResponse.of(key, imageUrlResolver.resolve(key))));
+			new UploadInfo(key, imageUrlResolver.resolve(key))));
 	}
 }

@@ -36,7 +36,16 @@ public enum AuthExceptionCode implements ExceptionCode {
 	/** 서명 불일치, 형식 오류, 로그아웃으로 폐기된 Refresh 등 */
 	TOKEN_INVALID("AUTH201", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
 	/** Access 또는 Refresh 만료 */
-	TOKEN_EXPIRED("AUTH202", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다.");
+	TOKEN_EXPIRED("AUTH202", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
+
+	/** 인증 코드를 발급받지 않았거나 이미 정리된 경우 */
+	VERIFICATION_NOT_FOUND("AUTH300", HttpStatus.NOT_FOUND, "인증 코드를 먼저 요청해 주세요."),
+	VERIFICATION_CODE_MISMATCH("AUTH301", HttpStatus.BAD_REQUEST, "인증 코드가 올바르지 않습니다."),
+	VERIFICATION_CODE_EXPIRED("AUTH302", HttpStatus.BAD_REQUEST, "인증 코드가 만료되었습니다. 다시 요청해 주세요."),
+	VERIFICATION_RESEND_TOO_SOON("AUTH303", HttpStatus.TOO_MANY_REQUESTS, "잠시 후에 다시 요청해 주세요."),
+	/** 인증 코드 확인을 건너뛰고 비밀번호 변경을 시도한 경우 */
+	VERIFICATION_REQUIRED("AUTH305", HttpStatus.BAD_REQUEST, "이메일 인증을 먼저 완료해 주세요."),
+	SAME_AS_OLD_PASSWORD("AUTH304", HttpStatus.BAD_REQUEST, "기존 비밀번호와 다른 비밀번호를 입력해 주세요.");
 
 	private final String code;
 	private final HttpStatus status;
