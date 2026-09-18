@@ -1,4 +1,4 @@
-# roomescape-front
+# roomescape client
 
 백엔드 인증 로직 검증용 프론트엔드.
 
