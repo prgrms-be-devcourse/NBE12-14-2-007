@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,6 +51,12 @@ public class FestivalSubmissionResponse {
             @Schema(description = "행사 제목")
             String title,
 
+            @Schema(description = "행사 지역")
+            FestivalRegion region,
+
+            @Schema(description = "행사 상세 주소")
+            String regionDetail,
+
             @Schema(description = "행사 시작 일시")
             LocalDateTime beginDe,
 
@@ -71,6 +78,8 @@ public class FestivalSubmissionResponse {
                     .festivalSubmissionId(festivalSubmission.getId())
                     .title(festival.getTitle())
                     .festivalId(festival.getId())
+                    .region(festival.getRegion())
+                    .regionDetail(festival.getRegionDetail())
                     .beginDe(festival.getBeginDe())
                     .endDe(festival.getEndDe())
                     .createdAt(festivalSubmission.getCreatedAt())
@@ -106,7 +115,9 @@ public class FestivalSubmissionResponse {
                                                     .title(festival.getTitle())
                                                     .manager(festival.getManager())
                                                     .festivalContent(festival.getContent())
-                                                    .url(festival.getUrl())
+                                                    .referenceUrl(festival.getUrl())
+                                                    .region(festival.getRegion())
+                                                    .regionDetail(festival.getRegionDetail())
                                                     .imgUrl(festival.getImgUrl())
                                                     .beginDe(festival.getBeginDe())
                                                     .endDe(festival.getEndDe())
@@ -114,7 +125,6 @@ public class FestivalSubmissionResponse {
                                                     .partcptExpnInfo(festival.getPartcptExpnInfo())
                                                     .telnoInfo(festival.getTelnoInfo())
                                                     .hostInstNm(festival.getHostInstNm())
-                                                    .hmpgUrl(festival.getHmpgUrl())
                                                     .writngDe(festival.getWritngDe())
                                                     .status(FestivalStatus.from(festival.getEndDe()))
                                                     .build()
@@ -166,8 +176,14 @@ public class FestivalSubmissionResponse {
             @Schema(description = "행사 상세 내용")
             String festivalContent,
 
-            @Schema(description = "행사 주소")
-            String url,
+            @Schema(description = "행사 정보를 확인할 수 있는 참고 링크")
+            String referenceUrl,
+
+            @Schema(description = "행사 지역")
+            FestivalRegion region,
+
+            @Schema(description = "행사 상세 주소")
+            String regionDetail,
 
             @Schema(description = "행사 이미지 URL")
             String imgUrl,
@@ -189,9 +205,6 @@ public class FestivalSubmissionResponse {
 
             @Schema(description = "주최기관명")
             String hostInstNm,
-
-            @Schema(description = "행사 홈페이지 URL")
-            String hmpgUrl,
 
             @Schema(description = "행사 등록 일시")
             LocalDateTime writngDe,

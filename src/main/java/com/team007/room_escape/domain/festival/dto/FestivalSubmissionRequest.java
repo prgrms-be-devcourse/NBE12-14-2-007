@@ -1,5 +1,6 @@
 package com.team007.room_escape.domain.festival.dto;
 
+import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -36,10 +37,19 @@ public class FestivalSubmissionRequest {
             @Schema(description = "공개할 행사 상세 내용")
             String festivalContent,
 
-            @NotBlank(message = "행사 주소는 필수입니다.")
-            @Size(max = 2048, message = "주소는 2,048자 이하여야 합니다.")
-            @Schema(description = "행사 주소", example = "서울특별시 성동구 성수동")
-            String url,
+            @Size(max = 2048, message = "행사 참고 링크는 2,048자 이하여야 합니다.")
+            @Schema(description = "행사 정보를 확인할 수 있는 참고 링크",
+                    example = "https://www.instagram.com/example-event")
+            String referenceUrl,
+
+            @NotNull(message = "행사 지역은 필수입니다.")
+            @Schema(description = "행사 지역", example = "GYEONGGI_SUWON")
+            FestivalRegion region,
+
+            @NotBlank(message = "행사 상세 주소는 필수입니다.")
+            @Size(max = 255, message = "행사 상세 주소는 255자 이하여야 합니다.")
+            @Schema(description = "행사 상세 주소", example = "팔달구 효원로 1")
+            String regionDetail,
 
             @Size(max = 2048, message = "이미지 URL은 2,048자 이하여야 합니다.")
             @Schema(description = "행사 이미지 URL")
@@ -65,10 +75,6 @@ public class FestivalSubmissionRequest {
 
             @Schema(description = "주최기관명", example = "방구석탈출")
             String hostInstNm,
-
-            @Size(max = 2048, message = "홈페이지 URL은 2,048자 이하여야 합니다.")
-            @Schema(description = "행사 홈페이지 URL")
-            String hmpgUrl,
 
             @NotBlank(message = "행사 제보 내용은 필수입니다.")
             @Schema(description = "행사 제보 내용")
