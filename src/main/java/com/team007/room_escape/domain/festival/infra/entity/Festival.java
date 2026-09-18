@@ -105,6 +105,7 @@ public class Festival extends SoftDeletableEntity {
 		this.imgUrl = imgUrl;
 		this.beginDe = beginDe;
 		this.endDe = endDe;
+		this.status = FestivalStatus.from(endDe);
 		this.eventTmInfo = eventTmInfo;
 		this.partcptExpnInfo = partcptExpnInfo;
 		this.telnoInfo = telnoInfo;

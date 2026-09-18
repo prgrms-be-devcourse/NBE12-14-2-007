@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -19,7 +20,10 @@ public class FestivalSubmissionResponse {
             Long festivalId,
 
             @Schema(description = "생성된 행사 제보 번호")
-            UUID festivalSubmissionId
+            UUID festivalSubmissionId,
+
+            @Schema(description = "행사 상태", example = "OPEN")
+            FestivalStatus status
     ) {
 
         public static CreateFestivalSubmissionResponse from(
@@ -29,12 +33,13 @@ public class FestivalSubmissionResponse {
             return CreateFestivalSubmissionResponse.builder()
                     .festivalId(festival.getId())
                     .festivalSubmissionId(festivalSubmission.getId())
+                    .status(FestivalStatus.from(festival.getEndDe()))
                     .build();
         }
     }
 
     @Builder
-    @Schema(description = "사용자 등록 행사 목록 응답")
+    @Schema(description = "[ME] 내 행사 목록 조회 응답")
     public record FindAllFestivalSubmissionResponse(
             @Schema(description = "행사 제보 번호")
             UUID festivalSubmissionId,
@@ -52,7 +57,10 @@ public class FestivalSubmissionResponse {
             LocalDateTime endDe,
 
             @Schema(description = "행사 제보 일시")
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+
+            @Schema(description = "행사 상태", example = "OPEN")
+            FestivalStatus status
     ) {
 
         public static FindAllFestivalSubmissionResponse from(FestivalSubmission festivalSubmission
@@ -66,12 +74,13 @@ public class FestivalSubmissionResponse {
                     .beginDe(festival.getBeginDe())
                     .endDe(festival.getEndDe())
                     .createdAt(festivalSubmission.getCreatedAt())
+                    .status(FestivalStatus.from(festival.getEndDe()))
                     .build();
         }
     }
 
     @Builder
-    @Schema(description = "사용자 등록 행사 상세 응답")
+    @Schema(description = "[ME] 내 행사 상세 조회")
     public record FindFestivalSubmissionResponse(
             @Schema(description = "행사 제보 정보")
             FestivalSubmissionDetail submission
@@ -107,6 +116,7 @@ public class FestivalSubmissionResponse {
                                                     .hostInstNm(festival.getHostInstNm())
                                                     .hmpgUrl(festival.getHmpgUrl())
                                                     .writngDe(festival.getWritngDe())
+                                                    .status(FestivalStatus.from(festival.getEndDe()))
                                                     .build()
                                     )
                                     .build()
@@ -184,7 +194,10 @@ public class FestivalSubmissionResponse {
             String hmpgUrl,
 
             @Schema(description = "행사 등록 일시")
-            LocalDateTime writngDe
+            LocalDateTime writngDe,
+
+            @Schema(description = "행사 상태", example = "OPEN")
+            FestivalStatus status
     ) {
     }
 }
