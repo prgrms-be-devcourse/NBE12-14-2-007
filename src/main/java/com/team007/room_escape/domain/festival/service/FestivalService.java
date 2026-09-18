@@ -36,6 +36,9 @@ public class FestivalService {
 
 	@Transactional
 	public void syncPublicFestivals() {
+		/** API 호출과 무관하게, 기존에 저장된 행사 중 종료일이 지난 건 먼저 CLOSED로 갱신 **/
+		closeExpiredFestivals();
+
 		List<FestivalApiRow> allRows = fetchAllRows();
 
 		/** 신규 저장이 실패해도 원본만큼은 남기고 싶어서, 필터링/비교보다 먼저 저장 **/
@@ -73,6 +76,12 @@ public class FestivalService {
 		} catch (Exception e) {
 			log.error("신규 행사 저장 실패, 원본 스냅샷은 반영됨", e);
 		}
+	}
+
+	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신 **/
+	private void closeExpiredFestivals() {
+		int closedCount = festivalRepository.closeExpiredFestivals(LocalDateTime.now());
+		log.info("종료된 행사 {}건 CLOSED로 갱신", closedCount);
 	}
 
 	/** API 1회 요청 최대 건수를 넘는 전체 데이터를,
