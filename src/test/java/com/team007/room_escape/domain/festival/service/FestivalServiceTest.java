@@ -8,10 +8,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.team007.room_escape.domain.festival.dto.FestivalResponse;
 import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClient;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
@@ -29,6 +31,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -145,7 +151,7 @@ class FestivalServiceTest {
 	}
 
 	/**
-	 * toFestival()이 각 필드를 제대로 옮기고 yyyyMMdd 문자열도 LocalDateTime으로 잘 파싱하는지 확인한다.
+	 * toGyeonggiFestival()이 각 필드를 제대로 옮기고 yyyyMMdd 문자열도 LocalDateTime으로 잘 파싱하는지 확인한다.
 	 */
 	@Test
 	@DisplayName("API 응답 필드가 Festival 엔티티 필드로 올바르게 매핑된다")
@@ -233,5 +239,90 @@ class FestivalServiceTest {
 		ArgumentCaptor<List<Festival>> captor = ArgumentCaptor.forClass(List.class);
 		verify(festivalRepository).saveAll(captor.capture());
 		return captor.getValue();
+	}
+
+	/** getPublicFestivalsByRegion() 테스트용 PUBLIC 행사 엔티티를 만드는 헬퍼. */
+	private Festival publicFestival(FestivalRegion region, LocalDateTime beginDe, LocalDateTime endDe, FestivalStatus storedStatus) {
+		return Festival.builder()
+			.providerType(ProviderType.PUBLIC)
+			.title("경기 행사")
+			.category("행사")
+			.instNm("경기문화재단")
+			.beginDe(beginDe)
+			.endDe(endDe)
+			.region(region)
+			.status(storedStatus)
+			.build();
+	}
+
+	/**
+	 * region/date가 그대로 리포지토리 쿼리 조건(PUBLIC 고정 + date는 자정 기준)으로 위임되는지 확인한다.
+	 */
+	@Test
+	@DisplayName("지역/날짜로 조회하면 PUBLIC 타입과 자정 기준 날짜로 리포지토리에 위임한다")
+	void delegatesToRepositoryWithPublicProviderTypeAndStartOfDay() {
+		LocalDate date = LocalDate.of(CURRENT_YEAR, 9, 20);
+		Pageable pageable = PageRequest.of(0, 20);
+		Festival festival = publicFestival(
+			FestivalRegion.GYEONGGI, date.minusDays(1).atStartOfDay(), date.plusDays(1).atStartOfDay(), FestivalStatus.OPEN);
+		Page<Festival> page = new PageImpl<>(List.of(festival), pageable, 1);
+
+		when(festivalRepository.findOngoingByProviderTypeAndRegion(
+			ProviderType.PUBLIC, FestivalRegion.GYEONGGI, date.atStartOfDay(), pageable))
+			.thenReturn(page);
+
+		Page<FestivalResponse.ListResponse> result =
+			festivalService.getPublicFestivalsByRegion(FestivalRegion.GYEONGGI, date, pageable);
+
+		assertThat(result.getTotalElements()).isEqualTo(1);
+		verify(festivalRepository).findOngoingByProviderTypeAndRegion(
+			ProviderType.PUBLIC, FestivalRegion.GYEONGGI, date.atStartOfDay(), pageable);
+	}
+
+	/**
+	 * 응답 매핑(ListResponse.from)이 status를 DB에 저장된 값 그대로 안 쓰고,
+	 * endDe 기준으로 다시 계산해서 담는지 확인한다 (저장된 status가 낡아있어도 응답은 항상 정확해야 함).
+	 */
+	@Test
+	@DisplayName("응답의 status는 저장된 값이 아니라 endDe 기준으로 다시 계산된다")
+	void computesStatusFromEndDeNotStoredValue() {
+		Pageable pageable = PageRequest.of(0, 20);
+		LocalDateTime pastEndDe = LocalDate.now().minusDays(1).atStartOfDay();
+		// DB엔 낡은 값(OPEN)으로 저장돼 있지만, endDe는 이미 지난 상태
+		Festival staleOpenFestival = publicFestival(
+			FestivalRegion.GYEONGGI, pastEndDe.minusDays(5), pastEndDe, FestivalStatus.OPEN);
+		Page<Festival> page = new PageImpl<>(List.of(staleOpenFestival), pageable, 1);
+
+		when(festivalRepository.findOngoingByProviderTypeAndRegion(
+			any(ProviderType.class), any(FestivalRegion.class), any(LocalDateTime.class), any(Pageable.class)))
+			.thenReturn(page);
+
+		Page<FestivalResponse.ListResponse> result =
+			festivalService.getPublicFestivalsByRegion(FestivalRegion.GYEONGGI, LocalDate.now(), pageable);
+
+		assertThat(result.getContent().get(0).status()).isEqualTo(FestivalStatus.CLOSED);
+	}
+
+	/**
+	 * ListResponse.from()이 region을 포함한 주요 필드를 엔티티에서 그대로 옮기는지 확인한다.
+	 */
+	@Test
+	@DisplayName("응답에 지역/제목 등 주요 필드가 그대로 매핑된다")
+	void mapsFestivalFieldsToListResponse() {
+		Pageable pageable = PageRequest.of(0, 20);
+		LocalDate date = LocalDate.now();
+		Festival festival = publicFestival(
+			FestivalRegion.GYEONGGI, date.minusDays(1).atStartOfDay(), date.plusDays(1).atStartOfDay(), FestivalStatus.OPEN);
+		Page<Festival> page = new PageImpl<>(List.of(festival), pageable, 1);
+
+		when(festivalRepository.findOngoingByProviderTypeAndRegion(
+			any(ProviderType.class), any(FestivalRegion.class), any(LocalDateTime.class), any(Pageable.class)))
+			.thenReturn(page);
+
+		FestivalResponse.ListResponse response =
+			festivalService.getPublicFestivalsByRegion(FestivalRegion.GYEONGGI, date, pageable).getContent().get(0);
+
+		assertThat(response.title()).isEqualTo("경기 행사");
+		assertThat(response.region()).isEqualTo(FestivalRegion.GYEONGGI);
 	}
 }
