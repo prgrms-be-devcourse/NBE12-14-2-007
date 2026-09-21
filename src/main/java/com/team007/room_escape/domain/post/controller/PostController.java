@@ -40,14 +40,7 @@ public class PostController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "전체 후기 조회", description = "행사 선택 없이 전체 후기 목록을 조회합니다.")
-	@GetMapping("/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getAllPosts(
-			@PageableDefault(size = 6, sort = "createdAt", direction = Sort.Direction.DESC) Pageable page) {
-		return ResponseEntity.ok(ApiResponse.success(postService.getAllPosts(page)));
-	}
-
-	@Operation(summary = "행사별 후기 다건 조회", description = "특정 행사의 후기 목록을 조회합니다.")
+	@Operation(summary = "후기 다건 조회", description = "후기 목록을 조회합니다.")
 	@GetMapping("/festivals/{id}/posts")
 	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPosts(
 			@PathVariable Long id,

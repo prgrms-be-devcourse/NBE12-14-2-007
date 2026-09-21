@@ -56,11 +56,6 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> getAllPosts(Pageable page) {
-		return postRepository.findAllVisible(page).map(PostResponse.ListResponse::from);
-	}
-
-	@Transactional(readOnly = true)
 	public Page<PostResponse.ListResponse> getPosts(Long festivalId, Pageable page) {
 		return postRepository.findAllByFestivalId(festivalId, page)
 				.map(PostResponse.ListResponse::from);

@@ -31,7 +31,7 @@ public class CommentResponse {
                     comment.getMember().getNickname(),
                     comment.getMember().getProfileImg(),
                     comment.getContent(),
-                    comment.getCreatedAt()
+                    comment.getUpdatedAt()
             );
         }
 
