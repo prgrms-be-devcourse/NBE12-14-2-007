@@ -38,4 +38,16 @@ public class LikeController {
 		return ResponseEntity.ok(ApiResponse.success(likeCount));
 	}
 
+	@Operation(summary = "후기 좋아요 삭제", description = "특정 후기에 좋아요를 취소합니다.")
+	@DeleteMapping("/me")
+	public ResponseEntity<ApiResponse<LikeResponse>> deleteLike(
+			@PathVariable UUID id,
+			@AuthenticationPrincipal CustomUserDetails user
+	) {
+		LikeResponse response = likeService.deleteLike(id, user.getId());
+
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+
 }
