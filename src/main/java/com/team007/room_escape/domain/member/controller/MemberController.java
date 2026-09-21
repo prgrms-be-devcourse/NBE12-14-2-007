@@ -2,7 +2,6 @@ package com.team007.room_escape.domain.member.controller;
 
 import com.team007.room_escape.domain.member.dto.MemberRequest;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
-import com.team007.room_escape.domain.member.dto.PasswordRequest;
 import com.team007.room_escape.domain.member.service.MemberService;
 import com.team007.room_escape.global.response.ApiResponse;
 import com.team007.room_escape.global.security.CustomUserDetails;
@@ -86,7 +85,7 @@ public class MemberController {
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<Void>> verifyPasswordChangeCode(
 		@AuthenticationPrincipal CustomUserDetails principal,
-		@Valid @RequestBody PasswordRequest.Verify request
+		@Valid @RequestBody MemberRequest.VerifyPassword request
 	) {
 		memberService.verifyPasswordChangeCode(principal.getId(), request);
 
@@ -102,7 +101,7 @@ public class MemberController {
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ApiResponse<Void>> changePassword(
 		@AuthenticationPrincipal CustomUserDetails principal,
-		@Valid @RequestBody PasswordRequest.Change request
+		@Valid @RequestBody MemberRequest.ChangePassword request
 	) {
 		memberService.changePassword(principal.getId(), request);
 

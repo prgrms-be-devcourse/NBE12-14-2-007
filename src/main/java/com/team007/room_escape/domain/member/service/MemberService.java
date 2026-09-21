@@ -5,7 +5,6 @@ import com.team007.room_escape.domain.auth.service.EmailVerificationService;
 import com.team007.room_escape.domain.auth.service.RefreshTokenService;
 import com.team007.room_escape.domain.member.dto.MemberRequest;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
-import com.team007.room_escape.domain.member.dto.PasswordRequest;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.global.exception.BusinessException;
@@ -101,7 +100,7 @@ public class MemberService {
 	 * 통과하면 잠시 인증 상태가 유지되고, 그 사이에 새 비밀번호를 설정하면 된다.
 	 */
 	@Transactional(readOnly = true)
-	public void verifyPasswordChangeCode(UUID memberId, PasswordRequest.Verify request) {
+	public void verifyPasswordChangeCode(UUID memberId, MemberRequest.VerifyPassword request) {
 		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
 			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
@@ -117,7 +116,7 @@ public class MemberService {
 	 * 변경에 성공하면 Refresh Token을 지워 다른 기기의 세션을 끊는다.
 	 */
 	@Transactional
-	public void changePassword(UUID memberId, PasswordRequest.Change request) {
+	public void changePassword(UUID memberId, MemberRequest.ChangePassword request) {
 		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
 			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
