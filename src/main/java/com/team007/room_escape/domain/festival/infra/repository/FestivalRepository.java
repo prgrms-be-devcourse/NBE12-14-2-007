@@ -16,6 +16,39 @@ import java.util.Optional;
 
 public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
+    @Query(value = """
+            SELECT f FROM Festival f LEFT JOIN FETCH f.member
+            WHERE f.providerType = :providerType AND f.deletedAt IS NULL
+              AND EXISTS (SELECT s.id FROM FestivalSubmission s WHERE s.festival = f AND s.deletedAt IS NULL)
+              AND LOWER(f.title) LIKE LOWER(:pattern) ESCAPE '!'
+              AND (:closed IS NULL
+                OR (:closed = TRUE AND f.endDe < :now)
+                OR (:closed = FALSE AND (f.endDe IS NULL OR f.endDe >= :now)))
+            """, countQuery = """
+            SELECT COUNT(f) FROM Festival f
+            WHERE f.providerType = :providerType AND f.deletedAt IS NULL
+              AND EXISTS (SELECT s.id FROM FestivalSubmission s WHERE s.festival = f AND s.deletedAt IS NULL)
+              AND LOWER(f.title) LIKE LOWER(:pattern) ESCAPE '!'
+              AND (:closed IS NULL
+                OR (:closed = TRUE AND f.endDe < :now)
+                OR (:closed = FALSE AND (f.endDe IS NULL OR f.endDe >= :now)))
+            """)
+    Page<Festival> findSharedSubmissions(
+            @Param("providerType") ProviderType providerType,
+            @Param("pattern") String pattern,
+            @Param("closed") Boolean closed,
+            @Param("now") LocalDateTime now,
+            Pageable page);
+
+    @Query("""
+            SELECT f FROM Festival f LEFT JOIN FETCH f.member
+            WHERE f.id = :festivalId AND f.deletedAt IS NULL
+              AND (f.providerType = :publicType
+                OR EXISTS (SELECT s.id FROM FestivalSubmission s WHERE s.festival = f AND s.deletedAt IS NULL))
+            """)
+    Optional<Festival> findSharedFestival(@Param("festivalId") Long festivalId,
+                                          @Param("publicType") ProviderType publicType);
+
 /** 저장 건수 조회 메서드 **/
 	long countByProviderType(ProviderType providerType);
 

@@ -10,6 +10,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface PostRepository extends JpaRepository<Post, UUID> {
+    @Query(value = """
+            SELECT p FROM Post p JOIN FETCH p.member JOIN FETCH p.festival f
+            WHERE p.deletedAt IS NULL AND f.deletedAt IS NULL
+            """, countQuery = """
+            SELECT COUNT(p) FROM Post p JOIN p.festival f
+            WHERE p.deletedAt IS NULL AND f.deletedAt IS NULL
+            """)
+    Page<Post> findAllVisible(Pageable page);
+
     @Query("""
             SELECT p
             FROM Post p
