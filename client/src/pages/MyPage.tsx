@@ -548,7 +548,7 @@ function InquiryDetail({
       )}
       {data.answer && (
         <div className="inquiry-answer">
-          <strong>EventUs의 답변</strong>
+          <strong>방구석탈출의 답변</strong>
           <p className="prose">{data.answer}</p>
         </div>
       )}

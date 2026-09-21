@@ -40,7 +40,7 @@ export function Logo() {
           />
         </svg>
       </span>
-      Event<span className="logo-us">Us</span>
+      <span>방구석탈출</span>
     </span>
   );
 }

@@ -53,7 +53,7 @@ export function Layout() {
       </div>
       <header className="site-header">
         <div className="container header-inner">
-          <Link to="/" aria-label="EventUs 홈">
+          <Link to="/" aria-label="방구석탈출 홈">
             <Logo />
           </Link>
           <nav
@@ -110,6 +110,7 @@ export function Layout() {
               <Link to="/submissions">행사 제보</Link>
               <Link to="/reviews">행사 후기</Link>
               <Link to="/mypage?tab=inquiries">문의하기</Link>
+              <Link to="/admin">시스템 관리자 미리보기</Link>
             </div>
             <div className="footer-message">
               <Compass size={24} />
@@ -121,7 +122,7 @@ export function Layout() {
             </div>
           </div>
           <div className="footer-bottom">
-            <span>© 2026 EventUs. 함께 만드는 즐거운 일상.</span>
+            <span>© 2026 roomescape. 함께 만드는 즐거운 일상.</span>
             <span>
               {mode === "preview" ? "DESIGN PREVIEW" : "일상에 즐거움을 더하다"}
             </span>
