@@ -8,6 +8,9 @@ import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
+import java.util.List;
+
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+
+import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +50,35 @@ public class InquiryController {
 		InquiryResponse.Info response = inquiryService.create(principal.getId(), request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
+
+	@Operation(
+		summary = "[ME] 내 문의 목록 조회",
+		description = "로그인한 사용자가 등록한 문의를 최신순으로 조회한다. 남의 문의는 조회할 수 없다."
+	)
+	@GetMapping("/me")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ApiResponse<List<InquiryResponse.Info>>> findMine(
+		@AuthenticationPrincipal CustomUserDetails principal
+	) {
+		List<InquiryResponse.Info> response = inquiryService.findMine(principal.getId());
+
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@Operation(
+		summary = "[ME] 내 문의 상세 조회",
+		description = "본인이 등록한 문의를 상세 조회한다. 남의 문의를 조회하면 404로 응답한다."
+	)
+	@GetMapping("/{inquiryId}")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ApiResponse<InquiryResponse.Info>> findMineById(
+		@PathVariable("inquiryId") UUID inquiryId,
+		@AuthenticationPrincipal CustomUserDetails principal
+	) {
+		InquiryResponse.Info response = inquiryService.findMineById(inquiryId, principal.getId());
+
+		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	@Operation(

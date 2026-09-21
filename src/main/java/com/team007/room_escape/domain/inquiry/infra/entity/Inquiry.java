@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.inquiry.infra.entity;
 
+import static com.team007.room_escape.global.util.StringUtil.emptyToNull;
+
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.global.entity.SoftDeletableEntity;
 
@@ -90,7 +92,7 @@ public class Inquiry extends SoftDeletableEntity {
 			this.content = content;
 		}
 		if (img != null) {
-			this.img = img.isBlank() ? null : img;
+			this.img = emptyToNull(img);
 		}
 	}
 }
