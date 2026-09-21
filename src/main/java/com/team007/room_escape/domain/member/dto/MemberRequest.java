@@ -1,5 +1,6 @@
 package com.team007.room_escape.domain.member.dto;
 
+import com.team007.room_escape.global.validation.ValidPhone;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 
@@ -19,8 +20,11 @@ public class MemberRequest {
 		@Schema(description = "닉네임. 생략하면 변경하지 않는다", example = "축제좋아")
 		String nickname,
 
-		@Size(max = 20)
-		@Schema(description = "연락처. 생략하면 변경하지 않고, 빈 문자열이면 지운다", example = "010-1234-5678")
+		@ValidPhone
+		@Schema(
+			description = "휴대폰 번호. 하이픈 없이 숫자만. 생략하면 변경하지 않고, 빈 문자열이면 지운다",
+			example = "01012345678"
+		)
 		String phone,
 
 		@Size(max = 2048)
