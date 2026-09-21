@@ -16,7 +16,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "npm run dev",
+    command: "pnpm dev",
     url: "http://localhost:3001",
     reuseExistingServer: true,
     timeout: 30_000,

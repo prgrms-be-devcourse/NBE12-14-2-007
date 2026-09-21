@@ -1,303 +1,689 @@
-import { useAuth } from '@/features/auth/authContext'
-import { uploadImage, validateImage } from '@/features/image/api'
-import { updateMyPage } from '@/features/member/api'
-import type { MemberRole, MyPageInfo } from '@/features/member/types'
-import { ApiError } from '@/shared/api/types'
-import { formatPhone, isValidPhone, toDigits } from '@/shared/lib/phone'
-import { Avatar } from '@/shared/ui/Avatar'
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Navigate } from 'react-router'
-import { PasswordSection } from './mypage/PasswordSection'
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  ArrowRight,
+  Check,
+  ChevronRight,
+  ClipboardList,
+  LogOut,
+  Mail,
+  MessageCircle,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+import { useApp, useLoad } from "../lib/context";
+import { dateText, errorText, roleNames } from "../lib/format";
+import type { Inquiry, InquiryInput } from "../lib/types";
+import {
+  Badge,
+  Empty,
+  ErrorState,
+  Field,
+  FormError,
+  Loading,
+  LoginRequired,
+  Modal,
+  PageTitle,
+  Photo,
+  SubmitButton,
+  Upload,
+} from "../components/ui";
+import { SubmissionList } from "./Submissions";
 
-/** 화면정의서 8번. 신뢰도·활동 탭은 관련 API 가 없어 자리만 잡아둔다. */
-const TABS = [
-  { key: 'profile', label: '내 정보' },
-  { key: 'trust', label: '신뢰도 현황' },
-  { key: 'posts', label: '내가 쓴 글' },
-  { key: 'activity', label: '내 활동' },
-] as const
-
-type TabKey = (typeof TABS)[number]['key']
-
-const ROLE_LABEL: Record<MemberRole, string> = {
-  ROLE_WARNING: '제재 중',
-  ROLE_UNVERIFIED: '신규 주최자',
-  ROLE_NORMAL: '일반',
-  ROLE_TRUSTED: '신뢰 주최자',
-  ROLE_ADMIN: '관리자',
-}
-
-export default function MyPage() {
-  const { me, booting } = useAuth()
-  const [tab, setTab] = useState<TabKey>('profile')
-
-  if (booting) {
-    return null
-  }
-  if (!me) {
-    return <Navigate to="/login" replace />
-  }
-
+export function MyPage() {
+  const { member, authLoading, api, setMember, toast } = useApp();
+  const [params, setParams] = useSearchParams();
+  const [error, setError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
+  const tab = params.get("tab") || "profile";
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-        <span aria-hidden>🎁</span> 마이페이지
-      </h1>
-
-      <nav className="mt-5 flex gap-1 border-b border-sand-200">
-        {TABS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => setTab(item.key)}
-            className={
-              tab === item.key
-                ? '-mb-px border-b-2 border-brand-500 px-4 py-2 text-sm font-semibold text-brand-600'
-                : 'px-4 py-2 text-sm text-slate-500 hover:text-slate-800'
-            }
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-6">
-        {tab === 'profile' ? (
-          <>
-            <ProfileSection me={me} />
-            <PasswordSection />
-          </>
-        ) : (
-          <Placeholder />
-        )}
-      </div>
+    <div className="container page-space">
+      <PageTitle
+        eyebrow="MY LITTLE JOURNEY"
+        title="마이페이지"
+        description="내가 나눈 소식과 이야기를 한곳에서 확인해요."
+      />
+      {authLoading ? (
+        <Loading />
+      ) : !member ? (
+        <LoginRequired />
+      ) : (
+        <div className="my-layout">
+          <aside className="my-sidebar">
+            <div className="my-profile">
+              {member.profileImg ? (
+                <Photo
+                  className="profile-image"
+                  src={member.profileImg}
+                  alt="내 프로필"
+                />
+              ) : (
+                <span className="avatar profile-avatar">
+                  {member.nickname[0]}
+                </span>
+              )}
+              <h2>{member.nickname}</h2>
+              <p>{member.email}</p>
+              <Badge tone="green">{roleNames[member.role]}</Badge>
+            </div>
+            <nav aria-label="마이페이지 메뉴">
+              {[
+                { key: "profile", label: "내 정보", Icon: UserRound },
+                {
+                  key: "submissions",
+                  label: "내 행사 제보",
+                  Icon: ClipboardList,
+                },
+                {
+                  key: "inquiries",
+                  label: "내 문의·신고",
+                  Icon: MessageCircle,
+                },
+              ].map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  className={tab === key ? "active" : ""}
+                  onClick={() => setParams({ tab: key })}
+                >
+                  <Icon size={18} />
+                  {label}
+                  <ChevronRight size={15} />
+                </button>
+              ))}
+            </nav>
+            <button
+              className="logout-button"
+              disabled={loggingOut}
+              onClick={async () => {
+                setLoggingOut(true);
+                try {
+                  await api.logout();
+                  setMember(null);
+                  toast("로그아웃했어요.");
+                } catch (e) {
+                  setError(errorText(e));
+                  setMember(null);
+                } finally {
+                  setLoggingOut(false);
+                }
+              }}
+            >
+              <LogOut size={16} />
+              로그아웃
+            </button>
+            <FormError message={error} />
+          </aside>
+          <div className="my-content">
+            {tab === "submissions" ? (
+              <SubmissionList compact />
+            ) : tab === "inquiries" ? (
+              <Inquiries />
+            ) : (
+              <Profile />
+            )}
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
-
-/** 신뢰도·게시글·활동은 백엔드 API 가 아직 없다. */
-function Placeholder() {
-  return (
-    <p className="rounded-xl border border-dashed border-sand-200 px-4 py-12 text-center text-sm text-slate-400">
-      아직 준비 중인 기능입니다.
-    </p>
-  )
-}
-/**
- * 내 정보. 기본은 읽기 전용이고 "수정하기"를 눌러야 입력창으로 바뀐다.
- * 실수로 값을 건드리는 걸 막기 위한 장치이며, 서버는 토큰만 확인한다.
- */
-function ProfileSection({ me }: { me: MyPageInfo }) {
-  const { refreshMe } = useAuth()
-
-  const [editing, setEditing] = useState(false)
-  const [nickname, setNickname] = useState(me.nickname)
-  const [phone, setPhone] = useState(formatPhone(me.phone ?? ''))
-  const [file, setFile] = useState<File | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
-
-  useEffect(() => {
-    if (!preview) {
-      return
+function Profile() {
+  const { member, api, setMember, toast, mode } = useApp();
+  const [nickname, setNickname] = useState(member!.nickname);
+  const [phone, setPhone] = useState(member!.phone || "");
+  const [image, setImage] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const restricted = member?.role === "ROLE_WARNING";
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (nickname.trim().length < 2) {
+      setError("닉네임은 2자 이상 입력해 주세요.");
+      return;
     }
-    return () => URL.revokeObjectURL(preview)
-  }, [preview])
-
-  function startEditing() {
-    setEditing(true)
-    setDone(false)
-    setError(null)
-  }
-
-  /** 편집한 내용을 버리고 서버 값으로 되돌린다. */
-  function cancelEditing() {
-    setEditing(false)
-    setError(null)
-    setNickname(me.nickname)
-    setPhone(formatPhone(me.phone ?? ''))
-    setFile(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const selected = event.target.files?.[0]
-    if (!selected) {
-      return
-    }
-    const invalid = validateImage(selected)
-    if (invalid) {
-      setError(invalid)
-      event.target.value = ''
-      return
-    }
-    setError(null)
-    setFile(selected)
-  }
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-
-    if (nickname.length < 2 || nickname.length > 30) {
-      setError('닉네임은 2~30자여야 합니다.')
-      return
-    }
-    if (!isValidPhone(toDigits(phone))) {
-      setError('휴대폰 번호 형식이 올바르지 않습니다. (예: 010-1234-5678)')
-      return
-    }
-
-    setError(null)
-    setSaving(true)
+    setBusy(true);
+    setError("");
     try {
-      const profileImg = file ? (await uploadImage(file, 'PROFILE')).key : undefined
-
-      await updateMyPage({
-        nickname,
-        // 빈 문자열을 보내면 서버가 번호를 지운다. 이게 "삭제"를 표현하는 방법이다.
-        phone: toDigits(phone),
-        profileImg,
-      })
-
-      // 헤더 아바타·닉네임이 바로 바뀌도록 전역 상태를 다시 읽는다.
-      await refreshMe()
-      setFile(null)
-      setEditing(false)
-      setDone(true)
+      const updated = await api.updateMe({
+        nickname: nickname.trim(),
+        phone,
+        ...(image !== undefined ? { profileImg: image } : {}),
+      });
+      setMember(updated);
+      toast(
+        mode === "preview"
+          ? "미리보기 프로필을 저장했어요."
+          : "내 정보를 저장했어요.",
+      );
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '알 수 없는 오류가 발생했습니다.')
+      setError(errorText(e));
     } finally {
-      setSaving(false)
+      setBusy(false);
     }
   }
-
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-sand-200 bg-white p-6">
-      <div className="flex flex-col items-center gap-3">
-        {editing ? (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="rounded-full ring-offset-2 hover:ring-2 hover:ring-brand-400"
-            aria-label="프로필 이미지 변경"
-          >
-            <Avatar src={preview ?? me.profileImg} name={me.nickname} size="lg" />
-          </button>
-        ) : (
-          <Avatar src={me.profileImg} name={me.nickname} size="lg" />
-        )}
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-
-        {editing && (
-          <span className="text-xs text-slate-400">
-            {file ? '저장을 눌러야 반영됩니다' : '이미지를 눌러 변경'}
-          </span>
-        )}
+    <>
+      <div className="section-heading">
+        <div>
+          <h2>내 정보</h2>
+          <p className="muted">이웃에게 보여줄 나를 소개해 주세요.</p>
+        </div>
       </div>
-
-      <dl className="mt-6 flex flex-col gap-4 text-sm">
-        <Row label="이메일">
-          {/* 이메일은 로그인 식별자라 수정 API 가 없다 */}
-          <span className="text-slate-500">{me.email}</span>
-        </Row>
-
-        <Row label="등급">
-          <span className="rounded bg-sand-100 px-2 py-0.5 text-xs text-slate-600">
-            {ROLE_LABEL[me.role]}
+      <div className="trust-panel">
+        <ShieldCheck size={38} />
+        <div>
+          <span>나의 활동 등급</span>
+          <h3>{roleNames[member!.role]}</h3>
+          <p>함께 나누는 정확한 정보가 믿을 수 있는 일상을 만들어요.</p>
+        </div>
+      </div>
+      <form className="profile-form" onSubmit={submit}>
+        <fieldset disabled={restricted || busy}>
+          <div className="form-grid">
+            <Field label="이메일" wide>
+              <input type="email" disabled value={member!.email} />
+            </Field>
+            <Field label="닉네임" required>
+              <input
+                required
+                minLength={2}
+                maxLength={30}
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+              />
+            </Field>
+            <Field label="휴대폰 번호" hint="하이픈 없이 숫자만 입력해 주세요.">
+              <input
+                type="tel"
+                pattern="01[016789][0-9]{7,8}"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="01012345678"
+              />
+            </Field>
+            <div className="wide">
+              <span className="upload-label">프로필 사진</span>
+              <Upload
+                type="PROFILE"
+                value={member!.profileImg}
+                onChange={setImage}
+                useKey
+              />
+            </div>
+          </div>
+        </fieldset>
+        {restricted && (
+          <p className="form-error">
+            활동 제한 등급은 프로필을 수정할 수 없어요.
+          </p>
+        )}
+        <FormError message={error} />
+        <div className="form-actions">
+          <SubmitButton busy={busy} disabled={restricted}>
+            변경 사항 저장
+            <Check size={16} />
+          </SubmitButton>
+        </div>
+      </form>
+      <div className="account-security">
+        <div>
+          <h3>계정 보안</h3>
+          <p>이메일 인증 후 비밀번호를 변경할 수 있어요.</p>
+        </div>
+        <button
+          className="btn secondary small"
+          onClick={() => setPasswordOpen(true)}
+        >
+          비밀번호 변경
+          <ArrowRight size={15} />
+        </button>
+      </div>
+      <div className="joined-date">
+        함께한 날 · {dateText(member!.createdAt)}
+      </div>
+      {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
+    </>
+  );
+}
+function PasswordModal({ onClose }: { onClose: () => void }) {
+  const { api, mode, setMember, toast } = useApp();
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!cooldown) return;
+    const t = setTimeout(() => setCooldown((x) => x - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+  async function send() {
+    setBusy(true);
+    setError("");
+    try {
+      await api.sendPasswordCode();
+      setStep(1);
+      setCooldown(60);
+      toast(
+        mode === "preview"
+          ? "미리보기에서는 메일을 보내지 않아요. 6자리 숫자를 입력해 보세요."
+          : "가입한 이메일로 인증 코드를 보냈어요.",
+      );
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (step === 2 && password !== confirm) {
+      setError("비밀번호가 서로 달라요.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (step === 1) {
+        await api.verifyPasswordCode(code);
+        setStep(2);
+      } else {
+        await api.changePassword(password);
+        setMember(null);
+        onClose();
+        navigate("/login");
+        toast("비밀번호를 변경했어요. 다시 로그인해 주세요.");
+      }
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal title="비밀번호 변경" onClose={onClose}>
+      <p className="muted">가입한 이메일로 본인 확인을 진행해요.</p>
+      <div className="step-indicator">
+        {["코드 받기", "이메일 인증", "비밀번호 변경"].map((label, i) => (
+          <span className={step >= i ? "active" : ""} key={label}>
+            {i + 1}. {label}
           </span>
-        </Row>
-
-        <Row label="가입일">
-          <span className="text-slate-500">{me.createdAt.slice(0, 10)}</span>
-        </Row>
-
-        <Row label="닉네임">
-          {editing ? (
-            <input
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              className="w-full rounded-lg border border-sand-200 px-3 py-2 outline-none focus:border-brand-400"
+        ))}
+      </div>
+      {step === 0 ? (
+        <button
+          className="btn primary full-width"
+          disabled={busy}
+          onClick={send}
+        >
+          <Mail size={17} />
+          인증 코드 받기
+        </button>
+      ) : (
+        <form onSubmit={submit}>
+          {step === 1 ? (
+            <>
+              <Field label="6자리 인증 코드" required>
+                <input
+                  required
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                />
+              </Field>
+              <button
+                type="button"
+                className="text-button"
+                disabled={cooldown > 0 || busy}
+                onClick={send}
+              >
+                {cooldown
+                  ? `${cooldown}초 후 다시 받기`
+                  : "인증 코드 다시 받기"}
+              </button>
+            </>
+          ) : (
+            <>
+              <Field
+                label="새 비밀번호"
+                required
+                hint="8~25자, 영문·숫자·특수문자(!@#%^&*) 포함"
+              >
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  maxLength={25}
+                  pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#%^&*]).{8,25}"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Field>
+              <Field label="새 비밀번호 확인" required>
+                <input
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                />
+              </Field>
+            </>
+          )}
+          <div className="form-actions">
+            <SubmitButton busy={busy}>
+              {step === 1 ? "코드 확인" : "비밀번호 변경"}
+            </SubmitButton>
+          </div>
+        </form>
+      )}
+      <FormError message={error} />
+    </Modal>
+  );
+}
+function Inquiries() {
+  const { api } = useApp();
+  const [params, setParams] = useSearchParams();
+  const { data, loading, error, reload } = useLoad(
+    () => api.inquiries(),
+    [api],
+  );
+  const [open, setOpen] = useState(!!params.get("report"));
+  const [selected, setSelected] = useState<Inquiry | null>(null);
+  const [edit, setEdit] = useState(false);
+  const report = params.get("report") || "";
+  function close() {
+    setOpen(false);
+    setSelected(null);
+    setEdit(false);
+    if (report) setParams({ tab: "inquiries" }, { replace: true });
+  }
+  return (
+    <>
+      <div className="section-heading">
+        <div>
+          <h2>내 문의·신고</h2>
+          <p className="muted">
+            궁금한 점이나 확인이 필요한 정보를 알려주세요.
+          </p>
+        </div>
+        <button
+          className="btn primary small"
+          onClick={() => {
+            setSelected(null);
+            setEdit(true);
+            setOpen(true);
+          }}
+        >
+          <Plus size={16} />
+          문의하기
+        </button>
+      </div>
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <ErrorState message={error} retry={reload} />
+      ) : data?.length ? (
+        <div className="inquiry-list">
+          {data.map((q) => (
+            <button
+              key={q.id}
+              className="inquiry-row"
+              onClick={() => {
+                setSelected(q);
+                setEdit(false);
+                setOpen(true);
+              }}
+            >
+              <span className="inquiry-icon">
+                <MessageCircle size={19} />
+              </span>
+              <div>
+                <Badge tone={q.status === "ANSWERED" ? "green" : "gray"}>
+                  {q.status === "ANSWERED" ? "답변 완료" : "답변 대기"}
+                </Badge>
+                <h3>{q.title}</h3>
+                <p>
+                  {q.category === "REPORT" ? "신고" : "일반 문의"} ·{" "}
+                  {dateText(q.createdAt)}
+                </p>
+              </div>
+              <ChevronRight size={17} />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <Empty
+          title="아직 남긴 문의가 없어요"
+          description="서비스 이용 중 궁금한 점이 있다면 편하게 남겨주세요."
+          icon={<MessageCircle size={30} />}
+        />
+      )}
+      <div className="inquiry-note">
+        문의 내용과 답변은 작성한 본인만 확인할 수 있어요.
+      </div>
+      {open && (
+        <Modal
+          title={
+            selected
+              ? edit
+                ? "문의 수정"
+                : "내 문의 상세"
+              : report
+                ? "정보 신고하기"
+                : "문의하기"
+          }
+          onClose={close}
+        >
+          {selected && !edit ? (
+            <InquiryDetail
+              id={selected.id}
+              onEdit={(q) => {
+                setSelected(q);
+                setEdit(true);
+              }}
+              onDeleted={() => {
+                close();
+                reload();
+              }}
             />
           ) : (
-            <span className="text-slate-800">{me.nickname}</span>
-          )}
-        </Row>
-
-        <Row label="휴대폰">
-          {editing ? (
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(formatPhone(e.target.value))}
-              placeholder="010-1234-5678"
-              className="w-full rounded-lg border border-sand-200 px-3 py-2 outline-none focus:border-brand-400"
+            <InquiryForm
+              existing={selected || undefined}
+              report={report}
+              onSave={() => {
+                close();
+                reload();
+              }}
             />
-          ) : (
-            <span className="text-slate-800">{formatPhone(me.phone ?? '') || '-'}</span>
           )}
-        </Row>
-      </dl>
-
-      {error && (
-        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
+        </Modal>
       )}
-      {done && !editing && (
-        <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          저장되었습니다.
-        </p>
+    </>
+  );
+}
+function InquiryDetail({
+  id,
+  onEdit,
+  onDeleted,
+}: {
+  id: string;
+  onEdit: (q: Inquiry) => void;
+  onDeleted: () => void;
+}) {
+  const { api } = useApp();
+  const { data, loading, error, reload } = useLoad(
+    () => api.inquiry(id),
+    [api, id],
+  );
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
+  if (loading) return <Loading />;
+  if (error) return <ErrorState message={error} retry={reload} />;
+  if (!data) return null;
+  return (
+    <>
+      <Badge tone={data.status === "ANSWERED" ? "green" : "gray"}>
+        {data.status === "ANSWERED" ? "답변 완료" : "답변 대기"}
+      </Badge>
+      <h3 className="inquiry-title">{data.title}</h3>
+      <p className="prose">{data.content}</p>
+      {data.img && (
+        <Photo
+          className="inquiry-image"
+          src={data.img}
+          alt="문의 첨부 이미지"
+        />
       )}
-
-      {editing ? (
-        <div className="mt-5 flex gap-2">
+      {data.answer && (
+        <div className="inquiry-answer">
+          <strong>EventUs의 답변</strong>
+          <p className="prose">{data.answer}</p>
+        </div>
+      )}
+      <FormError message={actionError} />
+      {confirm ? (
+        <div className="delete-confirm">
+          <p>이 문의를 삭제할까요?</p>
           <button
-            type="button"
-            onClick={cancelEditing}
-            disabled={saving}
-            className="flex-1 rounded-lg border border-sand-200 py-2.5 text-sm text-slate-600 hover:bg-sand-100 disabled:opacity-60"
+            className="btn secondary small"
+            onClick={() => setConfirm(false)}
           >
             취소
           </button>
           <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 rounded-lg bg-brand-500 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+            className="btn danger small"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await api.deleteInquiry(id);
+                onDeleted();
+              } catch (e) {
+                setActionError(errorText(e));
+              } finally {
+                setBusy(false);
+              }
+            }}
           >
-            {saving ? '저장 중…' : '저장'}
+            삭제
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={startEditing}
-          className="mt-5 w-full rounded-lg border border-sand-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-sand-100"
-        >
-          수정하기
-        </button>
+        <div className="form-actions">
+          <button
+            className="text-button muted"
+            onClick={() => setConfirm(true)}
+          >
+            문의 삭제
+          </button>
+          {data.status !== "ANSWERED" && (
+            <button className="btn secondary" onClick={() => onEdit(data)}>
+              <Pencil size={15} />
+              수정하기
+            </button>
+          )}
+        </div>
       )}
-    </form>
-  )
+    </>
+  );
 }
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function InquiryForm({
+  existing,
+  report,
+  onSave,
+}: {
+  existing?: Inquiry;
+  report: string;
+  onSave: () => void;
+}) {
+  const { api, toast, mode } = useApp();
+  const [category, setCategory] = useState<InquiryInput["category"]>(
+    existing?.category || (report ? "REPORT" : "QUESTION"),
+  );
+  const [title, setTitle] = useState(existing?.title || "");
+  const [content, setContent] = useState(existing?.content || report);
+  const [img, setImg] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || !content.trim()) {
+      setError("제목과 내용을 입력해 주세요.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const body = {
+        category,
+        title: title.trim(),
+        content: content.trim(),
+        ...(img !== undefined ? { img } : {}),
+      };
+      if (existing) await api.updateInquiry(existing.id, body);
+      else await api.createInquiry(body);
+      toast(
+        mode === "preview"
+          ? "미리보기 문의를 저장했어요."
+          : "문의를 저장했어요.",
+      );
+      onSave();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <div className="grid grid-cols-[5rem_1fr] items-center gap-3">
-      <dt className="text-slate-500">{label}</dt>
-      <dd>{children}</dd>
-    </div>
-  )
+    <form onSubmit={submit}>
+      <Field label="문의 종류" required>
+        <select
+          value={category}
+          onChange={(e) =>
+            setCategory(e.target.value as InquiryInput["category"])
+          }
+        >
+          <option value="QUESTION">일반 문의</option>
+          <option value="REPORT">잘못된 정보·게시물 신고</option>
+        </select>
+      </Field>
+      <Field label="제목" required>
+        <input
+          required
+          maxLength={255}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="어떤 도움이 필요하신가요?"
+        />
+      </Field>
+      <Field label="내용" required>
+        <textarea
+          required
+          rows={5}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="자세히 알려주시면 확인에 도움이 돼요."
+        />
+      </Field>
+      <Upload type="INQUIRY" value={existing?.img} onChange={setImg} useKey />
+      <FormError message={error} />
+      <div className="form-actions">
+        <SubmitButton busy={busy}>
+          {existing ? "수정 내용 저장" : "문의 남기기"}
+        </SubmitButton>
+      </div>
+    </form>
+  );
 }

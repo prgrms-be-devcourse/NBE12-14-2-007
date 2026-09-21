@@ -1,7 +1,0 @@
-node_modules/
-dist/
-.env.local
-test-results/
-playwright-report/
-*.log
-*.tsbuildinfo
