@@ -8,11 +8,15 @@ import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,12 +37,45 @@ public class InquiryController {
 	)
 	@PostMapping
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<ApiResponse<InquiryResponse.CreateInfo>> create(
+	public ResponseEntity<ApiResponse<InquiryResponse.Info>> create(
 		@AuthenticationPrincipal CustomUserDetails principal,
 		@Valid @RequestBody InquiryRequest.Create request
 	) {
-		InquiryResponse.CreateInfo response = inquiryService.create(principal.getId(), request);
+		InquiryResponse.Info response = inquiryService.create(principal.getId(), request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+	}
+
+	@Operation(
+		summary = "문의 수정",
+		description = "본인이 작성한 문의를 수정한다. 보낸 필드만 반영된다. "
+			+ "답변이 달린 뒤에는 수정할 수 없다(409, INQUIRY003)."
+	)
+	@PatchMapping("/{inquiryId}")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ApiResponse<InquiryResponse.Info>> update(
+		@PathVariable("inquiryId") UUID inquiryId,
+		@AuthenticationPrincipal CustomUserDetails principal,
+		@Valid @RequestBody InquiryRequest.Update request
+	) {
+		InquiryResponse.Info response = inquiryService.update(inquiryId, principal.getId(), request);
+
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@Operation(
+		summary = "문의 삭제",
+		description = "본인이 작성한 문의를 삭제한다. 관리자는 모든 문의를 삭제할 수 있다. "
+			+ "답변 여부와 무관하게 삭제할 수 있다."
+	)
+	@DeleteMapping("/{inquiryId}")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ApiResponse<Void>> delete(
+		@PathVariable("inquiryId") UUID inquiryId,
+		@AuthenticationPrincipal CustomUserDetails principal
+	) {
+		inquiryService.delete(inquiryId, principal.getId(), principal.isAdmin());
+
+		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 }

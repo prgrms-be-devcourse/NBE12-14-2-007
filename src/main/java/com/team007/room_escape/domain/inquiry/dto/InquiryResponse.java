@@ -12,9 +12,9 @@ public class InquiryResponse {
 	private InquiryResponse() {
 	}
 
-	/** 문의 등록 결과. */
+	/** 문의 등록·수정 응답. 두 경우의 모양이 같아 하나로 쓴다. */
 	@Builder
-	public record CreateInfo(
+	public record Info(
 		UUID id,
 		InquiryCategory category,
 		String title,
@@ -28,8 +28,8 @@ public class InquiryResponse {
 		/**
 		 * @param imgUrl 저장 key를 변환한 공개 URL. 첨부가 없으면 null
 		 */
-		public static CreateInfo from(Inquiry inquiry, String imgUrl) {
-			return CreateInfo.builder()
+		public static Info from(Inquiry inquiry, String imgUrl) {
+			return Info.builder()
 				.id(inquiry.getId())
 				.category(inquiry.getCategory())
 				.title(inquiry.getTitle())
