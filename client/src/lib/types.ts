@@ -37,8 +37,13 @@ export interface Festival {
 }
 export interface EventView extends Festival {
   source: "PUBLIC" | "MEMBER";
+  submitter?: { id: string; nickname: string };
   preview?: boolean;
   submissionId?: string;
+}
+export interface SharedFestival extends Festival {
+  providerType: "PUBLIC" | "MEMBER";
+  submitter: { id: string; nickname: string } | null;
 }
 export interface SubmissionInput {
   title: string;

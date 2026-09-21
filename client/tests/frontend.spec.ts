@@ -192,7 +192,7 @@ test("preview submission can be created, edited and deleted", async ({
     .getByRole("dialog")
     .getByRole("button", { name: "제보 삭제", exact: true })
     .click();
-  await expect(page).toHaveURL("/submissions");
+  await expect(page).toHaveURL("/mypage?tab=submissions");
   await expect(page.locator(".submission-list")).not.toContainText(
     "수정한 검증 행사",
   );
@@ -253,7 +253,7 @@ test("preview review, comment and like lifecycle works", async ({ page }) => {
   await expect(page).toHaveURL(/\/reviews\?festival=1001/);
 });
 
-test("live mode respects private submission response and missing public catalog", async ({
+test("live mode keeps private submissions in mypage and respects the missing public catalog", async ({
   page,
 }) => {
   const requested: string[] = [];
@@ -261,7 +261,7 @@ test("live mode respects private submission response and missing public catalog"
     requested.push(path);
     return false;
   });
-  await page.goto("/submissions");
+  await page.goto("/mypage?tab=submissions");
   await expect(
     page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
   ).toBeVisible();
@@ -335,7 +335,7 @@ test("server failure stays an error, with no demo fallback", async ({
     }
     return false;
   });
-  await page.goto("/submissions");
+  await page.goto("/mypage?tab=submissions");
   await expect(page.getByRole("alert")).toContainText("연동 검증 서버 오류");
   await expect(page.locator(".submission-row")).toHaveCount(0);
   await expect(
@@ -367,7 +367,7 @@ test("401 renews access token and retries the authorized request", async ({
     }
     return false;
   });
-  await page.goto("/submissions");
+  await page.goto("/mypage?tab=submissions");
   await expect(
     page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
   ).toBeVisible();

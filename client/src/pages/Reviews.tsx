@@ -11,15 +11,14 @@ import {
   Flag,
   MessageCircle,
   Pencil,
-  Plus,
   ThumbsUp,
   Trash2,
 } from "lucide-react";
 import { ApiError } from "../lib/api";
 import { useApp, useLoad } from "../lib/context";
-import { demoEvents, readDemo } from "../lib/demo";
-import { dateText, errorText } from "../lib/format";
-import type { Comment, PostDetail } from "../lib/types";
+import { readDemo } from "../lib/demo";
+import { dateText, dateTimeText, errorText } from "../lib/format";
+import type { Comment, PostDetail, PostSummary } from "../lib/types";
 import {
   Badge,
   Empty,
@@ -48,72 +47,14 @@ export function Reviews() {
       {authLoading ? (
         <Loading />
       ) : member ? (
-        <ReviewsContent />
+        <FestivalPosts />
       ) : (
         <LoginRequired />
       )}
     </div>
   );
 }
-function ReviewsContent() {
-  const { api, mode } = useApp();
-  const [params, setParams] = useSearchParams();
-  const { data, loading, error, reload } = useLoad(
-    async () =>
-      mode === "preview"
-        ? demoEvents.map((e) => ({ festivalId: e.festivalId, title: e.title }))
-        : api.submissions(),
-    [api, mode],
-  );
-  const selected = Number(params.get("festival")) || data?.[0]?.festivalId;
-  return (
-    <>
-      {loading ? (
-        <Loading />
-      ) : error ? (
-        <ErrorState message={error} retry={reload} />
-      ) : data?.length ? (
-        <>
-          <div className="review-filter">
-            <div>
-              <span className="route-icon peach">
-                <MessageCircle size={24} />
-              </span>
-              <div>
-                <strong>어떤 행사의 이야기가 궁금한가요?</strong>
-                <p>행사를 선택해 후기를 읽고, 나의 이야기도 남겨보세요.</p>
-              </div>
-            </div>
-            <select
-              aria-label="후기를 볼 행사"
-              value={selected || ""}
-              onChange={(e) => setParams({ festival: e.target.value })}
-            >
-              {data.map((e) => (
-                <option value={e.festivalId} key={e.festivalId}>
-                  {e.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          {selected && <FestivalPosts key={selected} festivalId={selected} />}
-        </>
-      ) : (
-        <Empty
-          title="후기를 확인할 행사가 아직 없어요"
-          description="내가 제보한 행사를 선택해 후기를 읽고 남길 수 있어요."
-          action={
-            <Link className="btn primary" to="/submissions/new">
-              행사 제보하기
-              <Plus size={16} />
-            </Link>
-          }
-        />
-      )}
-    </>
-  );
-}
-export function FestivalPosts({ festivalId }: { festivalId: number }) {
+export function FestivalPosts({ festivalId }: { festivalId?: number }) {
   const { api, member } = useApp();
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState("createdAt,desc");
@@ -143,7 +84,11 @@ export function FestivalPosts({ festivalId }: { festivalId: number }) {
             <option value="createdAt,asc">오래된순</option>
           </select>
           <Link
-            to={`/reviews/new?festival=${festivalId}`}
+            to={
+              festivalId
+                ? `/reviews/new?festival=${festivalId}`
+                : "/reviews/new"
+            }
             className="btn primary small"
           >
             <Pencil size={15} />
@@ -159,38 +104,61 @@ export function FestivalPosts({ festivalId }: { festivalId: number }) {
         <>
           <div className="post-list">
             {data.content.map((post) => (
-              <Link
-                to={`/reviews/${post.id}`}
-                className="post-row"
-                key={post.id}
-              >
-                <div className="post-row-copy">
-                  <span className="review-byline">
-                    <span className="avatar tiny">
-                      {post.member.nickname[0]}
-                    </span>
-                    {post.member.nickname}
-                    <time>{dateText(post.date)}</time>
-                  </span>
-                  <h3>{post.title}</h3>
-                  <span className="muted small-text">{post.festivalTitle}</span>
-                </div>
-                {post.thumbnail && (
-                  <Photo src={post.thumbnail} alt={post.title} />
-                )}
-                <ArrowRight size={18} />
-              </Link>
+              <PostRow post={post} key={post.id} />
             ))}
           </div>
           <Pagination page={page} total={data.totalPages} onChange={setPage} />
         </>
       ) : (
         <Empty
-          title="이 행사의 첫 이야기를 기다려요"
+          title={
+            festivalId
+              ? "이 행사의 첫 이야기를 기다려요"
+              : "첫 번째 이야기를 기다려요"
+          }
           description="기억에 남은 순간을 후기로 나눠주세요."
         />
       )}
     </div>
+  );
+}
+function PostRow({ post }: { post: PostSummary }) {
+  return (
+    <article className="post-row">
+      <div className="post-row-copy">
+        <span className="review-byline">
+          <span className="avatar tiny">{post.member.nickname[0]}</span>
+          {post.member.nickname}
+          <time dateTime={post.date}>{dateText(post.date)}</time>
+        </span>
+        <h3>
+          <Link to={`/reviews/${post.id}`}>{post.title}</Link>
+        </h3>
+        <Link
+          className="post-event-link small-text"
+          to={`/events/${post.festivalId}`}
+        >
+          {post.festivalTitle}
+          <ArrowRight size={13} />
+        </Link>
+      </div>
+      {post.thumbnail && (
+        <Link
+          className="post-thumbnail"
+          to={`/reviews/${post.id}`}
+          aria-label={`${post.title} 후기 보기`}
+        >
+          <Photo src={post.thumbnail} alt="" />
+        </Link>
+      )}
+      <Link
+        className="post-detail-link"
+        to={`/reviews/${post.id}`}
+        aria-label={`${post.title} 상세 보기`}
+      >
+        <ArrowRight size={18} />
+      </Link>
+    </article>
   );
 }
 export function ReviewDetailPage() {
@@ -254,7 +222,13 @@ function ReviewDetail({ id }: { id: string }) {
     <>
       <article className="review-article">
         <Badge tone="green">행사 후기</Badge>
-        <p className="review-event-title">{post.festivalTitle}</p>
+        <Link
+          className="review-event-title post-event-link"
+          to={`/events/${post.festivalId}`}
+        >
+          {post.festivalTitle}
+          <ArrowRight size={14} />
+        </Link>
         <h1>{post.title}</h1>
         <div className="article-meta">
           <span className="avatar">{post.member.nickname[0]}</span>
@@ -482,7 +456,7 @@ function CommentRow({
       <div>
         <div className="comment-meta">
           <strong>{comment.nickname}</strong>
-          <time>{dateText(comment.date)}</time>
+          <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
           <span />
           {own && (
             <button
@@ -581,11 +555,17 @@ export function ReviewFormPage() {
         <ReviewForm festivalId={festivalId} />
       ) : (
         <Empty
-          title="먼저 행사를 선택해 주세요"
+          title="후기를 남길 행사를 찾아주세요"
+          description="행사 상세의 후기 탭에서 다녀온 이야기를 남길 수 있어요."
           action={
-            <Link className="btn primary" to="/reviews">
-              행사 선택하기
-            </Link>
+            <div className="action-row">
+              <Link className="btn primary" to="/explore">
+                지역 문화행사 보기
+              </Link>
+              <Link className="btn secondary" to="/submissions">
+                제보된 행사 보기
+              </Link>
+            </div>
           }
         />
       )}

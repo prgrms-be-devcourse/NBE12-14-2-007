@@ -148,7 +148,7 @@ export function Home() {
             <div>
               <span className="mini-label">좋은 소식은 함께 나눠요</span>
               <h2>행사 제보</h2>
-              <p>알고 있는 행사를 알리고, 내 제보를 관리해요.</p>
+              <p>이웃이 전한 행사를 발견하고, 좋은 소식도 나눠요.</p>
             </div>
             <ArrowRight size={20} />
           </Link>
@@ -200,7 +200,7 @@ export function Home() {
               description="문화행사 둘러보기가 열리면 이곳에서 만나볼 수 있어요."
               action={
                 <Link to="/submissions" className="btn secondary">
-                  내 행사 제보 확인하기 <ArrowRight size={16} />
+                  이웃의 행사 제보 둘러보기 <ArrowRight size={16} />
                 </Link>
               }
             />

@@ -122,6 +122,47 @@ export const demoMember: Member = {
   createdAt: "2026-09-01T09:00:00",
   updatedAt: "2026-09-01T09:00:00",
 };
+export const demoCommunityEvents: EventView[] = [
+  {
+    ...demoEvents[4],
+    festivalId: 3001,
+    submissionId: undefined,
+    submitter: { id: "demo-neighbor", nickname: "소소한 여행자" },
+    title: "동네 책방, 가을 낭독회",
+    category: "체험",
+    regionDetail: "행궁동 작은 책방",
+    imgUrl: "/images/art.jpg",
+    festivalContent:
+      "이웃과 좋아하는 문장을 나누는 작은 낭독회입니다. 다른 회원이 제보한 행사를 둘러보기 위한 예시입니다.",
+  },
+  {
+    ...demoEvents[5],
+    festivalId: 3002,
+    submissionId: undefined,
+    submitter: { id: "demo-neighbor-2", nickname: "주말 수집가" },
+    title: "호숫가 작은 음악회",
+    partcptExpnInfo: "무료",
+    category: "공연",
+    region: "GYEONGGI_GOYANG",
+    regionDetail: "호수공원 야외무대",
+    imgUrl: "/images/music.jpg",
+    festivalContent:
+      "호숫가에서 함께 즐기는 작은 음악회입니다. 다른 회원이 제보한 행사를 둘러보기 위한 예시입니다.",
+  },
+];
+export function previewSubmittedEvents(): EventView[] {
+  const data = readDemo();
+  return [
+    ...demoCommunityEvents,
+    ...data.submissions.map(({ submission }) => ({
+      ...submission.festival,
+      submissionId: undefined,
+      source: "MEMBER" as const,
+      preview: true,
+      submitter: { id: data.member.id, nickname: data.member.nickname },
+    })),
+  ];
+}
 interface DemoState {
   member: Member;
   submissions: SubmissionDetail[];

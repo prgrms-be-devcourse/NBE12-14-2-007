@@ -143,11 +143,14 @@ export function EventCard({
       <div className="event-copy">
         <div className="card-eyebrow">
           <span>
-            {event.source === "PUBLIC" ? "지역 문화행사" : "내가 제보한 행사"}
+            {event.source === "PUBLIC" ? "지역 문화행사" : "회원 제보"}
           </span>
           {event.preview && <span className="example-label">예시</span>}
         </div>
         <h3>{event.title}</h3>
+        {event.submitter && (
+          <p className="event-submitter">제보자 · {event.submitter.nickname}</p>
+        )}
         <p>
           <MapPin size={14} />
           {regions[event.region] || event.regionDetail || "지역 미정"}

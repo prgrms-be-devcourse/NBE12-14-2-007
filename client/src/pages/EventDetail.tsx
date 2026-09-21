@@ -18,7 +18,6 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useApp, useLoad } from "../lib/context";
-import { demoEvents } from "../lib/demo";
 import { errorText, eventState, period, regions, safeUrl } from "../lib/format";
 import type { EventView } from "../lib/types";
 import {
@@ -48,31 +47,32 @@ export function EventDetailPage() {
         )}
       </div>
     );
-  const event =
-    mode === "preview"
-      ? demoEvents.find(
-          (e) => e.festivalId === Number(eventId) && e.source === "PUBLIC",
-        )
-      : undefined;
   return (
     <div className="container page-space">
-      {event ? (
-        <EventDetail key={eventId} event={event} />
+      {authLoading ? (
+        <Loading />
+      ) : mode === "api" && !member ? (
+        <LoginRequired />
       ) : (
-        <Empty
-          title={
-            mode === "api"
-              ? "행사 상세 보기를 준비하고 있어요"
-              : "행사를 찾을 수 없어요"
-          }
-          action={
-            <Link className="btn secondary" to="/explore">
-              행사 목록으로
-            </Link>
-          }
-        />
+        <PublicEventLoader key={eventId} id={Number(eventId)} />
       )}
     </div>
+  );
+}
+function PublicEventLoader({ id }: { id: number }) {
+  const { api } = useApp();
+  const { data, loading, error, reload } = useLoad(
+    () => api.event(id),
+    [api, id],
+  );
+  return loading ? (
+    <Loading />
+  ) : error ? (
+    <ErrorState message={error} retry={reload} />
+  ) : data ? (
+    <EventDetail event={data} />
+  ) : (
+    <Empty title="행사를 찾을 수 없어요" />
   );
 }
 function SubmissionDetailLoader({ id }: { id: string }) {
@@ -113,7 +113,11 @@ function EventDetail({
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
-  const back = event.source === "MEMBER" ? "/submissions" : "/explore";
+  const back = event.submissionId
+    ? "/mypage?tab=submissions"
+    : event.source === "MEMBER"
+      ? "/submissions"
+      : "/explore";
   async function share() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -178,6 +182,11 @@ function EventDetail({
               <MapPin size={17} />
               {regions[event.region] || ""} {event.regionDetail}
             </p>
+            {event.submitter && (
+              <p className="muted small-text">
+                제보자 · {event.submitter.nickname}
+              </p>
+            )}
           </div>
           <div
             className="detail-tabs"
@@ -297,7 +306,11 @@ function EventDetail({
                   <p>
                     {event.preview
                       ? "디자인 확인을 위해 구성한 예시 행사입니다. 실제 일정과 다릅니다."
-                      : "내가 제보한 행사 정보입니다. 일정이 변경되었다면 제보 내용을 수정해 주세요."}
+                      : event.submissionId
+                        ? "내가 제보한 행사 정보입니다. 일정이 변경되었다면 제보 내용을 수정해 주세요."
+                        : event.source === "MEMBER"
+                          ? "이웃이 제보한 행사 정보입니다. 방문 전 행사 안내를 확인해 주세요."
+                          : "제공 기관의 행사 정보입니다. 방문 전 행사 안내를 확인해 주세요."}
                   </p>
                 </div>
               </>
@@ -401,7 +414,7 @@ function EventDetail({
                 try {
                   await api.deleteSubmission(event.submissionId!);
                   toast("제보를 삭제했어요.");
-                  navigate("/submissions");
+                  navigate("/mypage?tab=submissions");
                 } catch (e) {
                   setError(errorText(e));
                 } finally {
