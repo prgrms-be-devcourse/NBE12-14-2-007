@@ -14,7 +14,6 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useApp, useLoad } from "../lib/context";
-import { readDemo } from "../lib/demo";
 import { dateText, errorText, period, regions } from "../lib/format";
 import type { SubmissionInput, SubmissionDetail } from "../lib/types";
 import {
@@ -142,7 +141,7 @@ function CommunitySubmissions() {
   );
 }
 export function SubmissionList({ compact = false }: { compact?: boolean }) {
-  const { api, mode } = useApp();
+  const { api } = useApp();
   const { data, loading, error, reload } = useLoad(
     () => api.submissions(),
     [api],
@@ -192,29 +191,18 @@ export function SubmissionList({ compact = false }: { compact?: boolean }) {
       ) : list.length ? (
         <div className="submission-list">
           {list.map((s) => {
-            const image =
-              mode === "preview"
-                ? readDemo().submissions.find(
-                    (x) =>
-                      x.submission.festivalSubmissionId ===
-                      s.festivalSubmissionId,
-                  )?.submission.festival.imgUrl
-                : null;
             return (
               <Link
                 className="submission-row"
                 key={s.festivalSubmissionId}
                 to={`/submissions/${s.festivalSubmissionId}`}
               >
-                <Photo src={image} alt={s.title} />
+                <Photo src={null} alt={s.title} />
                 <div className="submission-row-copy">
                   <div>
                     <Badge tone={s.status === "CLOSED" ? "gray" : "green"}>
                       {s.status === "CLOSED" ? "종료" : "종료 전"}
                     </Badge>
-                    {mode === "preview" && (
-                      <span className="example-label">예시 제보</span>
-                    )}
                   </div>
                   <h3>{s.title}</h3>
                   <p>
@@ -306,7 +294,7 @@ function EditSubmission({ id }: { id: string }) {
   ) : null;
 }
 function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
-  const { api, mode, toast } = useApp();
+  const { api, toast } = useApp();
   const navigate = useNavigate();
   const current = existing?.submission;
   const [form, setForm] = useState<SubmissionInput>(() => ({
@@ -373,11 +361,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
       let id = current?.festivalSubmissionId;
       if (id) await api.updateSubmission(id, payload);
       else id = (await api.createSubmission(payload)).festivalSubmissionId;
-      toast(
-        mode === "preview"
-          ? "미리보기 제보가 저장되었어요. 실제 서버에는 전송하지 않았어요."
-          : "행사 제보를 저장했어요.",
-      );
+      toast("행사 제보를 저장했어요.");
       navigate(`/submissions/${id}`);
     } catch (err) {
       setError(errorText(err));
@@ -611,13 +595,6 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             당신의 제보로 시작됩니다.
           </span>
         </div>
-        {mode === "preview" && (
-          <div className="preview-note">
-            지금은 미리보기예요.
-            <br />
-            저장한 제보는 이 탭에서만 확인할 수 있어요.
-          </div>
-        )}
       </aside>
     </div>
   );

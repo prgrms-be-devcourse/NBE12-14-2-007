@@ -6,7 +6,7 @@ import { errorText } from "../lib/format";
 import { Field, FormError, Logo, SubmitButton } from "../components/ui";
 
 export function AuthPage({ signup = false }: { signup?: boolean }) {
-  const { api, setMember, mode, toast, authLoading } = useApp();
+  const { api, setMember, toast, authLoading } = useApp();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [email, setEmail] = useState("");
@@ -38,20 +38,12 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           nickname: nickname.trim(),
           ...(phone ? { phone } : {}),
         });
-        toast(
-          mode === "preview"
-            ? "미리보기에서는 실제 계정을 만들지 않아요."
-            : "가입했어요. 이제 로그인해 주세요.",
-        );
+        toast("가입했어요. 이제 로그인해 주세요.");
         navigate(`/login?next=${encodeURIComponent(target)}`);
       } else {
         setMember(await api.login(email.trim(), password));
         navigate(target);
-        toast(
-          mode === "preview"
-            ? "예시 계정으로 미리보기를 계속합니다."
-            : "다시 만나 반가워요.",
-        );
+        toast("다시 만나 반가워요.");
       }
     } catch (e) {
       setError(errorText(e));
@@ -90,11 +82,6 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
             ? "일상을 특별하게 만드는 첫걸음, 회원가입."
             : "로그인하고 나만의 즐거운 순간을 기록해요."}
         </p>
-        {mode === "preview" && (
-          <p className="preview-note">
-            예시 계정으로 화면 흐름을 확인하는 미리보기입니다.
-          </p>
-        )}
         <form onSubmit={submit}>
           <Field label="이메일" required>
             <input

@@ -81,7 +81,7 @@ function PublicEventLoader({ id }: { id: number }) {
   );
 }
 function SubmissionDetailLoader({ id }: { id: string }) {
-  const { api, mode } = useApp();
+  const { api } = useApp();
   const { data, loading, error, reload } = useLoad(
     () => api.submission(id),
     [api, id],
@@ -97,7 +97,6 @@ function SubmissionDetailLoader({ id }: { id: string }) {
         ...data.submission.festival,
         source: "MEMBER",
         submissionId: id,
-        preview: mode === "preview",
       }}
       submissionContent={data.submission.submissionContent}
     />
