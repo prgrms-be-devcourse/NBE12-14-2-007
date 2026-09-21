@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.auth.service;
 
+import static com.team007.room_escape.global.util.StringUtil.emptyToNull;
+
 import com.team007.room_escape.domain.auth.dto.AuthRequest.Signup;
 import com.team007.room_escape.domain.auth.dto.TokenPair;
 import com.team007.room_escape.domain.member.infra.entity.Member;
@@ -97,10 +99,6 @@ public class AuthService {
 		} catch (RuntimeException ignored) {
 			// 만료·위조된 쿠키면 DB에 지울 행이 없을 수 있다
 		}
-	}
-
-	private String emptyToNull(String value) {
-		return (value == null || value.isBlank()) ? null : value;
 	}
 
 	private TokenPair issueTokens(Member member) {
