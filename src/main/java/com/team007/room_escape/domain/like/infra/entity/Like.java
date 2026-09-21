@@ -4,23 +4,23 @@ import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.global.entity.BaseTimeEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
-@Table(name = "`like`")
+@Table(
+		name = "`like`",
+		uniqueConstraints = {
+				@UniqueConstraint(
+						name = "uk_like_post_member",
+						columnNames = {"src_id", "member_id"}
+				)
+		}
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
+@AllArgsConstructor
 public class Like extends BaseTimeEntity{
 
 	@Id
@@ -34,7 +34,4 @@ public class Like extends BaseTimeEntity{
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
-
-	@Column(name = "`like`", nullable = false)
-	private Long liked;
 }
