@@ -10,7 +10,7 @@ export default defineConfig({
     // '@/features/auth/api' 처럼 절대경로로 import 하기 위한 설정.
     // tsconfig.app.json 의 paths 와 항상 같이 맞춰야 한다.
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   server: {

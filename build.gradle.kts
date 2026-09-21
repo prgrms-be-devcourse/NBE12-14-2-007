@@ -52,6 +52,13 @@ dependencies {
 	testAnnotationProcessor("org.projectlombok:lombok")
 }
 
+// 컴파일된 클래스에 파라미터 이름을 남긴다.
+// 이게 없으면 @RequestParam / @PathVariable 에 이름을 생략했을 때
+// Spring 이 인자 이름을 못 읽어 "parameter name information not available" 로 실패한다.
+tasks.withType<JavaCompile> {
+	options.compilerArgs.add("-parameters")
+}
+
 tasks.withType<Test> {
 	useJUnitPlatform()
 }

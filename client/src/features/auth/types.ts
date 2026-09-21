@@ -11,6 +11,8 @@ export interface SignupRequest {
   nickname: string
   /** 선택 */
   phone?: string
+  /** 선택. 업로드 API 가 돌려준 key. 공개 URL 이 아니다 */
+  profileImg?: string
 }
 
 /** 백엔드 TokenResponse 와 1:1 */

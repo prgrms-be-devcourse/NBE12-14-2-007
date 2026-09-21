@@ -60,7 +60,8 @@ public class ImageController {
 	)
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<ApiResponse<UploadInfo>> upload(
-		@RequestParam ImageType type,
+		// 이름을 생략하면 컴파일 옵션(-parameters)에 의존하게 된다. 명시해두면 어떤 빌드에서도 안전하다.
+		@RequestParam("type") ImageType type,
 		@RequestPart("file") MultipartFile file
 	) {
 		String key = r2StorageService.upload(file, type.getDirectory());

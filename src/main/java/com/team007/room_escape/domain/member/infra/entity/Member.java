@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.member.infra.entity;
 
+import static com.team007.room_escape.global.util.StringUtil.emptyToNull;
+
 import com.team007.room_escape.global.entity.SoftDeletableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -74,10 +76,10 @@ public class Member extends SoftDeletableEntity {
 			this.nickname = nickname;
 		}
 		if (phone != null) {
-			this.phone = phone.isBlank() ? null : phone;
+			this.phone = emptyToNull(phone);
 		}
 		if (profileImg != null) {
-			this.profileImg = profileImg.isBlank() ? null : profileImg;
+			this.profileImg = emptyToNull(profileImg);
 		}
 	}
 
