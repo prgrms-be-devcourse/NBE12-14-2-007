@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
  * Cloudflare R2 파일 저장소.
- * DB에는 공개 URL이 아니라 key만 저장하고, 내려줄 때 toPublicUrl()로 조합한다.
+ * DB에는 공개 URL이 아니라 key만 저장하고, 내려줄 때 ImageUrlResolver로 조합한다.
  * 도메인이 바뀌어도 데이터를 손대지 않기 위함이다.
  */
 @Slf4j
@@ -84,11 +84,4 @@ public class R2StorageService {
 		}
 	}
 
-	/** 저장 key를 브라우저가 접근 가능한 공개 URL로 바꾼다. */
-	public String toPublicUrl(String key) {
-		if (key == null || key.isBlank()) {
-			return null;
-		}
-		return "%s/%s".formatted(properties.publicUrl(), key);
-	}
 }

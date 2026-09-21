@@ -22,6 +22,9 @@ dependencies {
 	implementation(platform("software.amazon.awssdk:bom:2.35.0"))
 	implementation("software.amazon.awssdk:s3")
 
+	// 이메일 인증 코드를 담아두는 로컬 캐시. expireAfterWrite로 만료를 알아서 처리한다.
+	implementation("com.github.ben-manes.caffeine:caffeine")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-mail")
@@ -47,6 +50,13 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
+}
+
+// 컴파일된 클래스에 파라미터 이름을 남긴다.
+// 이게 없으면 @RequestParam / @PathVariable 에 이름을 생략했을 때
+// Spring 이 인자 이름을 못 읽어 "parameter name information not available" 로 실패한다.
+tasks.withType<JavaCompile> {
+	options.compilerArgs.add("-parameters")
 }
 
 tasks.withType<Test> {

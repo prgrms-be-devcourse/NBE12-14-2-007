@@ -14,6 +14,7 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +43,9 @@ public class FestivalSubmissionService {
                 .category(request.category())
                 .manager(request.manager())
                 .content(request.festivalContent())
-                .url(request.url())
+                .url(request.referenceUrl())
+                .region(request.region())
+                .regionDetail(request.regionDetail())
                 .imgUrl(request.imgUrl())
                 .beginDe(request.beginDe())
                 .endDe(request.endDe())
@@ -50,8 +53,8 @@ public class FestivalSubmissionService {
                 .partcptExpnInfo(request.partcptExpnInfo())
                 .telnoInfo(request.telnoInfo())
                 .hostInstNm(request.hostInstNm())
-                .hmpgUrl(request.hmpgUrl())
                 .writngDe(LocalDateTime.now())
+                .status(FestivalStatus.from(request.endDe()))
                 .build();
 
         Festival savedFestival = festivalRepository.save(festival);
@@ -110,15 +113,16 @@ public class FestivalSubmissionService {
                 request.category(),
                 request.manager(),
                 request.festivalContent(),
-                request.url(),
+                request.referenceUrl(),
+                request.region(),
+                request.regionDetail(),
                 request.imgUrl(),
                 request.beginDe(),
                 request.endDe(),
                 request.eventTmInfo(),
                 request.partcptExpnInfo(),
                 request.telnoInfo(),
-                request.hostInstNm(),
-                request.hmpgUrl()
+                request.hostInstNm()
         );
         submission.updateContent(request.submissionContent());
 
