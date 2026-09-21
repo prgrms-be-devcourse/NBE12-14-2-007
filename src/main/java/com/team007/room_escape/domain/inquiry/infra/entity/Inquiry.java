@@ -21,13 +21,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
+// @SQLRestriction 을 걸면 관리자가 삭제된 문의를 조회할 수 없어서 걸지 않는다.
+// 삭제 제외 조건은 repository 쿼리에서 직접 건다.
 @Entity
 @Table(name = "inquiry")
 @Getter
-@SQLRestriction("deleted_at is null")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor (access = AccessLevel.PRIVATE)
 @Builder 
