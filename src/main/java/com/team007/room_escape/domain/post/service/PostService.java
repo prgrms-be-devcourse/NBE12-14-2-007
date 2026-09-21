@@ -64,7 +64,7 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public PostResponse.DetailResponse getPostDetail(UUID id) {
 
-		Post post = postRepository.findById(id)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(id)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		return PostResponse.DetailResponse.from(post);
@@ -76,7 +76,7 @@ public class PostService {
 			PostRequest request,
 			UUID memberId
 	) {
-		Post post = postRepository.findById(postId)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		if(!post.getMember().getId().equals(memberId)) {
@@ -90,7 +90,7 @@ public class PostService {
 
 	@Transactional
 	public void deletePost(UUID postId, UUID memberId, boolean isAdmin) {
-		Post post = postRepository.findById(postId)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		boolean isAuthor = post.getMember().getId().equals(memberId);
