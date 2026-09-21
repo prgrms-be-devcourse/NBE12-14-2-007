@@ -22,6 +22,8 @@ public class InquiryResponse {
 		/** 공개 URL. 첨부가 없으면 null */
 		String img,
 		InquiryStatus status,
+		/** 관리자 답변. 아직 답변 전이면 null */
+		String answer,
 		LocalDateTime createdAt
 	) {
 
@@ -36,6 +38,7 @@ public class InquiryResponse {
 				.content(inquiry.getContent())
 				.img(imgUrl)
 				.status(inquiry.getStatus())
+				.answer(inquiry.getAnswer())
 				.createdAt(inquiry.getCreatedAt())
 				.build();
 		}

@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.inquiry.service;
 
+import static com.team007.room_escape.global.util.StringUtil.emptyToNull;
+
 import com.team007.room_escape.domain.inquiry.dto.InquiryRequest;
 import com.team007.room_escape.domain.inquiry.dto.InquiryResponse;
 import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
@@ -12,6 +14,7 @@ import com.team007.room_escape.global.response.code.InquiryExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import com.team007.room_escape.global.storage.R2StorageService;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,7 +47,8 @@ public class InquiryService {
 			.title(request.title())
 			.content(request.content())
 			// img는 업로드 API가 돌려준 R2 key다. 공개 URL이 아니다.
-			.img(request.img())
+			// 빈 문자열이 저장되면 "첨부 없음"이 null과 "" 두 가지로 갈린다.
+			.img(emptyToNull(request.img()))
 			// 등록 직후에는 항상 답변 대기 상태다.
 			.status(InquiryStatus.PENDING)
 			.build();
@@ -53,6 +57,29 @@ public class InquiryService {
 
 		// img는 R2 key로 저장되므로 응답에서는 공개 URL로 바꿔 내려준다.
 		return InquiryResponse.Info.from(saved, imageUrlResolver.resolve(saved.getImg()));
+	}
+
+	/** 내가 쓴 문의 목록. 최신순. 남의 문의는 애초에 조회 대상이 아니다. */
+	@Transactional(readOnly = true)
+	public List<InquiryResponse.Info> findMine(UUID memberId) {
+		return inquiryRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId).stream()
+			.map(inquiry -> InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg())))
+			.toList();
+	}
+
+	/**
+	 * 문의 상세. 본인이 쓴 것만 볼 수 있다.
+	 *
+	 * 남의 문의를 조회하면 403이 아니라 404로 응답한다.
+	 * 403으로 내려주면 "그 id의 문의가 존재한다"는 사실이 새어나가기 때문이다.
+	 */
+	@Transactional(readOnly = true)
+	public InquiryResponse.Info findMineById(UUID inquiryId, UUID memberId) {
+		Inquiry inquiry = inquiryRepository.findById(inquiryId)
+			.filter(found -> found.isWrittenBy(memberId))
+			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
+
+		return InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg()));
 	}
 
 	/**
