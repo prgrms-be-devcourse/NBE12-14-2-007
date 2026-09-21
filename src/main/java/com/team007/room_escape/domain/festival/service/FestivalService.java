@@ -39,9 +39,9 @@ public class FestivalService {
 	private final ObjectMapper objectMapper;
 
 	@Transactional
-	public void syncPublicFestivals() {
+	public FestivalResponse.SyncResponse syncPublicFestivals() {
 		/** API 호출과 무관하게, 기존에 저장된 행사 중 종료일이 지난 건 먼저 CLOSED로 갱신 **/
-		closeExpiredFestivals();
+		int closedCount = closeExpiredFestivals();
 
 		List<FestivalApiRow> allRows = fetchAllRows();
 
@@ -65,9 +65,10 @@ public class FestivalService {
 		int n = (int) (currentYearRows.size() - dbCount);
 		if (n <= 0) {
 			log.info("신규 행사 없음 ({}년 {}건, 저장된 {}건)", currentYear, currentYearRows.size(), dbCount);
-			return;
+			return new FestivalResponse.SyncResponse(closedCount, 0);
 		}
 
+		int savedCount = 0;
 		/** 이 블록에서 예외가 나도 밖으로 던지지 않아야, 트랜잭션이 정상 종료되면서
 		 *  위에서 먼저 저장해둔 원본 스냅샷(saveRawSource)이 롤백되지 않고 커밋된다 **/
 		try {
@@ -77,10 +78,12 @@ public class FestivalService {
 				.toList();
 
 			festivalRepository.saveAll(festivals);
-			log.info("공공 행사 {}건 저장 완료", festivals.size());
+			savedCount = festivals.size();
+			log.info("공공 행사 {}건 저장 완료", savedCount);
 		} catch (Exception e) {
 			log.error("신규 행사 저장 실패, 원본 스냅샷은 반영됨", e);
 		}
+		return new FestivalResponse.SyncResponse(closedCount, savedCount);
 	}
 
 	/** 지역 + 날짜를 선택하면 해당 지역에서 그 날짜에 진행 중인 공공 행사 목록을 조회 **/
@@ -91,9 +94,10 @@ public class FestivalService {
 	}
 
 	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신 **/
-	private void closeExpiredFestivals() {
+	private int closeExpiredFestivals() {
 		int closedCount = festivalRepository.closeExpiredFestivals(LocalDateTime.now());
 		log.info("종료된 행사 {}건 CLOSED로 갱신", closedCount);
+		return closedCount;
 	}
 
 	/** API 1회 요청 최대 건수를 넘는 전체 데이터를,

@@ -57,4 +57,14 @@ public class FestivalResponse {
                     .build();
         }
     }
+
+    @Schema(description = "공공 행사 동기화 결과")
+    public record SyncResponse(
+            @Schema(description = "종료 처리(CLOSED)된 행사 건수")
+            int closedCount,
+
+            @Schema(description = "새로 저장된 행사 건수")
+            int savedCount
+    ) {
+    }
 }

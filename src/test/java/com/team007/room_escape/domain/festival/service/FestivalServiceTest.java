@@ -233,6 +233,43 @@ class FestivalServiceTest {
 		inOrder.verify(publicFestivalSourceRepository).save(any());
 	}
 
+	/**
+	 * 수동 동기화 버튼에 돌려줄 결과: 종료 처리한 건수와 새로 저장한 건수가 정확히 나오는지 확인한다.
+	 */
+	@Test
+	@DisplayName("동기화 결과에 종료 처리 건수와 새로 저장한 건수가 담긴다")
+	void returnsClosedAndSavedCounts() {
+		FestivalApiRow row1 = rowInCurrentYear("0101", "29991231");
+		FestivalApiRow row2 = rowInCurrentYear("0102", "29991231");
+		when(festivalRepository.closeExpiredFestivals(any(LocalDateTime.class))).thenReturn(3);
+		when(festivalPublicApiClient.fetch(1, 1000))
+			.thenReturn(new FestivalApiResult(2, List.of(row1, row2)));
+		stubYearCount(0L);
+
+		FestivalResponse.SyncResponse result = festivalService.syncPublicFestivals();
+
+		assertThat(result.closedCount()).isEqualTo(3);
+		assertThat(result.savedCount()).isEqualTo(2);
+	}
+
+	/**
+	 * 새 행사가 없으면 저장 건수는 0이지만, 종료 처리한 건수는 그대로 응답해야 한다.
+	 */
+	@Test
+	@DisplayName("새 행사가 없으면 저장 건수는 0이고 종료 처리 건수만 담긴다")
+	void returnsZeroSavedWhenNoNewFestivals() {
+		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
+		when(festivalRepository.closeExpiredFestivals(any(LocalDateTime.class))).thenReturn(1);
+		when(festivalPublicApiClient.fetch(1, 1000))
+			.thenReturn(new FestivalApiResult(1, List.of(existing)));
+		stubYearCount(1L);
+
+		FestivalResponse.SyncResponse result = festivalService.syncPublicFestivals();
+
+		assertThat(result.closedCount()).isEqualTo(1);
+		assertThat(result.savedCount()).isZero();
+	}
+
 	/** saveAll(List)에 실제로 넘어간 Festival 목록을 잡아내는 공통 헬퍼. */
 	@SuppressWarnings("unchecked")
 	private List<Festival> captureSaved() {
