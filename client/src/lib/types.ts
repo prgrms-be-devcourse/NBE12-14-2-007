@@ -92,6 +92,8 @@ export interface PostSummary {
   title: string;
   thumbnail: string | null;
   date: string;
+  // Preview enrichment; the current backend list DTO does not include this.
+  likeCount?: number;
 }
 export interface PostDetail extends PostSummary {
   content: string;

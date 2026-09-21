@@ -201,7 +201,8 @@ test("search fields remain readable across the flex regression breakpoints", asy
     path: "docs/screenshots/home-tablet.png",
     fullPage: true,
   });
-  await page.getByLabel("찾을 지역").selectOption("GYEONGGI_SUWON");
+  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
+  await page.getByLabel("시·군·구 선택").selectOption("GYEONGGI_SUWON");
   await page.getByLabel("행사 날짜").fill("2026-10-10");
   await page.getByLabel("행사 검색어").fill("축제");
   await page.getByRole("button", { name: "행사 찾기", exact: true }).click();

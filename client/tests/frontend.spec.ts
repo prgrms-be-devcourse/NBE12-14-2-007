@@ -143,7 +143,8 @@ test("search, category, region, dates and URL navigation work", async ({
   await page.getByRole("button", { name: "공연", exact: true }).click();
   await expect(page.locator(".event-card")).toHaveCount(1);
   await expect(page.locator(".event-card")).toContainText("음악회");
-  await page.getByLabel("지역 필터").selectOption("GYEONGGI_SUWON");
+  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
+  await page.getByLabel("시·군·구 선택").selectOption("GYEONGGI_SUWON");
   await expect(page.getByText("조건에 맞는 행사가 없어요")).toBeVisible();
   await page.getByRole("button", { name: "필터 초기화" }).click();
   await page.getByLabel("행사 검색", { exact: true }).fill("가을빛");
@@ -278,6 +279,32 @@ test("live mode keeps private submissions in mypage and respects the missing pub
   ).toBeVisible();
   expect(requested).not.toContain("/festivals");
   await expect(page.locator(".event-card")).toHaveCount(0);
+});
+
+test("live festival reviews only send supported date sort fields", async ({
+  page,
+}) => {
+  const sorts: string[] = [];
+  await apiMode(page, async (route, path) => {
+    if (path === "/festivals/42/posts")
+      sorts.push(new URL(route.request().url()).searchParams.get("sort") || "");
+    return false;
+  });
+  await page.goto(`/submissions/${submissionId}`);
+  await page.getByRole("tab", { name: "행사 후기", exact: true }).click();
+  await expect(page.getByLabel("후기 정렬")).toHaveValue("createdAt,desc");
+  await expect(
+    page.getByLabel("후기 정렬").locator('option[value="likes,desc"]'),
+  ).toBeDisabled();
+  await expect(
+    page.getByText("좋아요순 정렬은 준비 중이에요.", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByText("이 행사의 첫 이야기를 기다려요")).toBeVisible();
+  await page.getByLabel("후기 정렬").selectOption("createdAt,asc");
+  await expect.poll(() => sorts.includes("createdAt,asc")).toBe(true);
+  expect(
+    sorts.every((sort) => ["createdAt,desc", "createdAt,asc"].includes(sort)),
+  ).toBe(true);
 });
 
 test("live form sends actual DTO names and ISO local datetimes", async ({

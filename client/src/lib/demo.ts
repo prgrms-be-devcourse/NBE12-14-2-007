@@ -6,6 +6,9 @@ import type {
   Inquiry,
   SubmissionDetail,
 } from "./types";
+import { parseDateTime } from "./format";
+
+export type ReviewSort = "likes,desc" | "createdAt,desc" | "createdAt,asc";
 
 // Fictional UI examples. Never sent to the backend or used as a network fallback.
 const eventBase = {
@@ -255,6 +258,29 @@ export function readDemo(): DemoState {
   } catch {
     return structuredClone(initial);
   }
+}
+export function previewPosts(
+  festivalId?: number,
+  sort: ReviewSort = "likes,desc",
+) {
+  const data = readDemo();
+  return data.posts
+    .filter(
+      (post) => festivalId === undefined || post.festivalId === festivalId,
+    )
+    .map((post) => ({ ...post, likeCount: data.likes[post.id] || 0 }))
+    .sort((a, b) => {
+      const newestFirst =
+        parseDateTime(b.date).getTime() - parseDateTime(a.date).getTime();
+      if (sort === "likes,desc")
+        return (
+          b.likeCount - a.likeCount || newestFirst || a.id.localeCompare(b.id)
+        );
+      return (
+        (sort === "createdAt,asc" ? -newestFirst : newestFirst) ||
+        a.id.localeCompare(b.id)
+      );
+    });
 }
 export function updateDemo<T>(fn: (state: DemoState) => T): T {
   const data = readDemo();

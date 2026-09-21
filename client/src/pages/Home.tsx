@@ -14,9 +14,10 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useApp } from "../lib/context";
-import { demoEvents, readDemo } from "../lib/demo";
+import { demoEvents, previewPosts } from "../lib/demo";
 import { categories, dateText } from "../lib/format";
 import { Badge, Empty, EventCard, Photo, SectionTitle } from "../components/ui";
+import { RegionSelects } from "../components/RegionSelects";
 
 export function Home() {
   const { mode } = useApp();
@@ -79,25 +80,11 @@ export function Home() {
             navigate(`/explore?${params}`);
           }}
         >
-          <label>
-            <MapPin size={20} />
-            <div>
-              <span>어디로 떠날까요?</span>
-              <select
-                aria-label="찾을 지역"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-              >
-                <option value="">모든 지역</option>
-                <option value="GYEONGGI">경기도 전체</option>
-                <option value="GYEONGGI_SUWON">수원시</option>
-                <option value="GYEONGGI_GAPYEONG">가평군</option>
-                <option value="GYEONGGI_GOYANG">고양시</option>
-                <option value="GYEONGGI_PAJU">파주시</option>
-                <option value="SEOUL">서울특별시</option>
-              </select>
-            </div>
-          </label>
+          <RegionSelects
+            value={region}
+            onChange={setRegion}
+            variant="discovery"
+          />
           <label>
             <CalendarDays size={20} />
             <div>
@@ -247,8 +234,8 @@ export function Home() {
           />
           {mode === "preview" ? (
             <div className="review-grid">
-              {readDemo()
-                .posts.slice(0, 3)
+              {previewPosts()
+                .slice(0, 3)
                 .map((post) => (
                   <Link
                     key={post.id}

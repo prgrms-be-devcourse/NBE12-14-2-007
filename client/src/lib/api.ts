@@ -17,8 +17,10 @@ import type {
 import {
   demoEvents,
   previewSubmittedEvents,
+  previewPosts,
   readDemo,
   updateDemo,
+  type ReviewSort,
 } from "./demo";
 import { parseDateTime } from "./format";
 
@@ -325,25 +327,18 @@ export function createApi(mode: Mode) {
     async posts(
       festivalId?: number,
       page = 0,
-      sort = "createdAt,desc",
+      sort: ReviewSort = demo ? "likes,desc" : "createdAt,desc",
     ): Promise<Page<PostSummary>> {
       if (!demo) {
         if (festivalId === undefined)
           throw new ApiError("전체 후기 조회 기능을 준비하고 있어요.");
+        if (sort === "likes,desc")
+          throw new ApiError("좋아요순 정렬을 준비하고 있어요.");
         return transport(
           `/festivals/${festivalId}/posts?page=${page}&size=6&sort=${encodeURIComponent(sort)}`,
         );
       }
-      const posts = readDemo()
-        .posts.filter(
-          (p) => festivalId === undefined || p.festivalId === festivalId,
-        )
-        .sort((a, b) =>
-          sort.endsWith("asc")
-            ? parseDateTime(a.date).getTime() - parseDateTime(b.date).getTime()
-            : parseDateTime(b.date).getTime() - parseDateTime(a.date).getTime(),
-        );
-      return pageOf(posts, page, 6);
+      return pageOf(previewPosts(festivalId, sort), page, 6);
     },
     async post(postId: string) {
       return demo

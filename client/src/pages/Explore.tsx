@@ -6,7 +6,6 @@ import {
   Grid2X2,
   Landmark,
   List,
-  MapPin,
   RotateCcw,
   Search,
   SlidersHorizontal,
@@ -14,6 +13,8 @@ import {
 import { useApp } from "../lib/context";
 import { demoEvents } from "../lib/demo";
 import { categories, regions } from "../lib/format";
+import { matchesRegion } from "../lib/regions";
+import { RegionSelects } from "../components/RegionSelects";
 import { Empty, EventCard, PageTitle, Pagination } from "../components/ui";
 
 export function Explore() {
@@ -39,10 +40,7 @@ export function Explore() {
       (e) =>
         e.source === "PUBLIC" &&
         (category === "전체" || e.category === category) &&
-        (!region ||
-          (region === "GYEONGGI"
-            ? e.region.startsWith(region)
-            : e.region === region)) &&
+        (!region || matchesRegion(e.region, region)) &&
         (!date ||
           (e.beginDe.slice(0, 10) <= date && e.endDe.slice(0, 10) >= date)) &&
         (!query ||
@@ -100,24 +98,10 @@ export function Explore() {
                 onChange={(e) => setText(e.target.value)}
               />
             </div>
-            <label className="filter-select">
-              <MapPin size={17} />
-              <select
-                aria-label="지역 필터"
-                value={region}
-                onChange={(e) => setFilter("region", e.target.value)}
-              >
-                <option value="">모든 지역</option>
-                <option value="GYEONGGI">경기도 전체</option>
-                {Object.entries(regions)
-                  .filter(([key]) => key.startsWith("GYEONGGI_"))
-                  .map(([key, name]) => (
-                    <option key={key} value={key}>
-                      {name}
-                    </option>
-                  ))}
-              </select>
-            </label>
+            <RegionSelects
+              value={region}
+              onChange={(value) => setFilter("region", value)}
+            />
             <label className="filter-select">
               <CalendarDays size={17} />
               <input
