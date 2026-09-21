@@ -23,6 +23,8 @@ import org.hibernate.annotations.UuidGenerator;
 @Builder
 public class Post extends SoftDeletableEntity {
 
+	// TODO Post에 LikeCount 추가
+
 	@Id
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	private UUID id;
