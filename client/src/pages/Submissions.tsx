@@ -34,7 +34,7 @@ import {
 } from "../components/ui";
 
 export function Submissions() {
-  const { member, authLoading } = useApp();
+  const { member, authLoading, mode } = useApp();
   return (
     <div className="container page-space">
       <PageTitle
@@ -64,10 +64,15 @@ export function Submissions() {
       </div>
       {authLoading ? (
         <Loading />
-      ) : member ? (
-        <CommunitySubmissions />
-      ) : (
+      ) : !member ? (
         <LoginRequired />
+      ) : mode === "api" ? (
+        <Empty
+          title="이웃의 행사 제보 조회를 준비하고 있어요"
+          description="디자인 미리보기에서 이웃들이 전한 행사를 둘러볼 수 있어요."
+        />
+      ) : (
+        <CommunitySubmissions />
       )}
     </div>
   );

@@ -53,6 +53,11 @@ export function EventDetailPage() {
         <Loading />
       ) : mode === "api" && !member ? (
         <LoginRequired />
+      ) : mode === "api" ? (
+        <Empty
+          title="행사 상세 조회를 준비하고 있어요"
+          description="디자인 미리보기에서 행사 정보를 확인할 수 있어요."
+        />
       ) : (
         <PublicEventLoader key={eventId} id={Number(eventId)} />
       )}

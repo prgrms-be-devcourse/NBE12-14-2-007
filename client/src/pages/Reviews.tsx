@@ -36,7 +36,7 @@ import {
 } from "../components/ui";
 
 export function Reviews() {
-  const { member, authLoading } = useApp();
+  const { member, authLoading, mode } = useApp();
   return (
     <div className="container page-space">
       <PageTitle
@@ -46,10 +46,15 @@ export function Reviews() {
       />
       {authLoading ? (
         <Loading />
-      ) : member ? (
-        <FestivalPosts />
-      ) : (
+      ) : !member ? (
         <LoginRequired />
+      ) : mode === "api" ? (
+        <Empty
+          title="전체 후기 조회를 준비하고 있어요"
+          description="디자인 미리보기에서 여러 행사의 후기를 둘러볼 수 있어요."
+        />
+      ) : (
+        <FestivalPosts />
       )}
     </div>
   );

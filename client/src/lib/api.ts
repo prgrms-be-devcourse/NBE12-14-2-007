@@ -13,7 +13,6 @@ import type {
   Inquiry,
   InquiryInput,
   EventView,
-  SharedFestival,
 } from "./types";
 import {
   demoEvents,
@@ -223,24 +222,7 @@ export function createApi(mode: Mode) {
       status = "ALL",
     ): Promise<Page<EventView>> {
       if (!demo) {
-        const params = new URLSearchParams({
-          page: String(page),
-          size: "6",
-          sort: "createdAt,desc",
-          q: query.trim(),
-        });
-        if (status !== "ALL") params.set("status", status);
-        const result = await transport<Page<SharedFestival>>(
-          `/festivals/submissions?${params}`,
-        );
-        return {
-          ...result,
-          content: result.content.map((event) => ({
-            ...event,
-            source: event.providerType,
-            submitter: event.submitter ?? undefined,
-          })),
-        };
+        throw new ApiError("전체 행사 제보 조회 기능을 준비하고 있어요.");
       }
       return pageOf(
         previewSubmittedEvents().filter(
@@ -255,14 +237,7 @@ export function createApi(mode: Mode) {
     },
     async event(festivalId: number): Promise<EventView> {
       if (!demo) {
-        const event = await transport<SharedFestival>(
-          `/festivals/${festivalId}`,
-        );
-        return {
-          ...event,
-          source: event.providerType,
-          submitter: event.submitter ?? undefined,
-        };
+        throw new ApiError("행사 상세 조회 기능을 준비하고 있어요.");
       }
       const event = [
         ...demoEvents.filter((e) => e.source === "PUBLIC"),
@@ -352,10 +327,13 @@ export function createApi(mode: Mode) {
       page = 0,
       sort = "createdAt,desc",
     ): Promise<Page<PostSummary>> {
-      if (!demo)
+      if (!demo) {
+        if (festivalId === undefined)
+          throw new ApiError("전체 후기 조회 기능을 준비하고 있어요.");
         return transport(
-          `${festivalId === undefined ? "/posts" : `/festivals/${festivalId}/posts`}?page=${page}&size=6&sort=${encodeURIComponent(sort)}`,
+          `/festivals/${festivalId}/posts?page=${page}&size=6&sort=${encodeURIComponent(sort)}`,
         );
+      }
       const posts = readDemo()
         .posts.filter(
           (p) => festivalId === undefined || p.festivalId === festivalId,

@@ -1,41 +1,10 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("live feed uses shared read APIs and does not request private submissions", async ({
+test("API mode shows pending views without calling unavailable or private browse APIs", async ({
   page,
 }) => {
   const urls: URL[] = [];
-  const event = {
-    festivalId: 72,
-    providerType: "MEMBER",
-    title: "다른 회원의 낭독회",
-    category: "체험",
-    festivalContent: "공개 행사 소개",
-    region: "GYEONGGI_SUWON",
-    regionDetail: "수원 책방",
-    beginDe: "2026-10-01T12:00:00",
-    endDe: "2026-10-01T18:00:00",
-    status: "OPEN",
-    submitter: { id: "neighbor", nickname: "이웃" },
-  };
-  const summary = {
-    id: "post-72",
-    member: { id: "neighbor", nickname: "이웃", profileImg: null },
-    festivalId: 72,
-    festivalTitle: event.title,
-    title: "낭독회에 다녀왔어요",
-    thumbnail: null,
-    date: "2026-09-21T15:24:00",
-  };
-  const paged = (content: unknown[]) => ({
-    content,
-    number: 0,
-    size: 6,
-    totalElements: content.length,
-    totalPages: content.length ? 1 : 0,
-    first: true,
-    last: true,
-  });
   await page.addInitScript(() => sessionStorage.setItem("eventus.mode", "api"));
   await page.route("**/api/v1/**", async (route) => {
     const url = new URL(route.request().url());
@@ -51,10 +20,6 @@ test("live feed uses shared read APIs and does not request private submissions",
         role: "ROLE_NORMAL",
         email: "me@example.com",
       };
-    else if (path === "/api/v1/posts") data = paged([summary]);
-    else if (path === "/api/v1/festivals/submissions")
-      data = paged(url.searchParams.get("status") === "CLOSED" ? [] : [event]);
-    else if (path === "/api/v1/festivals/72") data = event;
     else
       return route.fulfill({
         status: 404,
@@ -69,35 +34,22 @@ test("live feed uses shared read APIs and does not request private submissions",
       body: JSON.stringify({ success: true, data }),
     });
   });
-  await page.goto("/reviews");
-  await expect(
-    page.getByRole("heading", { name: "낭독회에 다녀왔어요", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: event.title, exact: true }).click();
-  await expect(page).toHaveURL("/events/72");
-  await expect(page.getByText("공개 행사 소개", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "제보 수정" })).toHaveCount(0);
-  await page.goto("/submissions");
-  await expect(
-    page.getByRole("heading", { name: event.title, exact: true }),
-  ).toBeVisible();
-  await page.getByLabel("제보된 행사 검색").fill("낭독회");
-  await page.getByLabel("제보 행사 상태 필터").selectOption("CLOSED");
-  await expect(
-    page.getByRole("heading", { name: "조건에 맞는 제보가 없어요" }),
-  ).toBeVisible();
+  for (const [path, heading] of [
+    ["/reviews", "전체 후기 조회를 준비하고 있어요"],
+    ["/submissions", "이웃의 행사 제보 조회를 준비하고 있어요"],
+    ["/events/72", "행사 상세 조회를 준비하고 있어요"],
+  ]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    await expect(page.locator(".post-row, .event-card")).toHaveCount(0);
+  }
+  expect(urls.length).toBeGreaterThan(0);
   expect(
-    urls.some(
+    urls.filter(
       (url) =>
-        url.searchParams.get("q") === "낭독회" &&
-        url.searchParams.get("status") === "CLOSED",
+        !["/api/v1/auth/refresh", "/api/v1/members/me"].includes(url.pathname),
     ),
-  ).toBe(true);
-  expect(
-    urls.some((url) =>
-      url.pathname.startsWith("/api/v1/members/me/submissions"),
-    ),
-  ).toBe(false);
+  ).toEqual([]);
 });
 
 test("review feed includes multiple events and keeps review and event links separate", async ({
