@@ -8,11 +8,40 @@ import { EventDetailPage } from "./pages/EventDetail";
 import { Reviews, ReviewDetailPage, ReviewFormPage } from "./pages/Reviews";
 import { MyPage } from "./pages/MyPage";
 import { AuthPage } from "./pages/Auth";
+import { AppProvider } from "./lib/context";
+import {
+  AdminLayout,
+  AdminDashboard,
+  AdminMembers,
+  AdminContent,
+  AdminTickets,
+  AdminActivity,
+} from "./admin/Admin";
 
 export function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route path="admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="members" element={<AdminMembers />} />
+        <Route
+          path="events"
+          element={<AdminContent kind="events" key="events" />}
+        />
+        <Route
+          path="reviews"
+          element={<AdminContent kind="reviews" key="reviews" />}
+        />
+        <Route path="inquiries" element={<AdminTickets />} />
+        <Route path="activity" element={<AdminActivity />} />
+      </Route>
+      <Route
+        element={
+          <AppProvider>
+            <Layout />
+          </AppProvider>
+        }
+      >
         <Route index element={<Home />} />
         <Route path="explore" element={<Explore />} />
         <Route path="events/:eventId" element={<EventDetailPage />} />

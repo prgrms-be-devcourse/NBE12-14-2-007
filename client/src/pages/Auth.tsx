@@ -74,7 +74,7 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           <p>
             새로운 발견과 소중한 순간을
             <br />
-            EventUs에서 함께 나눠요.
+            방구석탈출에서 함께 나눠요.
           </p>
         </section>
       </div>
@@ -183,7 +183,7 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           </SubmitButton>
         </form>
         <p className="auth-switch">
-          {signup ? "이미 함께하고 계신가요?" : "EventUs가 처음이신가요?"}
+          {signup ? "이미 함께하고 계신가요?" : "방구석탈출이 처음이신가요?"}
           <Link
             to={`${signup ? "/login" : "/signup"}?next=${encodeURIComponent(target)}`}
           >

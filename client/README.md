@@ -1,4 +1,4 @@
-# EventUs 프론트엔드
+# 방구석탈출(roomescape) 프론트엔드
 
 `src/main/java`의 Controller·Service·DTO·SecurityConfig와 제공된 레퍼런스를 기준으로 작성한 React + TypeScript + Vite 프론트엔드입니다. 팀 합의에 따라 기존 프론트엔드를 대체하며, 프로젝트의 `client` 폴더에서 관리합니다.
 
@@ -47,6 +47,24 @@ pnpm test
 
 ## 모드와 설정
 
+### 시스템 관리자 Mock 화면
+
+`http://localhost:3001/admin` 또는 서비스 하단의 **시스템 관리자 미리보기**에서 확인합니다. 행사 주최자가 아닌 서비스 전체 운영자를 위한 화면입니다.
+
+- 운영 대시보드: 회원·행사·후기 수, 미처리 문의·신고, 콘텐츠 검토 현황, 최근 운영 기록.
+- 회원 관리: 닉네임·이메일·ID 검색, 등급 필터, 사유를 남기는 신뢰 등급 변경. 관리자 계정의 권한 변경은 제외합니다.
+- 행사·후기 관리: 검색과 상태 필터, 상세 검토, 공개·숨김 처리. 행사는 유입 경로 필터와 검토 대기 상태도 제공합니다.
+- 문의·신고: 유형·상태 필터, 접수 내용 확인, 신고 대상 콘텐츠로 이동, 운영팀 답변 등록 및 완료 상태 확인.
+- 운영 기록: 등급·노출 상태·답변 변경 기록을 검색하고 영역별로 확인합니다.
+
+관리자 화면은 항상 Mock으로 동작하며, 공개 서비스의 API 모드와 별도 React provider 및 `eventus.admin.mock.v1` sessionStorage를 사용합니다. 관리자 진입 시 실제 인증·관리 API를 호출하지 않으며 일반 서비스의 예시 데이터도 변경하지 않습니다. 현재 탭에서 새로고침해도 변경 사항은 유지되고, 상단 **예시 초기화**로 복구할 수 있습니다.
+
+`ROLE_*`, `QUESTION/REPORT`, `PENDING/ANSWERED` 명칭은 기존 백엔드 모델을 따릅니다. 콘텐츠의 공개·검토 대기·숨김은 **관리자 UI용 예시 상태**이며, 백엔드의 행사 진행 상태 `OPEN/CLOSED`와 다릅니다. 관리자 권한 검증과 실제 관리 API 연동은 구현하지 않았습니다. Mock 페이지이므로 로그인 없이 접근할 수 있습니다.
+
+구현은 `src/admin/Admin.tsx`, `src/admin/store.tsx`, `src/admin/admin.css`에 있습니다.
+
+### 일반 서비스 설정
+
 `.env.example`을 `.env.local`로 복사해 필요할 때만 변경합니다. 루트의 백엔드 `.env`는 읽거나 복사하지 않습니다.
 
 | 변수                  | 기본값                  | 용도                                                                               |
@@ -84,10 +102,12 @@ pnpm test
 
 ## 검증
 
-- 최종 결과: production build 성공, Playwright 15개 테스트 통과.
+- 최종 결과: production build 성공, Playwright 21개 테스트 통과.
 - TypeScript type check 및 production build.
 - Playwright: 미리보기 격리, 검색/필터/URL 복구, 제보·후기·댓글 CRUD, 좋아요 토글, 실제 DTO 형식, private 제보 상세 응답, 실패 시 예시 fallback 금지, 401 재발급, 로그인과 token 비영속화, role 제한, 문의 상태, 화면 크기별 overflow.
 - axe-core: 홈·제보 form·마이페이지·로그인·행사 상세의 WCAG A/AA 자동 검사.
+- 관리자: 실제 API 모드와 Mock 격리, 회원 등급 변경·초기화·새로고침 유지, 행사 공개·후기 복구, 신고 콘텐츠 숨김 및 별도 답변, 운영 기록 반영. 관리자 6개 화면과 회원 관리 dialog의 axe-core 자동 검사 및 320·390·768·1024px overflow 검사.
+- 홈 검색창: 320~1440px의 15개 폭에서 라벨 한 줄 유지·입력칸 너비·overflow 확인. 960px 이하는 2열, 380px 이하는 1열로 배치합니다.
 - 실제 로컬 서버: 프론트 HTTP 200, proxy를 통한 미인증 `/members/me` HTTP 401, OpenAPI 경로 확인.
 - 백엔드 계정을 새로 생성하거나 DB 데이터를 쓰지 않았고, 메일 발송·R2 업로드도 실제로 실행하지 않았습니다. 인증 후 쓰기 동작은 격리된 preview와 응답 mock 기반 브라우저 테스트로 검증했습니다.
 
@@ -100,3 +120,5 @@ Vite proxy와 effect cleanup 구현은 [Vite 공식 문서](https://vite.dev/con
 - [데스크톱 홈](./docs/screenshots/home-desktop.png) / [모바일 홈](./docs/screenshots/home-mobile.png)
 - [데스크톱 상세](./docs/screenshots/detail-desktop.png) / [모바일 상세](./docs/screenshots/detail-mobile.png)
 - [내 행사 제보](./docs/screenshots/submissions-desktop.png) / [마이페이지](./docs/screenshots/mypage-desktop.png)
+- [관리자 대시보드](./docs/screenshots/admin-desktop.png) / [회원 관리](./docs/screenshots/admin-members.png) / [모바일 관리자](./docs/screenshots/admin-mobile.png)
+- [검색창 수정 후 태블릿 홈](./docs/screenshots/home-tablet.png)
