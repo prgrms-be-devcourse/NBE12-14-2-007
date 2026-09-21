@@ -20,25 +20,27 @@ import type { SubmissionInput, SubmissionDetail } from "../lib/types";
 import {
   Badge,
   Empty,
+  EventCard,
   ErrorState,
   Field,
   FormError,
   Loading,
   LoginRequired,
   PageTitle,
+  Pagination,
   Photo,
   SubmitButton,
   Upload,
 } from "../components/ui";
 
 export function Submissions() {
-  const { member, authLoading } = useApp();
+  const { member, authLoading, mode } = useApp();
   return (
     <div className="container page-space">
       <PageTitle
         eyebrow="GOOD THINGS, TOGETHER"
         title="행사 제보"
-        description="알고 있는 행사를 공유하고, 내가 제보한 정보를 관리해요."
+        description="이웃들이 전한 행사를 둘러보고, 알고 있는 소식도 함께 나눠요."
         action={
           <Link className="btn primary" to="/submissions/new">
             <Plus size={17} />
@@ -62,12 +64,81 @@ export function Submissions() {
       </div>
       {authLoading ? (
         <Loading />
-      ) : member ? (
-        <SubmissionList />
-      ) : (
+      ) : !member ? (
         <LoginRequired />
+      ) : mode === "api" ? (
+        <Empty
+          title="이웃의 행사 제보 조회를 준비하고 있어요"
+          description="디자인 미리보기에서 이웃들이 전한 행사를 둘러볼 수 있어요."
+        />
+      ) : (
+        <CommunitySubmissions />
       )}
     </div>
+  );
+}
+function CommunitySubmissions() {
+  const { api } = useApp();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [page, setPage] = useState(0);
+  const { data, loading, error, reload } = useLoad(
+    () => api.submittedEvents(page, query, status),
+    [api, page, query, status],
+  );
+  return (
+    <>
+      <div className="section-heading">
+        <h2>
+          이웃이 전한 행사{" "}
+          <span className="count">{data?.totalElements ?? 0}</span>
+        </h2>
+        <select
+          className="plain-select"
+          aria-label="제보 행사 상태 필터"
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(0);
+          }}
+        >
+          <option value="ALL">모든 일정</option>
+          <option value="OPEN">종료 전</option>
+          <option value="CLOSED">종료</option>
+        </select>
+      </div>
+      <div className="inline-search">
+        <Search size={18} />
+        <input
+          aria-label="제보된 행사 검색"
+          placeholder="이웃이 제보한 행사 검색"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+        />
+      </div>
+      {loading ? (
+        <Loading cards />
+      ) : error ? (
+        <ErrorState message={error} retry={reload} />
+      ) : data?.content.length ? (
+        <>
+          <div className="event-grid">
+            {data.content.map((event) => (
+              <EventCard event={event} key={event.festivalId} />
+            ))}
+          </div>
+          <Pagination page={page} total={data.totalPages} onChange={setPage} />
+        </>
+      ) : (
+        <Empty
+          title="조건에 맞는 제보가 없어요"
+          description="다른 검색 조건으로 찾아보거나 새로운 행사를 제보해 주세요."
+        />
+      )}
+    </>
   );
 }
 export function SubmissionList({ compact = false }: { compact?: boolean }) {

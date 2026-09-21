@@ -12,8 +12,15 @@ import type {
   Comment,
   Inquiry,
   InquiryInput,
+  EventView,
 } from "./types";
-import { demoEvents, readDemo, updateDemo } from "./demo";
+import {
+  demoEvents,
+  previewSubmittedEvents,
+  readDemo,
+  updateDemo,
+} from "./demo";
+import { parseDateTime } from "./format";
 
 export class ApiError extends Error {
   constructor(
@@ -27,7 +34,7 @@ export class ApiError extends Error {
 let accessToken: string | null = null;
 let refreshPromise: Promise<void> | null = null;
 let sessionVersion = 0;
-const now = () => new Date().toISOString().slice(0, 19);
+const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
 export function clearSession() {
   accessToken = null;
@@ -209,6 +216,36 @@ export function createApi(mode: Mode) {
           }))
         : transport("/members/me/submissions");
     },
+    async submittedEvents(
+      page = 0,
+      query = "",
+      status = "ALL",
+    ): Promise<Page<EventView>> {
+      if (!demo) {
+        throw new ApiError("전체 행사 제보 조회 기능을 준비하고 있어요.");
+      }
+      return pageOf(
+        previewSubmittedEvents().filter(
+          (event) =>
+            (!query.trim() ||
+              event.title.toLowerCase().includes(query.trim().toLowerCase())) &&
+            (status === "ALL" || event.status === status),
+        ),
+        page,
+        6,
+      );
+    },
+    async event(festivalId: number): Promise<EventView> {
+      if (!demo) {
+        throw new ApiError("행사 상세 조회 기능을 준비하고 있어요.");
+      }
+      const event = [
+        ...demoEvents.filter((e) => e.source === "PUBLIC"),
+        ...previewSubmittedEvents(),
+      ].find((e) => e.festivalId === festivalId);
+      if (!event) throw new ApiError("행사를 찾을 수 없어요.", 404);
+      return event;
+    },
     async submission(submissionId: string) {
       return demo
         ? getSubmission(submissionId)
@@ -286,20 +323,25 @@ export function createApi(mode: Mode) {
       });
     },
     async posts(
-      festivalId: number,
+      festivalId?: number,
       page = 0,
       sort = "createdAt,desc",
     ): Promise<Page<PostSummary>> {
-      if (!demo)
+      if (!demo) {
+        if (festivalId === undefined)
+          throw new ApiError("전체 후기 조회 기능을 준비하고 있어요.");
         return transport(
           `/festivals/${festivalId}/posts?page=${page}&size=6&sort=${encodeURIComponent(sort)}`,
         );
+      }
       const posts = readDemo()
-        .posts.filter((p) => p.festivalId === festivalId)
+        .posts.filter(
+          (p) => festivalId === undefined || p.festivalId === festivalId,
+        )
         .sort((a, b) =>
           sort.endsWith("asc")
-            ? a.date.localeCompare(b.date)
-            : b.date.localeCompare(a.date),
+            ? parseDateTime(a.date).getTime() - parseDateTime(b.date).getTime()
+            : parseDateTime(b.date).getTime() - parseDateTime(a.date).getTime(),
         );
       return pageOf(posts, page, 6);
     },
@@ -319,6 +361,8 @@ export function createApi(mode: Mode) {
         const postId = id();
         const festivalTitle =
           demoEvents.find((e) => e.festivalId === festivalId)?.title ||
+          previewSubmittedEvents().find((e) => e.festivalId === festivalId)
+            ?.title ||
           d.submissions.find(
             (s) => s.submission.festival.festivalId === festivalId,
           )?.submission.festival.title ||
@@ -362,7 +406,11 @@ export function createApi(mode: Mode) {
       return demo
         ? readDemo()
             .comments.filter((c) => c.postId === postId)
-            .sort((a, b) => b.date.localeCompare(a.date))
+            .sort(
+              (a, b) =>
+                parseDateTime(b.date).getTime() -
+                parseDateTime(a.date).getTime(),
+            )
             .slice(page * 20, (page + 1) * 20)
         : transport<Comment[]>(
             `/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=20&sort=createdAt,desc`,

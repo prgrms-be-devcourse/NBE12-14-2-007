@@ -37,6 +37,7 @@ export interface Festival {
 }
 export interface EventView extends Festival {
   source: "PUBLIC" | "MEMBER";
+  submitter?: { id: string; nickname: string };
   preview?: boolean;
   submissionId?: string;
 }

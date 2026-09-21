@@ -63,6 +63,27 @@ export const roleNames: Record<string, string> = {
 export function dateText(value?: string | null) {
   return value ? value.slice(0, 10).replaceAll("-", ".") : "일정 미정";
 }
+export function parseDateTime(value: string) {
+  const hasTime = /T\d{2}:\d{2}/.test(value);
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  return new Date(hasTime && !hasZone ? `${value}+09:00` : value);
+}
+export function dateTimeText(value: string) {
+  const date = parseDateTime(value);
+  if (Number.isNaN(date.getTime())) return dateText(value);
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value;
+  return `${part("year")}.${part("month")}.${part("day")} ${part("hour")}:${part("minute")}`;
+}
 export function period(start?: string, end?: string) {
   return start?.slice(0, 10) === end?.slice(0, 10)
     ? dateText(start)
