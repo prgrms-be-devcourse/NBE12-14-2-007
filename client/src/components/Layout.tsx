@@ -73,7 +73,11 @@ export function Layout() {
               행사 제보하기
             </Link>
             <span className="header-divider" />
-            <Link to={member ? "/mypage" : "/login"} className="account-link">
+            <Link
+              to={member ? "/mypage" : "/login"}
+              className="account-link"
+              aria-label={member ? "마이페이지" : "로그인"}
+            >
               <UserRound size={18} />
               <span>{member ? "마이페이지" : "로그인"}</span>
               <ChevronDown size={12} />

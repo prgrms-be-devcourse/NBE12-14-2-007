@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { ApiError } from "../lib/api";
 import { useApp, useLoad } from "../lib/context";
-import { readDemo } from "../lib/demo";
+import { readDemo, type ReviewSort } from "../lib/demo";
 import { dateText, dateTimeText, errorText } from "../lib/format";
 import type { Comment, PostDetail, PostSummary } from "../lib/types";
 import {
@@ -60,12 +60,14 @@ export function Reviews() {
   );
 }
 export function FestivalPosts({ festivalId }: { festivalId?: number }) {
-  const { api, member } = useApp();
+  const { api, member, mode } = useApp();
   const [page, setPage] = useState(0);
-  const [sort, setSort] = useState("createdAt,desc");
+  const [sort, setSort] = useState<ReviewSort>("likes,desc");
+  const activeSort =
+    mode === "api" && sort === "likes,desc" ? "createdAt,desc" : sort;
   const { data, loading, error, reload } = useLoad(
-    () => api.posts(festivalId, page, sort),
-    [api, festivalId, page, sort],
+    () => api.posts(festivalId, page, activeSort),
+    [api, festivalId, page, activeSort],
   );
   if (!member) return <LoginRequired />;
   return (
@@ -79,12 +81,15 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
           <select
             aria-label="후기 정렬"
             className="plain-select"
-            value={sort}
+            value={activeSort}
             onChange={(e) => {
-              setSort(e.target.value);
+              setSort(e.target.value as ReviewSort);
               setPage(0);
             }}
           >
+            <option value="likes,desc" disabled={mode === "api"}>
+              좋아요순{mode === "api" ? " (준비 중)" : ""}
+            </option>
             <option value="createdAt,desc">최신순</option>
             <option value="createdAt,asc">오래된순</option>
           </select>
@@ -101,6 +106,11 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
           </Link>
         </div>
       </div>
+      {mode === "api" && (
+        <p className="quiet-note review-sort-note">
+          좋아요순 정렬은 준비 중이에요. 현재는 작성일 기준으로 볼 수 있어요.
+        </p>
+      )}
       {loading ? (
         <Loading />
       ) : error ? (
@@ -135,6 +145,15 @@ function PostRow({ post }: { post: PostSummary }) {
           <span className="avatar tiny">{post.member.nickname[0]}</span>
           {post.member.nickname}
           <time dateTime={post.date}>{dateText(post.date)}</time>
+          {post.likeCount !== undefined && (
+            <span
+              className="post-like-count"
+              aria-label={`좋아요 ${post.likeCount}개`}
+            >
+              <ThumbsUp size={13} />
+              {post.likeCount}
+            </span>
+          )}
         </span>
         <h3>
           <Link to={`/reviews/${post.id}`}>{post.title}</Link>
