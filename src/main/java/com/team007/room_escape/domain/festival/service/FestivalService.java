@@ -20,9 +20,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -35,7 +33,6 @@ public class FestivalService {
 
 	/** API가 날짜열"260916"형태로 넘겨줘서 해석하는 규칙**/
 	private static final DateTimeFormatter API_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
-	private static final int FESTIVAL_SEARCH_PAGE_SIZE = 9;
 	private static final int MAX_PAGE_SIZE = 1000; // API 문서상 1회 요청 최대 건수
 
 	private final FestivalRepository festivalRepository;
@@ -92,7 +89,7 @@ public class FestivalService {
 	@Transactional(readOnly = true)
 	public Page<FestivalResponse.ListResponse> searchFestivals(
 			FestivalSearchRequest request,
-			int page
+			Pageable pageable
 	) {
 		String keyword = normalize(request.keyword());
 		String category = normalize(request.category());
@@ -104,12 +101,6 @@ public class FestivalService {
 		LocalDateTime dateEnd = request.date() == null
 				? null
 				: request.date().plusDays(1).atStartOfDay();
-
-		Pageable pageable = PageRequest.of(
-				Math.max(page, 0),
-				FESTIVAL_SEARCH_PAGE_SIZE,
-				Sort.by(Sort.Direction.ASC, "beginDe")
-		);
 
 		return festivalRepository.searchFestivals(
 				keyword != null,

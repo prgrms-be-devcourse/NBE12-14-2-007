@@ -335,7 +335,7 @@ class FestivalServiceTest {
 		)).thenReturn(festivalPage);
 
 		Page<FestivalResponse.ListResponse> result =
-				festivalService.searchFestivals(request, 0);
+				festivalService.searchFestivals(request, pageable);
 
 		assertThat(result.getTotalElements()).isEqualTo(1);
 
@@ -397,7 +397,7 @@ class FestivalServiceTest {
 		)).thenReturn(festivalPage);
 
 		Page<FestivalResponse.ListResponse> result =
-				festivalService.searchFestivals(request, 0);
+				festivalService.searchFestivals(request, pageable);
 
 		assertThat(result.getContent().get(0).status())
 				.isEqualTo(FestivalStatus.CLOSED);
@@ -437,7 +437,7 @@ class FestivalServiceTest {
 		)).thenReturn(festivalPage);
 
 		FestivalResponse.ListResponse response =
-				festivalService.searchFestivals(request, 0)
+				festivalService.searchFestivals(request, pageable)
 						.getContent()
 						.get(0);
 
