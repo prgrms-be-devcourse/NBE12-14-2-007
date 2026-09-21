@@ -60,4 +60,21 @@ public class LikeService {
 
 		return likeRepository.countByPostId(postId);
 	}
+
+	@Transactional
+	public LikeResponse deleteLike(UUID postId, UUID memberId) {
+
+		if(!postRepository.existsById(postId)) {
+			throw new BusinessException(PostExceptionCode.POST_NOT_FOUND);
+		}
+
+		Like like =  likeRepository.findByPostIdAndMemberId(postId, memberId)
+				.orElseThrow(() -> new BusinessException(LikeExceptionCode.LIKE_NOT_FOUND));
+
+		likeRepository.delete(like);
+
+		Long likeCount = likeRepository.countByPostId(postId);
+
+		return new LikeResponse(likeCount);
+	}
 }
