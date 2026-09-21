@@ -9,8 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
@@ -28,4 +27,9 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	@Query("UPDATE Festival f SET f.status = com.team007.room_escape.domain.festival.infra.entity.FestivalStatus.CLOSED "
 		+ "WHERE f.status = com.team007.room_escape.domain.festival.infra.entity.FestivalStatus.OPEN AND f.endDe < :now")
 	int closeExpiredFestivals(@Param("now") LocalDateTime now);
+
+	Optional<Festival> findByIdAndProviderTypeAndDeletedAtIsNull(
+			Long festivalId,
+			ProviderType providerType
+	);
 }
