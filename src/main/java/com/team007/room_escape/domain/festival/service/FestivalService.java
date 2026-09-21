@@ -1,9 +1,11 @@
 package com.team007.room_escape.domain.festival.service;
 
+import com.team007.room_escape.domain.festival.dto.FestivalResponse;
 import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClient;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource;
@@ -16,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -54,6 +58,7 @@ public class FestivalService {
 		 *  DB 쪽도 반드시 같은 연도 범위로 좁혀서 비교 (안 그러면 서로 다른 걸 비교하게 됨) **/
 		LocalDateTime yearStart = LocalDateTime.of(currentYear, 1, 1, 0, 0);
 		LocalDateTime yearEnd = yearStart.plusYears(1);
+		// TODO: 서울 등 다른 지역 API 추가 시 PUBLIC 전체가 아니라 지역별로 건수를 세도록 변경 (안 그러면 다른 지역 행사가 섞여 신규 건수 계산이 틀어짐)
 		long dbCount = festivalRepository.countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
 			ProviderType.PUBLIC, yearStart, yearEnd);
 
@@ -68,7 +73,7 @@ public class FestivalService {
 		try {
 			List<Festival> festivals = currentYearRows.stream()
 				.limit(n) // 필터링된 목록의 앞에서부터 N건만 신규로 간주
-				.map(this::toFestival)
+				.map(this::toGyeonggiFestival)
 				.toList();
 
 			festivalRepository.saveAll(festivals);
@@ -76,6 +81,13 @@ public class FestivalService {
 		} catch (Exception e) {
 			log.error("신규 행사 저장 실패, 원본 스냅샷은 반영됨", e);
 		}
+	}
+
+	/** 지역 + 날짜를 선택하면 해당 지역에서 그 날짜에 진행 중인 공공 행사 목록을 조회 **/
+	@Transactional(readOnly = true)
+	public Page<FestivalResponse.ListResponse> getPublicFestivalsByRegion(FestivalRegion region, LocalDate date, Pageable page) {
+		return festivalRepository.findOngoingByProviderTypeAndRegion(ProviderType.PUBLIC, region, date.atStartOfDay(), page)
+			.map(FestivalResponse.ListResponse::from);
 	}
 
 	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신 **/
@@ -106,8 +118,7 @@ public class FestivalService {
 		return rows;
 	}
 
-	/** 원본 스냅샷은 누적하지 않고 "최신 1건"만 유지
-	 *  매번 새 row를 추가하면 거의 동일한 대용량 데이터가 배치 주기마다 중복 저장 **/
+	/** 원본 스냅샷은 누적하지 않고 "최신 1건"만 유지 매번 새 row를 추가하면 거의 동일한 대용량 데이터가 배치 주기마다 중복 저장 **/
 	private void saveRawSource(List<FestivalApiRow> rows) {
 		try {
 			String json = objectMapper.writeValueAsString(rows);
@@ -125,8 +136,9 @@ public class FestivalService {
 		return yyyyMMdd != null && yyyyMMdd.startsWith(String.valueOf(year));
 	}
 
-	/** Dto -> Entity **/
-	private Festival toFestival(FestivalApiRow row) {
+	// TODO: 서울 API 연동 시 toSeoulFestival() 추가
+	/** 경기도 API 응답(Dto) -> Entity **/
+	private Festival toGyeonggiFestival(FestivalApiRow row) {
 		LocalDateTime beginDe = parseDate(row.beginDe());
 		LocalDateTime endDe = parseDate(row.endDe());
 
@@ -146,6 +158,8 @@ public class FestivalService {
 			.endDe(endDe)
 			.writngDe(parseDate(row.writngDe()))
 			.status(resolveStatus(endDe))
+			/** API 응답에 시/군 단위 지역 필드가 없어서, 일단 도 단위로만 저장 (경기도 전역 API) **/
+			.region(FestivalRegion.GYEONGGI)
 			.build();
 	}
 
