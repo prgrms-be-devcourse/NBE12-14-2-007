@@ -30,6 +30,8 @@ public class LikeController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
+	// TODO 추후에 API따로 작성안하고 개수 조회는 Post로 이동 시킬지 결정
+
 	@Operation(summary = "후기 좋아요 개수 조회", description = "특정 후기의 좋아요 개수를 조회합니다.")
 	@GetMapping()
 	public ResponseEntity<ApiResponse<Long>> getLikeCount(@PathVariable UUID id) {
