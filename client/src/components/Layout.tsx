@@ -1,28 +1,13 @@
 import { useEffect, useState } from "react";
-import {
-  Link,
-  NavLink,
-  Outlet,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
-import {
-  ArrowRight,
-  ChevronDown,
-  Compass,
-  Menu,
-  Plus,
-  UserRound,
-  X,
-} from "lucide-react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { ChevronDown, Compass, Menu, Plus, UserRound, X } from "lucide-react";
 import { useApp } from "../lib/context";
 import { Logo } from "./ui";
 
 export function Layout() {
-  const { mode, setMode, member } = useApp();
+  const { member } = useApp();
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   useEffect(() => {
     setOpen(false);
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -32,25 +17,6 @@ export function Layout() {
       <a className="skip-link" href="#main">
         본문으로 바로가기
       </a>
-      <div className="preview-bar">
-        <div className="container">
-          <span>
-            <span className={`mode-dot ${mode}`} />
-            {mode === "preview"
-              ? "디자인 미리보기 · 행사와 활동은 예시 데이터입니다"
-              : "실제 서비스 · 로그인 후 내 활동을 확인하세요"}
-          </span>
-          <button
-            onClick={() => {
-              setMode(mode === "preview" ? "api" : "preview");
-              navigate("/");
-            }}
-          >
-            {mode === "preview" ? "실제 API 연결" : "미리보기로 돌아가기"}
-            <ArrowRight size={13} />
-          </button>
-        </div>
-      </div>
       <header className="site-header">
         <div className="container header-inner">
           <Link to="/" aria-label="방구석탈출 홈">
@@ -93,7 +59,7 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main id="main" className="main-content" key={mode}>
+      <main id="main" className="main-content">
         <Outlet />
       </main>
       <footer className="site-footer">
@@ -127,9 +93,7 @@ export function Layout() {
           </div>
           <div className="footer-bottom">
             <span>© 2026 roomescape. 함께 만드는 즐거운 일상.</span>
-            <span>
-              {mode === "preview" ? "DESIGN PREVIEW" : "일상에 즐거움을 더하다"}
-            </span>
+            <span>일상에 즐거움을 더하다</span>
           </div>
         </div>
       </footer>

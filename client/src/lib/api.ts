@@ -34,10 +34,16 @@ export class ApiError extends Error {
   }
 }
 let accessToken: string | null = null;
+let currentMember: Member | null = null;
 let refreshPromise: Promise<void> | null = null;
 let sessionVersion = 0;
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
+/** 예시 데이터로 남아 있는 후기·댓글의 작성자를 실제 로그인 회원으로 맞춘다. */
+export function setCurrentMember(member: Member | null) {
+  currentMember = member;
+}
+const demoAuthor = () => currentMember ?? readDemo().member;
 export function clearSession() {
   accessToken = null;
   refreshPromise = null;
@@ -126,13 +132,6 @@ async function refresh() {
       });
   return refreshPromise;
 }
-function getSubmission(submissionId: string): SubmissionDetail {
-  const item = readDemo().submissions.find(
-    (s) => s.submission.festivalSubmissionId === submissionId,
-  );
-  if (!item) throw new ApiError("제보를 찾을 수 없어요.", 404);
-  return item;
-}
 function getPost(postId: string): PostDetail {
   const post = readDemo().posts.find((p) => p.id === postId);
   if (!post) throw new ApiError("후기를 찾을 수 없어요.", 404);
@@ -154,12 +153,10 @@ export function createApi(mode: Mode) {
   const demo = mode === "preview";
   return {
     async restore() {
-      if (demo) return readDemo().member;
       await refresh();
       return transport<Member>("/members/me");
     },
     async login(email: string, password: string) {
-      if (demo) return readDemo().member;
       const token = await transport<{ accessToken: string }>(
         "/auth/login",
         "POST",
@@ -169,54 +166,37 @@ export function createApi(mode: Mode) {
       return transport<Member>("/members/me");
     },
     async signup(input: SignupInput) {
-      if (demo) return;
       return transport<void>("/auth/signup", "POST", input);
     },
     async logout() {
-      if (!demo) {
-        try {
-          await transport("/auth/logout", "POST");
-        } finally {
-          clearSession();
-        }
+      try {
+        await transport("/auth/logout", "POST");
+      } finally {
+        clearSession();
       }
     },
     async me() {
-      return demo ? readDemo().member : transport<Member>("/members/me");
+      return transport<Member>("/members/me");
     },
     async updateMe(input: {
       nickname?: string;
       phone?: string;
       profileImg?: string;
     }) {
-      return demo
-        ? updateDemo(
-            (d) => (d.member = { ...d.member, ...input, updatedAt: now() }),
-          )
-        : transport<Member>("/members/me", "PATCH", input);
+      return transport<Member>("/members/me", "PATCH", input);
     },
     async sendPasswordCode() {
-      if (!demo)
-        await transport("/members/me/password/verification-code", "POST");
+      await transport("/members/me/password/verification-code", "POST");
     },
     async verifyPasswordCode(code: string) {
-      if (!demo)
-        await transport("/members/me/password/verify", "POST", { code });
+      await transport("/members/me/password/verify", "POST", { code });
     },
     async changePassword(newPassword: string) {
-      if (!demo) {
-        await transport("/members/me/password", "PATCH", { newPassword });
-        clearSession();
-      }
+      await transport("/members/me/password", "PATCH", { newPassword });
+      clearSession();
     },
     async submissions(): Promise<SubmissionSummary[]> {
-      return demo
-        ? readDemo().submissions.map(({ submission: s }) => ({
-            ...s.festival,
-            festivalSubmissionId: s.festivalSubmissionId,
-            createdAt: s.createdAt,
-          }))
-        : transport("/members/me/submissions");
+      return transport("/members/me/submissions");
     },
     async submittedEvents(
       page = 0,
@@ -249,80 +229,29 @@ export function createApi(mode: Mode) {
       return event;
     },
     async submission(submissionId: string) {
-      return demo
-        ? getSubmission(submissionId)
-        : transport<SubmissionDetail>(
-            `/members/me/submissions/${encodeURIComponent(submissionId)}`,
-          );
+      return transport<SubmissionDetail>(
+        `/members/me/submissions/${encodeURIComponent(submissionId)}`,
+      );
     },
     async createSubmission(input: SubmissionInput) {
-      if (!demo)
-        return transport<{
-          festivalId: number;
-          festivalSubmissionId: string;
-          status: string;
-        }>("/festivals/submissions", "POST", input);
-      return updateDemo((d) => {
-        const festivalId =
-          Math.max(
-            2002,
-            ...d.submissions.map((s) => s.submission.festival.festivalId),
-          ) + 1;
-        const festivalSubmissionId = id();
-        const status = new Date(input.endDe) < new Date() ? "CLOSED" : "OPEN";
-        d.submissions.unshift({
-          submission: {
-            festivalSubmissionId,
-            submissionContent: input.submissionContent,
-            createdAt: now(),
-            updatedAt: now(),
-            festival: {
-              instNm: null,
-              referenceUrl: null,
-              imgUrl: null,
-              partcptExpnInfo: null,
-              telnoInfo: null,
-              hostInstNm: null,
-              ...input,
-              festivalId,
-              status,
-              writngDe: now(),
-            },
-          },
-        });
-        return { festivalId, festivalSubmissionId, status };
-      });
+      return transport<{
+        festivalId: number;
+        festivalSubmissionId: string;
+        status: string;
+      }>("/festivals/submissions", "POST", input);
     },
     async updateSubmission(submissionId: string, input: SubmissionInput) {
-      if (!demo)
-        return transport<SubmissionDetail>(
-          `/members/me/submissions/${encodeURIComponent(submissionId)}`,
-          "PATCH",
-          input,
-        );
-      return updateDemo((d) => {
-        const s = d.submissions.find(
-          (s) => s.submission.festivalSubmissionId === submissionId,
-        )!;
-        Object.assign(s.submission.festival, input, {
-          status: new Date(input.endDe) < new Date() ? "CLOSED" : "OPEN",
-        });
-        s.submission.submissionContent = input.submissionContent;
-        s.submission.updatedAt = now();
-        return s;
-      });
+      return transport<SubmissionDetail>(
+        `/members/me/submissions/${encodeURIComponent(submissionId)}`,
+        "PATCH",
+        input,
+      );
     },
     async deleteSubmission(submissionId: string) {
-      if (!demo)
-        return transport<void>(
-          `/members/me/submissions/${encodeURIComponent(submissionId)}`,
-          "DELETE",
-        );
-      updateDemo((d) => {
-        d.submissions = d.submissions.filter(
-          (s) => s.submission.festivalSubmissionId !== submissionId,
-        );
-      });
+      return transport<void>(
+        `/members/me/submissions/${encodeURIComponent(submissionId)}`,
+        "DELETE",
+      );
     },
     async posts(
       festivalId?: number,
@@ -368,7 +297,7 @@ export function createApi(mode: Mode) {
           id: postId,
           festivalId,
           festivalTitle,
-          member: d.member,
+          member: demoAuthor(),
           date: now(),
         });
         return { id: postId };
@@ -419,12 +348,13 @@ export function createApi(mode: Mode) {
           { content },
         );
       return updateDemo((d) => {
+        const author = demoAuthor();
         const c = {
           id: Date.now(),
           postId,
-          memberId: d.member.id,
-          nickname: d.member.nickname,
-          profile_img: d.member.profileImg,
+          memberId: author.id,
+          nickname: author.nickname,
+          profile_img: author.profileImg,
           content,
           date: now(),
         };
@@ -474,56 +404,26 @@ export function createApi(mode: Mode) {
       });
     },
     async inquiries() {
-      return demo
-        ? readDemo().inquiries
-        : transport<Inquiry[]>("/inquiries/me");
+      return transport<Inquiry[]>("/inquiries/me");
     },
     async inquiry(inquiryId: string) {
-      if (!demo)
-        return transport<Inquiry>(
-          `/inquiries/${encodeURIComponent(inquiryId)}`,
-        );
-      const q = readDemo().inquiries.find((q) => q.id === inquiryId);
-      if (!q) throw new ApiError("문의를 찾을 수 없어요.", 404);
-      return q;
+      return transport<Inquiry>(`/inquiries/${encodeURIComponent(inquiryId)}`);
     },
     async createInquiry(input: InquiryInput) {
-      if (!demo) return transport<Inquiry>("/inquiries", "POST", input);
-      return updateDemo((d) => {
-        const q: Inquiry = {
-          ...input,
-          img: input.img || null,
-          id: id(),
-          status: "PENDING",
-          answer: null,
-          createdAt: now(),
-        };
-        d.inquiries.unshift(q);
-        return q;
-      });
+      return transport<Inquiry>("/inquiries", "POST", input);
     },
     async updateInquiry(inquiryId: string, input: InquiryInput) {
-      if (!demo)
-        return transport<Inquiry>(
-          `/inquiries/${encodeURIComponent(inquiryId)}`,
-          "PATCH",
-          input,
-        );
-      return updateDemo((d) => {
-        const q = d.inquiries.find((q) => q.id === inquiryId)!;
-        Object.assign(q, input);
-        return q;
-      });
+      return transport<Inquiry>(
+        `/inquiries/${encodeURIComponent(inquiryId)}`,
+        "PATCH",
+        input,
+      );
     },
     async deleteInquiry(inquiryId: string) {
-      if (!demo)
-        return transport<void>(
-          `/inquiries/${encodeURIComponent(inquiryId)}`,
-          "DELETE",
-        );
-      updateDemo((d) => {
-        d.inquiries = d.inquiries.filter((q) => q.id !== inquiryId);
-      });
+      return transport<void>(
+        `/inquiries/${encodeURIComponent(inquiryId)}`,
+        "DELETE",
+      );
     },
     async upload(
       file: File,
@@ -533,10 +433,6 @@ export function createApi(mode: Mode) {
         throw new ApiError("이미지는 5MB 이하로 올려 주세요.");
       if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
         throw new ApiError("JPG, PNG, WEBP 이미지만 올릴 수 있어요.");
-      if (demo) {
-        const url = URL.createObjectURL(file);
-        return { key: url, url };
-      }
       const form = new FormData();
       form.append("file", file);
       form.append("type", type);

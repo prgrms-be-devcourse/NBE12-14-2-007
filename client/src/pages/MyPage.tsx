@@ -130,7 +130,7 @@ export function MyPage() {
   );
 }
 function Profile() {
-  const { member, api, setMember, toast, mode } = useApp();
+  const { member, api, setMember, toast } = useApp();
   const [nickname, setNickname] = useState(member!.nickname);
   const [phone, setPhone] = useState(member!.phone || "");
   const [image, setImage] = useState<string | undefined>();
@@ -153,11 +153,7 @@ function Profile() {
         ...(image !== undefined ? { profileImg: image } : {}),
       });
       setMember(updated);
-      toast(
-        mode === "preview"
-          ? "미리보기 프로필을 저장했어요."
-          : "내 정보를 저장했어요.",
-      );
+      toast("내 정보를 저장했어요.");
     } catch (e) {
       setError(errorText(e));
     } finally {
@@ -249,7 +245,7 @@ function Profile() {
   );
 }
 function PasswordModal({ onClose }: { onClose: () => void }) {
-  const { api, mode, setMember, toast } = useApp();
+  const { api, setMember, toast } = useApp();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [code, setCode] = useState("");
@@ -270,11 +266,7 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
       await api.sendPasswordCode();
       setStep(1);
       setCooldown(60);
-      toast(
-        mode === "preview"
-          ? "미리보기에서는 메일을 보내지 않아요. 6자리 숫자를 입력해 보세요."
-          : "가입한 이메일로 인증 코드를 보냈어요.",
-      );
+      toast("가입한 이메일로 인증 코드를 보냈어요.");
     } catch (e) {
       setError(errorText(e));
     } finally {
@@ -608,7 +600,7 @@ function InquiryForm({
   report: string;
   onSave: () => void;
 }) {
-  const { api, toast, mode } = useApp();
+  const { api, toast } = useApp();
   const [category, setCategory] = useState<InquiryInput["category"]>(
     existing?.category || (report ? "REPORT" : "QUESTION"),
   );
@@ -634,11 +626,7 @@ function InquiryForm({
       };
       if (existing) await api.updateInquiry(existing.id, body);
       else await api.createInquiry(body);
-      toast(
-        mode === "preview"
-          ? "미리보기 문의를 저장했어요."
-          : "문의를 저장했어요.",
-      );
+      toast("문의를 저장했어요.");
       onSave();
     } catch (e) {
       setError(errorText(e));

@@ -6,13 +6,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { clearSession, createApi, type Api } from "./api";
-import { readDemo } from "./demo";
+import { createApi, setCurrentMember, type Api } from "./api";
 import type { Member, Mode } from "./types";
+
+/**
+ * 로그인·마이페이지는 항상 실제 백엔드를 사용한다.
+ * 아직 API가 없는 행사 탐색·후기 화면만 예시 데이터로 채우기 위해 남겨둔 값.
+ */
+const CONTENT_MODE: Mode = "preview";
 
 interface AppContextValue {
   mode: Mode;
-  setMode: (mode: Mode) => void;
   api: Api;
   member: Member | null;
   setMember: (member: Member | null) => void;
@@ -21,18 +25,10 @@ interface AppContextValue {
 }
 const Context = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [mode, updateMode] = useState<Mode>(() =>
-    (sessionStorage.getItem("eventus.mode") ||
-      import.meta.env.VITE_DATA_MODE) === "api"
-      ? "api"
-      : "preview",
-  );
-  const [member, setMember] = useState<Member | null>(
-    mode === "preview" ? readDemo().member : null,
-  );
-  const [authLoading, setAuthLoading] = useState(mode === "api");
+  const [member, setMember] = useState<Member | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const api = useMemo(() => createApi(mode), [mode]);
+  const api = useMemo(() => createApi(CONTENT_MODE), []);
   useEffect(() => {
     let active = true;
     setAuthLoading(true);
@@ -52,6 +48,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [api]);
   useEffect(() => {
+    setCurrentMember(member);
+  }, [member]);
+  useEffect(() => {
     const fn = () => setMember(null);
     window.addEventListener("eventus:session-expired", fn);
     return () => window.removeEventListener("eventus:session-expired", fn);
@@ -61,17 +60,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const t = window.setTimeout(() => setMessage(""), 4500);
     return () => clearTimeout(t);
   }, [message]);
-  const setMode = (next: Mode) => {
-    clearSession();
-    sessionStorage.setItem("eventus.mode", next);
-    setMember(next === "preview" ? readDemo().member : null);
-    updateMode(next);
-  };
   return (
     <Context.Provider
       value={{
-        mode,
-        setMode,
+        mode: CONTENT_MODE,
         api,
         member,
         setMember,
