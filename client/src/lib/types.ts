@@ -63,23 +63,22 @@ export interface FestivalSearchItem {
   region: string;
   status: "OPEN" | "CLOSED";
 }
+// GET /api/v1/festivals/{festivalId} 응답 그대로의 모양 (공공 행사 상세 조회 전용, 항상 PUBLIC)
 export interface FestivalDetailItem {
   festivalId: number;
-  providerType: "PUBLIC" | "MEMBER";
   title: string;
   category: string;
-  festivalContent: string | null;
   instNm: string | null;
   hostInstNm: string | null;
   imgUrl: string | null;
-  referenceUrl: string | null;
+  url: string | null;
+  hmpgUrl: string | null;
   beginDe: string;
   endDe: string;
   eventTmInfo: string | null;
   partcptExpnInfo: string | null;
   telnoInfo: string | null;
   region: string;
-  regionDetail: string | null;
   status: "OPEN" | "CLOSED";
 }
 export interface SubmissionInput {
