@@ -21,6 +21,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  data:
+    web:
+      pageable:
+        # 클라이언트가 size를 크게 넣어 한 번에 다 긁어가는 것을 막는다.
+        max-page-size: 50
   servlet:
     multipart:
       max-file-size: 5MB
