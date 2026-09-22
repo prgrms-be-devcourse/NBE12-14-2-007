@@ -214,6 +214,20 @@ export interface SyncResult {
   /** 새로 저장된 행사 */
   savedFestivals: { festivalId: number; title: string }[];
 }
+/**
+ * 관리자 행사 검색 조건. 비운 항목은 조건을 걸지 않는다.
+ * 공개 화면과 같은 GET /festivals 를 쓰지만 페이지 크기가 달라 따로 둔다.
+ */
+export interface AdminFestivalQuery {
+  keyword?: string;
+  providerType?: "PUBLIC" | "MEMBER";
+  category?: string;
+  /** true면 종료된 행사를 제외한다 */
+  excludeClosed?: boolean;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 /** 관리자 회원 검색 조건. 비운 항목은 조건을 걸지 않는다. */
 export interface AdminMemberQuery {
   /** 닉네임 또는 이메일 부분 일치 */

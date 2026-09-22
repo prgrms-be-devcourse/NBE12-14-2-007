@@ -11,6 +11,7 @@ import { dateText, errorText } from "../lib/format";
 import type {
   AdminInquiryListItem,
   AdminMemberInfo,
+  FestivalSearchItem,
   Role,
 } from "../lib/types";
 
@@ -38,6 +39,20 @@ export interface AdminMember {
   /** 탈퇴 시각. 탈퇴하지 않았으면 null */
   deletedAt: string | null;
 }
+/**
+ * 행사 진행 상태. 서버 FestivalStatus 와 같은 값으로, 종료일에서 계산된다.
+ * 노출 상태(Visibility)와는 다른 축이다. 행사에는 아직 노출 상태 개념이 없다.
+ */
+export type RunState = "OPEN" | "CLOSED";
+export const runStateNames: Record<RunState, string> = {
+  OPEN: "진행중",
+  CLOSED: "종료",
+};
+/** 상태 뱃지 하나로 둘 다 그리기 위한 통합 이름표. */
+export const statusNames: Record<string, string> = {
+  ...visibilityNames,
+  ...runStateNames,
+};
 export interface ContentItem {
   id: string;
   title: string;
@@ -45,7 +60,8 @@ export interface ContentItem {
   source: "PUBLIC" | "MEMBER";
   category: string;
   date: string;
-  status: Visibility;
+  /** 행사는 RunState(서버값), 후기는 Visibility(아직 mock) */
+  status: Visibility | RunState;
   content: string;
   image?: string;
   reason?: string;
@@ -71,108 +87,23 @@ export interface Activity {
 }
 /**
  * 아직 API가 없어 브라우저에만 두는 예시 데이터.
- * 회원(members)과 문의(tickets)는 실제 서버에서 오므로 여기 없다.
+ * 회원·문의·행사는 실제 서버에서 오므로 여기 없다.
  */
 interface AdminState {
-  version: 3;
-  events: ContentItem[];
+  version: 4;
   reviews: ContentItem[];
   activity: Activity[];
 }
-/** 화면이 받아 쓰는 데이터. members와 tickets는 실제 서버에서 온다. */
+/** 화면이 받아 쓰는 데이터. reviews와 activity만 아직 예시다. */
 interface AdminData extends AdminState {
   members: AdminMember[];
   tickets: Ticket[];
+  events: ContentItem[];
 }
-const storageKey = "eventus.admin.mock.v3";
+const storageKey = "eventus.admin.mock.v4";
 function seed(): AdminState {
   return {
-    version: 3,
-    events: [
-      {
-        id: "E-2008",
-        title: "가을 정원 산책",
-        author: "경기도 문화행사 데이터",
-        source: "PUBLIC",
-        category: "축제",
-        date: "2026-09-21",
-        status: "PUBLISHED",
-        image: "/images/garden.jpg",
-        content:
-          "가을꽃이 피어난 정원을 산책하는 예시 문화행사입니다. 일정: 10월 3일 ~ 10월 12일 · 가평군.",
-      },
-      {
-        id: "E-2007",
-        title: "우리 동네 주말 플리마켓",
-        author: "동네탐험가",
-        source: "MEMBER",
-        category: "장터",
-        date: "2026-09-21",
-        status: "PENDING",
-        image: "/images/market.jpg",
-        content:
-          "동네 주민과 함께하는 주말 장터를 제보합니다. 일정: 10월 10일 · 수원시. 장소 및 운영 시간 확인이 필요합니다.",
-      },
-      {
-        id: "E-2006",
-        title: "수원 화성의 가을밤",
-        author: "경기도 문화행사 데이터",
-        source: "PUBLIC",
-        category: "문화",
-        date: "2026-09-20",
-        status: "PUBLISHED",
-        image: "/images/palace.jpg",
-        content:
-          "수원 화성에서 즐기는 야간 문화 산책 예시입니다. 일정: 10월 9일 ~ 10월 11일 · 수원시.",
-      },
-      {
-        id: "E-2005",
-        title: "호수공원 작은 음악회",
-        author: "문화산책",
-        source: "MEMBER",
-        category: "공연",
-        date: "2026-09-20",
-        status: "PENDING",
-        image: "/images/music.jpg",
-        content:
-          "가을 저녁, 호숫가에서 열리는 어쿠스틱 공연입니다. 일정: 10월 17일 · 고양시.",
-      },
-      {
-        id: "E-2004",
-        title: "선입금 필수 무료 축제",
-        author: "오늘의 행사",
-        source: "MEMBER",
-        category: "축제",
-        date: "2026-09-19",
-        status: "PUBLISHED",
-        image: "/images/flowers.jpg",
-        content:
-          "무료 축제로 소개되어 있지만 개인 계좌로 선입금을 안내하고 있어 신고가 접수된 예시 행사입니다.",
-      },
-      {
-        id: "E-2003",
-        title: "작은 미술관 가을 전시",
-        author: "경기도 문화행사 데이터",
-        source: "PUBLIC",
-        category: "전시",
-        date: "2026-09-18",
-        status: "PUBLISHED",
-        image: "/images/art.jpg",
-        content:
-          "지역 작가들의 그림을 만나보는 예시 전시입니다. 일정: 10월 1일 ~ 10월 25일 · 파주시.",
-      },
-      {
-        id: "E-2002",
-        title: "중복 등록된 꽃 축제",
-        author: "꽃길따라",
-        source: "MEMBER",
-        category: "축제",
-        date: "2026-09-17",
-        status: "HIDDEN",
-        content: "동일한 일정과 장소로 중복 제보된 예시 행사입니다.",
-        reason: "기존 행사와 내용이 중복되어 숨김 처리",
-      },
-    ],
+    version: 4,
     reviews: [
       {
         id: "P-3005",
@@ -263,8 +194,8 @@ function read(): AdminState {
   try {
     const data = JSON.parse(sessionStorage.getItem(storageKey) || "null");
     if (
-      data?.version === 3 &&
-      ["events", "reviews", "activity"].every((k) => Array.isArray(data[k]))
+      data?.version === 4 &&
+      ["reviews", "activity"].every((k) => Array.isArray(data[k]))
     ) {
       return data as AdminState;
     }
@@ -283,6 +214,27 @@ function toMember(item: AdminMemberInfo): AdminMember {
     joined: dateText(item.createdAt),
     profileImg: item.profileImg,
     deletedAt: item.deletedAt,
+  };
+}
+/**
+ * 서버 행사 한 줄을 화면이 쓰는 ContentItem 모양으로 바꾼다.
+ *
+ * status 는 노출 상태가 아니라 진행 상태(OPEN/CLOSED)다.
+ * 행사에는 아직 노출 상태 컬럼이 없어서 숨김 처리를 표현할 수 없다.
+ */
+function toEvent(item: FestivalSearchItem): ContentItem {
+  return {
+    id: String(item.festivalId),
+    title: item.title,
+    // 공공 행사는 주최 기관, 회원 제보는 기관명이 비어 있을 수 있다.
+    author: item.instNm || (item.providerType === "MEMBER" ? "회원 제보" : "-"),
+    source: item.providerType,
+    category: item.category,
+    date: dateText(item.beginDe),
+    status: item.status,
+    // 목록 응답에는 본문이 없다. 상세를 열 때 채워 넣는다.
+    content: "",
+    image: item.imgUrl ?? undefined,
   };
 }
 /** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
@@ -310,6 +262,13 @@ interface AdminContextValue {
    *      파라미터는 이력 테이블이 생기면 바로 쓰려고 남겨 둔다.
    */
   changeRole: (id: string, role: Role, reason: string) => Promise<void>;
+  /**
+   * 노출 상태 변경.
+   *
+   * TODO 서버에 노출 상태 컬럼이 없어 아직 로컬에서만 동작한다.
+   *      행사는 실제 데이터라 여기서 바꿔도 새로고침하면 되돌아가므로
+   *      화면(ContentDialog)에서 아예 막아 뒀다. 후기는 아직 예시 데이터라 그대로 둔다.
+   */
   moderate: (
     kind: "events" | "reviews",
     id: string,
@@ -318,6 +277,10 @@ interface AdminContextValue {
   ) => void;
   /** 답변 등록. 서버에 저장하므로 실패할 수 있다. */
   answer: (id: string, answer: string) => Promise<void>;
+  /** 행사 목록을 서버에서 다시 불러온다. */
+  reloadEvents: () => void;
+  eventsLoading: boolean;
+  eventsError: string;
   /** 회원 목록을 서버에서 다시 불러온다. */
   reloadMembers: () => void;
   membersLoading: boolean;
@@ -335,6 +298,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(read);
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState(false);
+  const [events, setEvents] = useState<ContentItem[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState("");
+  const [eventsRevision, setEventsRevision] = useState(0);
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [membersError, setMembersError] = useState("");
@@ -345,6 +312,33 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [ticketsRevision, setTicketsRevision] = useState(0);
   // 토큰 복구가 끝나기 전에 부르면 첫 요청이 401로 한 번 헛돈다.
   const ready = !authLoading && signedInAdmin?.role === "ROLE_ADMIN";
+  useEffect(() => {
+    if (!ready) {
+      setEvents([]);
+      setEventsLoading(authLoading);
+      return;
+    }
+    let active = true;
+    setEventsLoading(true);
+    setEventsError("");
+    api
+      // 검색·필터를 화면에서 하고 있어서 한 번에 받아 두고 거른다.
+      // 행사는 수천 건이라 이 방식이 오래 못 간다.
+      // TODO 검색어·유입 경로를 서버 파라미터(keyword/providerType)로 넘길 것.
+      .adminFestivals({ size: 50 })
+      .then((page) => {
+        if (active) setEvents(page.content.map(toEvent));
+      })
+      .catch((error) => {
+        if (active) setEventsError(errorText(error));
+      })
+      .finally(() => {
+        if (active) setEventsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, ready, authLoading, eventsRevision]);
   useEffect(() => {
     if (!ready) {
       setMembers([]);
@@ -434,13 +428,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }
   // 매 렌더마다 새 객체를 만들면 data를 의존성에 넣은 쪽이 계속 다시 돈다.
   const value = useMemo(
-    () => ({ ...data, members, tickets }),
-    [data, members, tickets],
+    () => ({ ...data, members, tickets, events }),
+    [data, members, tickets, events],
   );
   return (
     <Context.Provider
       value={{
         data: value,
+        eventsLoading,
+        eventsError,
+        reloadEvents() {
+          setEventsRevision((current) => current + 1);
+        },
         membersLoading,
         membersError,
         reloadMembers() {
@@ -479,25 +478,28 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           setMessage("회원 등급을 변경했습니다.");
         },
         moderate(kind, id, status, reason) {
-          const item = data[kind].find((item) => item.id === id);
+          // 행사는 이제 실제 서버 데이터다. 노출 상태 컬럼이 없어서
+          // 여기서 바꿔봤자 새로고침하면 되돌아간다. 화면에서도 막아 두었다.
+          if (kind === "events") return;
+          const item = data.reviews.find((item) => item.id === id);
           if (
             !item ||
             !reason.trim() ||
             item.status === status ||
-            (kind === "reviews" && status === "PENDING")
+            status === "PENDING"
           )
             return;
           commit(
             (current) => ({
               ...current,
-              [kind]: current[kind].map((item) =>
+              reviews: current.reviews.map((item) =>
                 item.id === id
                   ? { ...item, status, reason: reason.trim() }
                   : item,
               ),
             }),
             {
-              area: kind === "events" ? "행사" : "후기",
+              area: "후기",
               action: `${visibilityNames[status]} 처리`,
               target: item.title,
               reason: reason.trim(),

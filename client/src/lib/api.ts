@@ -17,6 +17,7 @@ import type {
   AdminInquiryQuery,
   AdminMemberInfo,
   AdminMemberQuery,
+  AdminFestivalQuery,
   SyncResult,
   Role,
   EventView,
@@ -555,6 +556,34 @@ export function createApi(mode: Mode) {
      */
     async syncFestivals() {
       return transport<SyncResult>("/festivals/sync", "POST");
+    },
+    /**
+     * [ADMIN] 행사 목록. 공개 화면과 같은 GET /festivals 를 쓴다.
+     *
+     * festivals()를 쓰지 않는 이유: 그쪽은 page size가 9로 고정이고
+     * 예시 데이터 모드면 서버를 부르지 않는다. 관리자 화면은 둘 다 곤란하다.
+     */
+    async adminFestivals(query: AdminFestivalQuery = {}) {
+      const {
+        page = 0,
+        size = 50,
+        sort = "beginDe,desc",
+        excludeClosed,
+        ...filters
+      } = query;
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sort,
+      });
+      // 빈 문자열을 그대로 보내면 서버가 enum으로 변환하다 400을 낸다.
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined || value === "") continue;
+        params.set(key, String(value));
+      }
+      // false는 보내지 않는다. 서버 기본값이 false다.
+      if (excludeClosed) params.set("excludeClosed", "true");
+      return transport<Page<FestivalSearchItem>>(`/festivals?${params}`);
     },
     /** [ADMIN] 회원 목록. 닉네임·이메일 부분 일치 검색. */
     async adminMembers(query: AdminMemberQuery = {}) {
