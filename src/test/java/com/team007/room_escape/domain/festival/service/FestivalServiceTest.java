@@ -548,7 +548,7 @@ class FestivalServiceTest {
 			.endDe(today.plusDays(1).atStartOfDay())
 			.region(FestivalRegion.GYEONGGI)
 			.build();
-		when(festivalRepository.findActiveById(7L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(festival));
+		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(7L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(festival));
 
 		FestivalResponse.DetailResponse detail = festivalService.getPublicFestival(7L);
 
@@ -569,7 +569,7 @@ class FestivalServiceTest {
 	@Test
 	@DisplayName("행사를 찾을 수 없으면 FESTIVAL_NOT_FOUND 예외가 발생한다")
 	void getPublicFestivalThrowsWhenNotFound() {
-		when(festivalRepository.findActiveById(999L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.empty());
+		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(999L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.empty());
 
 		assertThatThrownBy(() -> festivalService.getPublicFestival(999L))
 			.isInstanceOf(BusinessException.class)
@@ -585,7 +585,7 @@ class FestivalServiceTest {
 	void getPublicFestivalComputesStatusFromEndDe() {
 		LocalDateTime pastEndDe = LocalDate.now().minusDays(1).atStartOfDay();
 		Festival stale = publicFestival(FestivalRegion.GYEONGGI, pastEndDe.minusDays(5), pastEndDe, FestivalStatus.OPEN);
-		when(festivalRepository.findActiveById(1L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(stale));
+		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(1L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(stale));
 
 		assertThat(festivalService.getPublicFestival(1L).status()).isEqualTo(FestivalStatus.CLOSED);
 	}

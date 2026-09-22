@@ -133,7 +133,7 @@ public class FestivalService {
 	/** 공공 행사 1건의 상세 정보를 조회. 없거나 삭제됐거나 공공 행사가 아니면 FESTIVAL_NOT_FOUND **/
 	@Transactional(readOnly = true)
 	public FestivalResponse.DetailResponse getPublicFestival(Long festivalId) {
-		Festival festival = festivalRepository.findActiveById(festivalId, ProviderType.PUBLIC)
+		Festival festival = festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(festivalId, ProviderType.PUBLIC)
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 		return FestivalResponse.DetailResponse.from(festival);
 	}

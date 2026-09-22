@@ -68,11 +68,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		+ "WHERE f.status = com.team007.room_escape.domain.festival.infra.entity.FestivalStatus.OPEN AND f.endDe < :now")
 	List<Festival> findExpiredOpen(@Param("now") LocalDateTime now);
 
-	/** 삭제되지 않은 행사 1건 조회 (공공/민간 구분은 providerType으로) */
-	@Query("SELECT f FROM Festival f "
-		+ "WHERE f.id = :id AND f.providerType = :providerType AND f.deletedAt IS NULL")
-	Optional<Festival> findActiveById(@Param("id") Long id, @Param("providerType") ProviderType providerType);
-
 	/** endDe가 지난 OPEN 행사를 CLOSED로 일괄 갱신 (반환값: 갱신된 건수)
 	 *  clearAutomatically=true: 벌크 UPDATE는 영속성 컨텍스트를 거치지 않아서,
 	 *  같은 트랜잭션에서 이후에 Festival을 다시 조회하면 캐시된 옛날 status를 볼 수 있음 -> 캐시 비우기 */
@@ -81,6 +76,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		+ "WHERE f.status = com.team007.room_escape.domain.festival.infra.entity.FestivalStatus.OPEN AND f.endDe < :now")
 	int closeExpiredFestivals(@Param("now") LocalDateTime now);
 
+	/** 삭제되지 않은 행사 1건 조회 (공공/민간 구분은 providerType으로) */
 	Optional<Festival> findByIdAndProviderTypeAndDeletedAtIsNull(
 			Long festivalId,
 			ProviderType providerType
