@@ -21,7 +21,19 @@ public enum MemberExceptionCode implements ExceptionCode {
 	NICKNAME_DUPLICATED("MEMBER002", HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
 	/** ROLE_WARNING 등급이 정보 수정 등 제한된 기능을 시도한 경우 */
 	MEMBER_RESTRICTED("MEMBER003", HttpStatus.FORBIDDEN,
-		"제재 중인 계정이라 정보를 수정할 수 없습니다. 관리자에게 문의해 주세요.");
+		"제재 중인 계정이라 정보를 수정할 수 없습니다. 관리자에게 문의해 주세요."),
+	/** 관리자 계정의 등급은 화면에서 바꾸지 않는다. 관리자 박탈은 DB에서 직접 처리한다 */
+	MEMBER_ROLE_ADMIN_PROTECTED("MEMBER004", HttpStatus.FORBIDDEN,
+		"관리자 계정의 등급은 변경할 수 없습니다."),
+	/** 등급 부여로 관리자를 만들 수 있으면 권한 상승 경로가 열린다 */
+	MEMBER_ROLE_ADMIN_GRANT_DENIED("MEMBER005", HttpStatus.FORBIDDEN,
+		"관리자 등급은 부여할 수 없습니다."),
+	/** 자기 등급을 내리면 되돌릴 권한까지 잃는다 */
+	MEMBER_ROLE_SELF_CHANGE_DENIED("MEMBER006", HttpStatus.FORBIDDEN,
+		"본인의 등급은 변경할 수 없습니다."),
+	/** 탈퇴한 회원은 등급을 바꿔도 의미가 없다 */
+	MEMBER_ALREADY_DELETED("MEMBER007", HttpStatus.CONFLICT,
+		"탈퇴한 회원의 등급은 변경할 수 없습니다.");
 
 	private final String code;
 	private final HttpStatus status;
