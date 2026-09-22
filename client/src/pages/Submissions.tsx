@@ -143,7 +143,9 @@ export function SubmissionFormPage() {
       <PageTitle
         eyebrow="SHARE A LITTLE JOY"
         title={
-          submissionId ? "행사 제보 수정" : "당신의 제보가 새로운 탈출의 시작이에요"
+          submissionId
+            ? "행사 제보 수정"
+            : "당신의 제보가 새로운 탈출의 시작이에요"
         }
         description="알고 있는 행사 정보를 이웃과 공유해 주세요."
       />
@@ -188,7 +190,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
   const navigate = useNavigate();
   const current = existing?.submission;
   const [form, setForm] = useState<SubmissionInput>(() => ({
-    name: "",
+    title: "",
     category: "",
     festivalContent: "",
     region: "",
@@ -207,7 +209,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
           Object.entries(current.festival).map(([k, v]) => [k, v ?? ""]),
         )
       : {}),
-    ...(current ? { name: current.festival.title } : {}),
+    ...(current ? { title: current.festival.title } : {}),
   }));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -219,7 +221,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
     if (busy) return;
     setError("");
     const requiredFields = {
-      name: "행사 이름",
+      title: "행사 이름",
       category: "행사 종류",
       region: "지역",
       beginDe: "시작 일시",
@@ -243,7 +245,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
     setBusy(true);
     try {
       const payload: SubmissionInput = {
-        name: form.name.trim(),
+        title: form.title.trim(),
         category: form.category.trim(),
         festivalContent: form.festivalContent?.trim(),
         region: form.region,
@@ -272,9 +274,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
   return (
     <div className="form-layout">
       <form className="editor-form" onSubmit={submit}>
-        <p className="muted">
-          * 표시된 항목은 필수입니다.
-        </p>
+        <p className="muted">* 표시된 항목은 필수입니다.</p>
         <section className="form-section">
           <div className="form-section-title">
             <span>01</span>
@@ -285,8 +285,8 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             <Field label="행사 이름" required wide>
               <input
                 required
-                value={form.name}
-                onChange={(e) => change("name", e.target.value)}
+                value={form.title}
+                onChange={(e) => change("title", e.target.value)}
                 placeholder="행사 이름을 알려주세요"
               />
             </Field>

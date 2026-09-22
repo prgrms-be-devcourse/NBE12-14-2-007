@@ -22,7 +22,7 @@ public class FestivalSubmissionRequest {
 
             @NotBlank(message = "행사 이름은 필수입니다.")
             @Schema(description = "행사 이름", example = "성수 독립 플리마켓")
-            String name,
+            String title,
 
             @NotBlank(message = "제보 행사 카테고리는 필수입니다.")
             @Size(max = 50, message = "제보 행사 카테고리는 50자 이하여야 합니다.")

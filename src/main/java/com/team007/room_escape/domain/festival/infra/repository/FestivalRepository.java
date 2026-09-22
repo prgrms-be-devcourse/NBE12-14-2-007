@@ -80,4 +80,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 			Long festivalId,
 			ProviderType providerType
 	);
+
+	Optional<Festival> findByIdAndDeletedAtIsNull(Long festivalId);
 }

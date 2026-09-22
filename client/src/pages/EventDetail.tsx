@@ -2,11 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
-  ArrowUpRight,
   CalendarDays,
   Check,
   Clock3,
-  ExternalLink,
   Flag,
   Landmark,
   MapPin,
@@ -18,7 +16,14 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useApp, useLoad } from "../lib/context";
-import { errorText, eventState, period, regions, safeUrl } from "../lib/format";
+import {
+  errorText,
+  eventState,
+  imageUrl,
+  period,
+  regions,
+  safeUrl,
+} from "../lib/format";
 import type { EventView } from "../lib/types";
 import {
   Badge,
@@ -28,13 +33,12 @@ import {
   Loading,
   LoginRequired,
   Modal,
-  Photo,
 } from "../components/ui";
 import { FestivalPosts } from "./Reviews";
 
 export function EventDetailPage() {
   const { eventId, submissionId } = useParams();
-  const { mode, member, authLoading } = useApp();
+  const { member, authLoading } = useApp();
   if (submissionId)
     return (
       <div className="container page-space">
@@ -49,22 +53,11 @@ export function EventDetailPage() {
     );
   return (
     <div className="container page-space">
-      {authLoading ? (
-        <Loading />
-      ) : mode === "api" && !member ? (
-        <LoginRequired />
-      ) : mode === "api" ? (
-        <Empty
-          title="행사 상세 조회를 준비하고 있어요"
-          description="디자인 미리보기에서 행사 정보를 확인할 수 있어요."
-        />
-      ) : (
-        <PublicEventLoader key={eventId} id={Number(eventId)} />
-      )}
+      <EventLoader key={eventId} id={Number(eventId)} />
     </div>
   );
 }
-function PublicEventLoader({ id }: { id: number }) {
+function EventLoader({ id }: { id: number }) {
   const { api } = useApp();
   const { data, loading, error, reload } = useLoad(
     () => api.event(id),
@@ -111,6 +104,8 @@ function EventDetail({ event }: { event: EventView }) {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
+  const heroUrl = imageUrl(event.imgUrl);
+  const [heroVisible, setHeroVisible] = useState(Boolean(heroUrl));
   const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
   async function share() {
     try {
@@ -144,21 +139,18 @@ function EventDetail({ event }: { event: EventView }) {
           )}
         </div>
       </div>
-      <div className="detail-hero">
-        <Photo src={event.imgUrl} alt={event.title} />
-        <div className="detail-hero-overlay" />
-        <div className="detail-hero-copy">
-          <span>
-            {event.source === "PUBLIC"
-              ? "CULTURE NEAR YOU"
-              : "GOOD THINGS, TOGETHER"}
-          </span>
-          <p>일상 밖, 새로운 즐거움을 만나는 시간.</p>
+      {heroUrl && heroVisible && (
+        <div className="detail-hero">
+          <img
+            src={heroUrl}
+            alt={event.title}
+            onError={() => setHeroVisible(false)}
+          />
+          {event.preview && (
+            <span className="photo-example">미리보기 예시 이미지</span>
+          )}
         </div>
-        {event.preview && (
-          <span className="photo-example">미리보기 예시 이미지</span>
-        )}
-      </div>
+      )}
       <div className="detail-layout">
         <div className="detail-main">
           <div className="detail-title">
@@ -215,15 +207,69 @@ function EventDetail({ event }: { event: EventView }) {
           >
             {tab === "about" ? (
               <>
+                <section className="detail-section detail-link-section">
+                  {externalUrl ? (
+                    <a
+                      className="btn primary detail-primary-link"
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span className="door-link-icon" aria-hidden="true">
+                        <span className="door-frame">
+                          <span className="door-light" />
+                          <span className="door-panel door-panel-left">
+                            <span className="door-knob door-knob-left" />
+                          </span>
+                          <span className="door-panel door-panel-right">
+                            <span className="door-knob door-knob-right" />
+                          </span>
+                        </span>
+                      </span>
+                      행사 안내 페이지 보기
+                    </a>
+                  ) : (
+                    <p className="aside-note">
+                      등록된 행사 참고 링크가 없어요.
+                    </p>
+                  )}
+                </section>
                 <section className="detail-section">
-                  <h2>이런 즐거움이 기다려요</h2>
+                  <h2>요약 정보</h2>
+                  <div className="detail-summary">
+                    <div>
+                      <CalendarDays size={20} />
+                      <span>
+                        <small>일정</small>
+                        {period(event.beginDe, event.endDe)}
+                      </span>
+                    </div>
+                    <div>
+                      <MapPin size={20} />
+                      <span>
+                        <small>장소</small>
+                        {event.regionDetail ||
+                          regions[event.region] ||
+                          "장소 안내 확인"}
+                      </span>
+                    </div>
+                    <div>
+                      <Ticket size={20} />
+                      <span>
+                        <small>참가 비용</small>
+                        {event.partcptExpnInfo || "별도 안내 없음"}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+                <section className="detail-section detail-description">
                   <p className="prose">
                     {event.festivalContent ||
                       "아직 등록된 상세 소개가 없어요. 행사 참고 링크에서 자세한 내용을 확인해 주세요."}
                   </p>
                 </section>
                 <section className="detail-section">
-                  <h2>방문 전에 확인해 주세요</h2>
+                  <h2>상세 정보</h2>
                   <dl className="event-info">
                     <div>
                       <dt>
@@ -304,60 +350,6 @@ function EventDetail({ event }: { event: EventView }) {
               <FestivalPosts festivalId={event.festivalId} />
             )}
           </div>
-        </div>
-        <aside className="detail-aside">
-          <div className="visit-card">
-            <span className="eyebrow">PLAN YOUR DAY</span>
-            <h3>즐거운 하루를 준비해요</h3>
-            <div>
-              <CalendarDays size={18} />
-              <span>
-                <small>언제</small>
-                {period(event.beginDe, event.endDe)}
-              </span>
-            </div>
-            <div>
-              <MapPin size={18} />
-              <span>
-                <small>어디서</small>
-                {event.regionDetail ||
-                  regions[event.region] ||
-                  "장소 안내 확인"}
-              </span>
-            </div>
-            <div>
-              <Ticket size={18} />
-              <span>
-                <small>참가 비용</small>
-                {event.partcptExpnInfo || "별도 안내 없음"}
-              </span>
-            </div>
-            {externalUrl ? (
-              <a
-                className="btn primary full-width"
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                행사 안내 확인하기
-                <ExternalLink size={16} />
-              </a>
-            ) : (
-              <p className="aside-note">등록된 행사 참고 링크가 없어요.</p>
-            )}
-            <button
-              className="btn secondary full-width"
-              onClick={() => {
-                setTab("reviews");
-                document
-                  .querySelector(".detail-tabs")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            >
-              다녀온 이야기 보기
-              <ArrowUpRight size={17} />
-            </button>
-          </div>
           <Link
             className="report-link"
             to={`/mypage?tab=inquiries&report=${encodeURIComponent(`행사 정보 문의: ${event.title}\n행사 주소: ${window.location.href}`)}`}
@@ -373,7 +365,7 @@ function EventDetail({ event }: { event: EventView }) {
               <Trash2 size={14} />내 제보 삭제
             </button>
           )}
-        </aside>
+        </div>
       </div>
       {deleteOpen && (
         <Modal

@@ -20,6 +20,7 @@ import type {
   SyncResult,
   Role,
   EventView,
+  FestivalDetailItem,
   FestivalSearchInput,
   FestivalSearchItem,
 } from "./types";
@@ -200,6 +201,16 @@ function toEventView(item: FestivalSearchItem): EventView {
   };
 }
 
+function toDetailEvent(item: FestivalDetailItem): EventView {
+  return {
+    ...item,
+    source: item.providerType,
+    manager: null,
+    regionDetail: item.regionDetail || "",
+    writngDe: null,
+  };
+}
+
 export function createApi(mode: Mode) {
   const demo = mode === "preview";
   return {
@@ -299,15 +310,18 @@ export function createApi(mode: Mode) {
       return transport("/members/me/submissions");
     },
     async event(festivalId: number): Promise<EventView> {
-      if (!demo) {
-        throw new ApiError("행사 상세 조회 기능을 준비하고 있어요.");
+      if (demo) {
+        const event = [
+          ...demoEvents.filter((e) => e.source === "PUBLIC"),
+          ...previewSubmittedEvents(),
+        ].find((e) => e.festivalId === festivalId);
+        if (!event) throw new ApiError("행사를 찾을 수 없어요.", 404);
+        return event;
       }
-      const event = [
-        ...demoEvents.filter((e) => e.source === "PUBLIC"),
-        ...previewSubmittedEvents(),
-      ].find((e) => e.festivalId === festivalId);
-      if (!event) throw new ApiError("행사를 찾을 수 없어요.", 404);
-      return event;
+      const result = await transport<FestivalDetailItem>(
+        `/festivals/${encodeURIComponent(String(festivalId))}`,
+      );
+      return toDetailEvent(result);
     },
     async submission(submissionId: string) {
       return transport<SubmissionDetail>(

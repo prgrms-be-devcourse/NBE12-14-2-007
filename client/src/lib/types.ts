@@ -63,8 +63,27 @@ export interface FestivalSearchItem {
   region: string;
   status: "OPEN" | "CLOSED";
 }
+export interface FestivalDetailItem {
+  festivalId: number;
+  providerType: "PUBLIC" | "MEMBER";
+  title: string;
+  category: string;
+  festivalContent: string | null;
+  instNm: string | null;
+  hostInstNm: string | null;
+  imgUrl: string | null;
+  referenceUrl: string | null;
+  beginDe: string;
+  endDe: string;
+  eventTmInfo: string | null;
+  partcptExpnInfo: string | null;
+  telnoInfo: string | null;
+  region: string;
+  regionDetail: string | null;
+  status: "OPEN" | "CLOSED";
+}
 export interface SubmissionInput {
-  name: string;
+  title: string;
   category: string;
   festivalContent?: string;
   region: string;
