@@ -6,6 +6,8 @@ import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class AdminInquiryRequest {
 
@@ -47,6 +49,28 @@ public class AdminInquiryRequest {
 
 		public boolean includeDeletedOrFalse() {
 			return Boolean.TRUE.equals(includeDeleted);
+		}
+	}
+
+	/**
+	 * 관리자 답변 등록·수정 요청.
+	 * 이미 답변이 있으면 덮어쓴다. 오타를 고칠 방법이 없으면 곤란하기 때문이다.
+	 */
+	@Schema(name = "AdminInquiryAnswerRequest", description = "관리자 문의 답변 요청")
+	public record Answer(
+
+		@NotBlank
+		@Size(max = 2000)
+		@Schema(
+			description = "답변 내용",
+			example = "확인 결과 중복 등록이 맞아 해당 제보를 숨김 처리했습니다."
+		)
+		String answer
+	) {
+
+		/** 앞뒤 공백은 저장하지 않는다. */
+		public String trimmed() {
+			return answer.trim();
 		}
 	}
 }
