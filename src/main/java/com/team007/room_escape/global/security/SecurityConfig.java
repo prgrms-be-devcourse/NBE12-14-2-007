@@ -53,6 +53,7 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/v1/images").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/festivals").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/festivals/{festivalId:\\d+}").permitAll()
+				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 				.requestMatchers(
 					"/v3/api-docs/**",
 					"/swagger-ui/**",

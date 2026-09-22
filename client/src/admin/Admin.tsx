@@ -25,6 +25,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
+import { AppProvider, useApp, useLoad } from "../lib/context";
+import { errorText } from "../lib/format";
 import type { Role } from "../lib/types";
 import {
   AdminProvider,
@@ -64,10 +66,14 @@ const stamp = (date: string) =>
   });
 
 export function AdminLayout() {
+  // AdminProvider가 실제 어드민 API를 부르려면 토큰과 로그인 정보가 필요하다.
+  // AppProvider가 마운트될 때 리프레시 쿠키로 액세스 토큰을 복구한다.
   return (
-    <AdminProvider>
-      <AdminShell />
-    </AdminProvider>
+    <AppProvider>
+      <AdminProvider>
+        <AdminShell />
+      </AdminProvider>
+    </AppProvider>
   );
 }
 function AdminShell() {
@@ -970,7 +976,7 @@ function ContentDialog({
 }
 
 export function AdminTickets() {
-  const { data } = useAdmin();
+  const { data, ticketsLoading, ticketsError, reloadTickets } = useAdmin();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [params, setParams] = useSearchParams();
@@ -1031,8 +1037,22 @@ export function AdminTickets() {
           </select>
         </Toolbar>
         <div className="adm-result-count">
-          검색 결과 <strong>{items.length}</strong>건
+          {ticketsLoading ? (
+            "불러오는 중…"
+          ) : (
+            <>
+              검색 결과 <strong>{items.length}</strong>건
+            </>
+          )}
         </div>
+        {ticketsError && (
+          <p className="adm-dialog-note" role="alert">
+            {ticketsError}{" "}
+            <button type="button" className="adm-row-button" onClick={reloadTickets}>
+              다시 시도
+            </button>
+          </p>
+        )}
         <Table
           label="문의·신고 목록"
           headers={[
@@ -1099,25 +1119,57 @@ function TicketDialog({
   onClose: () => void;
 }) {
   const { data, answer } = useAdmin();
+  const { api } = useApp();
+  // 목록 응답에는 본문과 답변이 없다. 상세를 열 때 따로 불러온다.
+  const detail = useLoad(() => api.adminInquiry(ticket.id), [ticket.id]);
   const [response, setResponse] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [editing, setEditing] = useState(false);
   const target =
     ticket.target &&
     data[ticket.target.kind].find((item) => item.id === ticket.target!.id);
+  // 상세를 받기 전에는 목록에서 알고 있는 값으로 그린다.
+  const status = detail.data?.status ?? ticket.status;
+  const answered = status === "ANSWERED";
   return (
     <Modal
       title={ticket.category === "REPORT" ? "신고 상세" : "문의 상세"}
       onClose={onClose}
     >
       <div className="adm-dialog-title">
-        <Badge tone={tone(ticket.status)}>
-          {ticket.status === "PENDING" ? "답변 대기" : "답변 완료"}
+        <Badge tone={tone(status)}>
+          {status === "PENDING" ? "답변 대기" : "답변 완료"}
         </Badge>
         <h3>{ticket.title}</h3>
         <p>
           {ticket.author} · {ticket.date} · {ticket.id}
         </p>
       </div>
-      <p className="adm-content-body">{ticket.content}</p>
+      {detail.loading ? (
+        <p className="adm-content-body">본문을 불러오는 중…</p>
+      ) : detail.error ? (
+        <p className="adm-content-body" role="alert">
+          {detail.error}
+        </p>
+      ) : (
+        <>
+          <p className="adm-content-body">{detail.data?.content}</p>
+          {detail.data?.img && (
+            <img
+              className="adm-content-image"
+              src={detail.data.img}
+              alt="문의 첨부 이미지"
+            />
+          )}
+          {detail.data?.deletedAt && (
+            <p className="adm-dialog-note">
+              작성자가 삭제한 문의입니다. 답변을 남겨도 작성자에게 보이지
+              않습니다.
+            </p>
+          )}
+        </>
+      )}
       {ticket.target && (
         <Link
           className="adm-target-link"
@@ -1133,20 +1185,42 @@ function TicketDialog({
           <ExternalLink size={16} />
         </Link>
       )}
-      {ticket.status === "ANSWERED" ? (
+      {answered && !editing ? (
         <div className="adm-saved-answer">
           <span>
             <Check size={16} />
             운영팀 답변
           </span>
-          <p>{ticket.answer}</p>
+          <p>{detail.data?.answer ?? ticket.answer}</p>
+          <div className="adm-dialog-actions">
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={detail.loading || !!detail.data?.deletedAt}
+              onClick={() => {
+                setResponse(detail.data?.answer ?? "");
+                setEditing(true);
+              }}
+            >
+              답변 수정
+            </button>
+          </div>
         </div>
       ) : (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            answer(ticket.id, response);
-            onClose();
+            setSaving(true);
+            setSaveError("");
+            try {
+              await answer(ticket.id, response);
+              onClose();
+            } catch (error) {
+              // 실패하면 닫지 않는다. 쓴 답변이 그대로 남아 있어야 다시 시도한다.
+              setSaveError(errorText(error));
+            } finally {
+              setSaving(false);
+            }
           }}
         >
           <Field label="운영팀 답변" required>
@@ -1165,12 +1239,24 @@ function TicketDialog({
               등록만으로 콘텐츠가 숨겨지지는 않습니다.
             </p>
           )}
+          {saveError && (
+            <p className="adm-dialog-note" role="alert">
+              {saveError}
+            </p>
+          )}
           <div className="adm-dialog-actions">
-            <button type="button" className="btn secondary" onClick={onClose}>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => (editing ? setEditing(false) : onClose())}
+            >
               취소
             </button>
-            <button className="btn primary" disabled={!response.trim()}>
-              답변 등록
+            <button
+              className="btn primary"
+              disabled={!response.trim() || saving || detail.loading}
+            >
+              {saving ? "등록 중…" : "답변 등록"}
             </button>
           </div>
         </form>

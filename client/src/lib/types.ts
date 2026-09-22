@@ -129,6 +129,56 @@ export interface Inquiry extends Omit<InquiryInput, "img"> {
   answer: string | null;
   createdAt: string;
 }
+/** 관리자 화면에 보이는 작성자 정보. 서버 MemberResponse.AdminInfo와 같은 모양. */
+export interface AdminMemberInfo {
+  id: string;
+  email: string;
+  nickname: string;
+  profileImg: string | null;
+  phone: string | null;
+  role: Role;
+  createdAt: string;
+  updatedAt: string;
+  /** 탈퇴 시각. 탈퇴하지 않았으면 null */
+  deletedAt: string | null;
+}
+/**
+ * 관리자 문의 목록의 한 줄. 서버 AdminInquiryResponse.ListItem과 같은 모양.
+ * 목록에는 본문(content)과 답변(answer)이 없다. 상세 조회 API가 따로 필요하다.
+ */
+export interface AdminInquiryListItem {
+  id: string;
+  category: "QUESTION" | "REPORT";
+  title: string;
+  /** 작성자 회원이 남아있지 않으면 null */
+  writer: AdminMemberInfo | null;
+  status: "PENDING" | "ANSWERED";
+  createdAt: string;
+  /** 삭제 시각. 삭제되지 않았으면 null */
+  deletedAt: string | null;
+}
+/**
+ * 관리자 문의 상세. 서버 AdminInquiryResponse.Detail과 같은 모양.
+ * 목록에 없는 본문·첨부·답변이 여기에 있다.
+ */
+export interface AdminInquiryDetail extends AdminInquiryListItem {
+  content: string;
+  /** 첨부 이미지 공개 URL. 없으면 null */
+  img: string | null;
+  /** 아직 답변 전이면 null */
+  answer: string | null;
+  updatedAt: string;
+}
+/** 관리자 문의 검색 조건. 비운 항목은 조건을 걸지 않는다. */
+export interface AdminInquiryQuery {
+  title?: string;
+  status?: "PENDING" | "ANSWERED";
+  category?: "QUESTION" | "REPORT";
+  includeDeleted?: boolean;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 export interface SignupInput {
   email: string;
   password: string;

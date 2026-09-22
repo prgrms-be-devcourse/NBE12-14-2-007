@@ -21,13 +21,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
+// @SQLRestriction 을 걸면 관리자가 삭제된 문의를 조회할 수 없어서 걸지 않는다.
+// 삭제 제외 조건은 repository 쿼리에서 직접 건다.
 @Entity
 @Table(name = "inquiry")
 @Getter
-@SQLRestriction("deleted_at is null")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor (access = AccessLevel.PRIVATE)
 @Builder 
@@ -73,6 +73,17 @@ public class Inquiry extends SoftDeletableEntity {
 	 */
 	public boolean isAnswered() {
 		return status == InquiryStatus.ANSWERED || (answer != null && !answer.isBlank());
+	}
+
+	/**
+	 * 관리자 답변을 단다. 답변과 상태를 항상 함께 바꾼다.
+	 * 둘 중 하나만 바뀌면 isAnswered()의 두 조건이 어긋나기 때문이다.
+	 *
+	 * 이미 답변이 있으면 덮어쓴다. 잘못 쓴 답변을 관리자가 고칠 수 있어야 한다.
+	 */
+	public void answer(String answer) {
+		this.answer = answer;
+		this.status = InquiryStatus.ANSWERED;
 	}
 
 	/**

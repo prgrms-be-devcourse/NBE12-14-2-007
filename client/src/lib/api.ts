@@ -12,6 +12,9 @@ import type {
   Comment,
   Inquiry,
   InquiryInput,
+  AdminInquiryListItem,
+  AdminInquiryDetail,
+  AdminInquiryQuery,
   EventView,
 } from "./types";
 import {
@@ -423,6 +426,47 @@ export function createApi(mode: Mode) {
       return transport<void>(
         `/inquiries/${encodeURIComponent(inquiryId)}`,
         "DELETE",
+      );
+    },
+    /**
+     * [ADMIN] 문의·신고 목록. 관리자 화면 전용이며 ROLE_ADMIN이 아니면 403이 온다.
+     *
+     * 예시 데이터 모드에서도 실제 서버를 부른다. 관리자 화면은 로그인한
+     * 관리자만 들어오므로 예시로 흉내 낼 이유가 없다.
+     */
+    async adminInquiries(query: AdminInquiryQuery = {}) {
+      const {
+        page = 0,
+        size = 20,
+        sort = "createdAt,desc",
+        ...filters
+      } = query;
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sort,
+      });
+      // 빈 문자열을 그대로 보내면 서버가 enum으로 변환하다 400을 낸다.
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined || value === "") continue;
+        params.set(key, String(value));
+      }
+      return transport<Page<AdminInquiryListItem>>(
+        `/admin/inquiries?${params}`,
+      );
+    },
+    /** [ADMIN] 문의 상세. 목록에 없는 본문·첨부·답변이 여기서 온다. */
+    async adminInquiry(inquiryId: string) {
+      return transport<AdminInquiryDetail>(
+        `/admin/inquiries/${encodeURIComponent(inquiryId)}`,
+      );
+    },
+    /** [ADMIN] 답변 등록. 이미 답변이 있으면 덮어쓴다. */
+    async answerInquiry(inquiryId: string, answer: string) {
+      return transport<AdminInquiryDetail>(
+        `/admin/inquiries/${encodeURIComponent(inquiryId)}/answer`,
+        "PATCH",
+        { answer },
       );
     },
     async upload(

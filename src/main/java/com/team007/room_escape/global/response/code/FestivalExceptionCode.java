@@ -21,7 +21,10 @@ public enum FestivalExceptionCode implements ExceptionCode {
     PUBLIC_API_PARSE_FAILED("FESTIVAL003", HttpStatus.INTERNAL_SERVER_ERROR, "공공 API 응답 파싱에 실패했습니다."),
 
     /** 행사 제보가 존재하지 않거나 로그인한 회원의 제보가 아닐 때 */
-    FESTIVAL_SUBMISSION_NOT_FOUND("FESTIVAL004", HttpStatus.NOT_FOUND, "요청하신 행사 제보를 찾을 수 없습니다.");
+    FESTIVAL_SUBMISSION_NOT_FOUND("FESTIVAL004", HttpStatus.NOT_FOUND, "요청하신 행사 제보를 찾을 수 없습니다."),
+
+    /** 이미 다른 동기화가 실행 중일 때 (버튼 연타 등) */
+    SYNC_ALREADY_RUNNING("FESTIVAL005", HttpStatus.CONFLICT, "이미 공공 행사 동기화가 진행 중입니다.");
 
     private final String code;
     private final HttpStatus status;

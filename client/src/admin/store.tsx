@@ -2,10 +2,13 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
-import type { Role } from "../lib/types";
+import { useApp } from "../lib/context";
+import { dateText, errorText } from "../lib/format";
+import type { AdminInquiryListItem, Role } from "../lib/types";
 
 export const roleNames: Record<Role, string> = {
   ROLE_UNVERIFIED: "미인증",
@@ -58,18 +61,22 @@ export interface Activity {
   target: string;
   reason: string;
 }
+/** 아직 API가 없어 브라우저에만 두는 예시 데이터. 문의(tickets)는 여기 없다. */
 interface AdminState {
-  version: 1;
+  version: 2;
   members: AdminMember[];
   events: ContentItem[];
   reviews: ContentItem[];
-  tickets: Ticket[];
   activity: Activity[];
 }
-const storageKey = "eventus.admin.mock.v1";
+/** 화면이 받아 쓰는 데이터. tickets만 실제 서버에서 온다. */
+interface AdminData extends AdminState {
+  tickets: Ticket[];
+}
+const storageKey = "eventus.admin.mock.v2";
 function seed(): AdminState {
   return {
-    version: 1,
+    version: 2,
     members: [
       {
         id: "M-1008",
@@ -271,74 +278,6 @@ function seed(): AdminState {
         reason: "이용자 비방 표현 확인",
       },
     ],
-    tickets: [
-      {
-        id: "Q-4005",
-        category: "REPORT",
-        title: "무료 행사에서 개인 계좌 입금을 요구해요",
-        author: "꽃길따라",
-        date: "2026-09-21",
-        status: "PENDING",
-        answer: "",
-        content:
-          "무료 행사라고 되어 있는데 주최자가 개인 계좌로 예약금을 보내라고 안내합니다. 행사 정보를 확인해 주세요.",
-        target: {
-          kind: "events",
-          id: "E-2004",
-          title: "선입금 필수 무료 축제",
-        },
-      },
-      {
-        id: "Q-4004",
-        category: "REPORT",
-        title: "후기에 광고가 반복해서 올라옵니다",
-        author: "주말의 기록",
-        date: "2026-09-21",
-        status: "PENDING",
-        answer: "",
-        content:
-          "행사와 상관없는 광고 링크가 같은 작성자의 후기에 반복됩니다. 검토 부탁드립니다.",
-        target: {
-          kind: "reviews",
-          id: "P-3004",
-          title: "광고 링크가 반복되는 후기",
-        },
-      },
-      {
-        id: "Q-4003",
-        category: "QUESTION",
-        title: "제보한 행사 정보를 수정하고 싶어요",
-        author: "동네탐험가",
-        date: "2026-09-20",
-        status: "PENDING",
-        answer: "",
-        content:
-          "행사 장소가 변경되었습니다. 제가 제보한 행사 정보를 어디에서 수정할 수 있나요?",
-      },
-      {
-        id: "Q-4002",
-        category: "QUESTION",
-        title: "회원 등급은 어디에서 확인하나요?",
-        author: "가을바람",
-        date: "2026-09-19",
-        status: "ANSWERED",
-        answer:
-          "마이페이지의 내 정보에서 현재 회원 등급을 확인하실 수 있습니다.",
-        content: "현재 제 회원 등급을 알고 싶어요.",
-      },
-      {
-        id: "Q-4001",
-        category: "REPORT",
-        title: "같은 행사가 두 번 등록되어 있어요",
-        author: "문화산책",
-        date: "2026-09-18",
-        status: "ANSWERED",
-        answer:
-          "중복 등록을 확인하여 해당 제보를 숨김 처리했습니다. 제보해 주셔서 감사합니다.",
-        content: "동일한 장소와 일정의 꽃 축제가 중복으로 보입니다.",
-        target: { kind: "events", id: "E-2002", title: "중복 등록된 꽃 축제" },
-      },
-    ],
     activity: [
       {
         id: "A-3",
@@ -371,8 +310,8 @@ function read(): AdminState {
   try {
     const data = JSON.parse(sessionStorage.getItem(storageKey) || "null");
     if (
-      data?.version === 1 &&
-      ["members", "events", "reviews", "tickets", "activity"].every((k) =>
+      data?.version === 2 &&
+      ["members", "events", "reviews", "activity"].every((k) =>
         Array.isArray(data[k]),
       )
     ) {
@@ -391,8 +330,23 @@ function read(): AdminState {
   }
   return seed();
 }
+/** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
+function toTicket(item: AdminInquiryListItem): Ticket {
+  return {
+    id: item.id,
+    category: item.category,
+    title: item.title,
+    // 탈퇴하면 writer가 null로 내려온다.
+    author: item.writer?.nickname ?? "탈퇴한 사용자",
+    date: dateText(item.createdAt),
+    // 목록 응답에는 본문과 답변이 없다. 상세를 열 때 채워 넣는다.
+    content: "",
+    status: item.status,
+    answer: "",
+  };
+}
 interface AdminContextValue {
-  data: AdminState;
+  data: AdminData;
   changeRole: (id: string, role: Role, reason: string) => void;
   moderate: (
     kind: "events" | "reviews",
@@ -400,14 +354,55 @@ interface AdminContextValue {
     status: Visibility,
     reason: string,
   ) => void;
-  answer: (id: string, answer: string) => void;
+  /** 답변 등록. 서버에 저장하므로 실패할 수 있다. */
+  answer: (id: string, answer: string) => Promise<void>;
+  /** 문의 목록을 서버에서 다시 불러온다. */
+  reloadTickets: () => void;
+  ticketsLoading: boolean;
+  ticketsError: string;
   reset: () => void;
 }
 const Context = createContext<AdminContextValue | null>(null);
 export function AdminProvider({ children }: { children: ReactNode }) {
+  // 아래 changeRole 등에서 member를 지역 변수로 쓰고 있어 이름을 구분한다.
+  const { api, authLoading, member: signedInAdmin } = useApp();
   const [data, setData] = useState(read);
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState(false);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [ticketsError, setTicketsError] = useState("");
+  const [ticketsRevision, setTicketsRevision] = useState(0);
+  // 토큰 복구가 끝나기 전에 부르면 첫 요청이 401로 한 번 헛돈다.
+  const ready = !authLoading && signedInAdmin?.role === "ROLE_ADMIN";
+  useEffect(() => {
+    if (!ready) {
+      // 관리자가 아니면 목록을 부를 이유가 없다. 로딩 표시도 끝내야 한다.
+      setTickets([]);
+      setTicketsLoading(authLoading);
+      return;
+    }
+    let active = true;
+    setTicketsLoading(true);
+    setTicketsError("");
+    api
+      // 검색·필터를 화면에서 하고 있어서 한 번에 받아 두고 거른다.
+      // 건수가 늘면 서버 검색 파라미터(title/status/category)로 옮겨야 한다.
+      // size는 서버 max-page-size(50)가 상한이다.
+      .adminInquiries({ size: 50 })
+      .then((page) => {
+        if (active) setTickets(page.content.map(toTicket));
+      })
+      .catch((error) => {
+        if (active) setTicketsError(errorText(error));
+      })
+      .finally(() => {
+        if (active) setTicketsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, ready, authLoading, ticketsRevision]);
   useEffect(() => {
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(data));
@@ -421,25 +416,37 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => setMessage(""), 4000);
     return () => clearTimeout(timer);
   }, [message]);
-  function commit(
-    update: (current: AdminState) => AdminState,
-    entry: Omit<Activity, "id" | "at">,
-  ) {
+  /** 운영 기록에 한 줄 남긴다. 감사 로그 API가 없어 탭 안에서만 유지된다. */
+  function record(entry: Omit<Activity, "id" | "at">) {
     const log = {
       ...entry,
       id: crypto.randomUUID(),
       at: new Date().toISOString(),
     };
     setData((current) => ({
-      ...update(current),
+      ...current,
       activity: [log, ...current.activity],
     }));
+  }
+  function commit(
+    update: (current: AdminState) => AdminState,
+    entry: Omit<Activity, "id" | "at">,
+  ) {
+    setData(update);
+    record(entry);
     setMessage("Mock 데이터에 반영했습니다.");
   }
+  // 매 렌더마다 새 객체를 만들면 data를 의존성에 넣은 쪽이 계속 다시 돈다.
+  const value = useMemo(() => ({ ...data, tickets }), [data, tickets]);
   return (
     <Context.Provider
       value={{
-        data,
+        data: value,
+        ticketsLoading,
+        ticketsError,
+        reloadTickets() {
+          setTicketsRevision((current) => current + 1);
+        },
         changeRole(id, role, reason) {
           const member = data.members.find((item) => item.id === id);
           if (
@@ -491,25 +498,26 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             },
           );
         },
-        answer(id, answer) {
-          const ticket = data.tickets.find((item) => item.id === id);
-          if (!ticket || ticket.status === "ANSWERED" || !answer.trim()) return;
-          commit(
-            (current) => ({
-              ...current,
-              tickets: current.tickets.map((item) =>
-                item.id === id
-                  ? { ...item, status: "ANSWERED", answer: answer.trim() }
-                  : item,
-              ),
-            }),
-            {
-              area: "문의·신고",
-              action: "답변 등록",
-              target: ticket.id,
-              reason: ticket.title,
-            },
+        async answer(id, text) {
+          const ticket = tickets.find((item) => item.id === id);
+          if (!ticket || !text.trim()) return;
+          const saved = await api.answerInquiry(id, text.trim());
+          // 서버가 돌려준 값으로 갈아끼운다. 낙관적 갱신을 하면
+          // 저장에 실패했을 때 화면만 답변 완료로 남는다.
+          setTickets((current) =>
+            current.map((item) =>
+              item.id === id
+                ? { ...item, status: saved.status, answer: saved.answer ?? "" }
+                : item,
+            ),
           );
+          record({
+            area: "문의·신고",
+            action: "답변 등록",
+            target: ticket.id,
+            reason: ticket.title,
+          });
+          setMessage("답변을 등록했습니다.");
         },
         reset() {
           setData(seed());
