@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -40,9 +41,9 @@ public class PostController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "후기 다건 조회", description = "후기 목록을 조회합니다.")
+	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기 목록을 조회합니다.")
 	@GetMapping("/festivals/{id}/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPosts(
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPostsByFestival(
 			@PathVariable Long id,
 			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page) {
