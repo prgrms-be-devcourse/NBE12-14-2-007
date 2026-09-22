@@ -263,7 +263,7 @@ class FestivalServiceTest {
 	void returnsClosedAndSavedFestivals() {
 		FestivalApiRow row1 = rowInCurrentYear("0101", "29991231");
 		FestivalApiRow row2 = rowInCurrentYear("0102", "29991231");
-		when(festivalRepository.findExpiredOpen(any(LocalDateTime.class)))
+		when(festivalRepository.findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), any(LocalDateTime.class)))
 			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회"), expiredOpenFestival(4L, "지난 전시회")));
 		when(festivalPublicApiClient.fetch(1, 1000))
 			.thenReturn(new FestivalApiResult(2, List.of(row1, row2)));
@@ -295,7 +295,7 @@ class FestivalServiceTest {
 		ArgumentCaptor<LocalDateTime> lookupNow = ArgumentCaptor.forClass(LocalDateTime.class);
 		ArgumentCaptor<LocalDateTime> updateNow = ArgumentCaptor.forClass(LocalDateTime.class);
 		InOrder inOrder = Mockito.inOrder(festivalRepository);
-		inOrder.verify(festivalRepository).findExpiredOpen(lookupNow.capture());
+		inOrder.verify(festivalRepository).findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), lookupNow.capture());
 		inOrder.verify(festivalRepository).closeExpiredFestivals(updateNow.capture());
 		assertThat(updateNow.getValue()).isEqualTo(lookupNow.getValue());
 	}
@@ -307,7 +307,7 @@ class FestivalServiceTest {
 	@DisplayName("새 행사가 없으면 저장 목록은 비고 종료 처리 목록만 담긴다")
 	void returnsEmptySavedWhenNoNewFestivals() {
 		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
-		when(festivalRepository.findExpiredOpen(any(LocalDateTime.class)))
+		when(festivalRepository.findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), any(LocalDateTime.class)))
 			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회")));
 		when(festivalPublicApiClient.fetch(1, 1000))
 			.thenReturn(new FestivalApiResult(1, List.of(existing)));

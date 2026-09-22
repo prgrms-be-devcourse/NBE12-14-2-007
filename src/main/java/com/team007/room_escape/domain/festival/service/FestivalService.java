@@ -142,7 +142,7 @@ public class FestivalService {
 	private List<FestivalResponse.SyncedFestival> closeExpiredFestivals() {
 		LocalDateTime now = LocalDateTime.now();
 		// 일괄 UPDATE는 어떤 행이 바뀌었는지 돌려주지 않아서, 같은 시각(now)으로 갱신 전에 목록을 먼저 뽑아둔다
-		List<FestivalResponse.SyncedFestival> closed = festivalRepository.findExpiredOpen(now).stream()
+		List<FestivalResponse.SyncedFestival> closed = festivalRepository.findByStatusAndEndDeBefore(FestivalStatus.OPEN, now).stream()
 			.map(FestivalResponse.SyncedFestival::from)
 			.toList();
 		festivalRepository.closeExpiredFestivals(now);
