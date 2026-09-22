@@ -4,13 +4,18 @@ import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,6 +32,15 @@ public class FestivalPublicApiClient {
     /** 30초 안에 응답 X -> 실패처리 */
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
+    /**
+     * 경기도 공공 API 앞단의 보안 장비가 브라우저가 아닌 요청을 막는다.
+     * User-Agent 를 안 보내면 HTTP 200 에 "보안 정책에 의해 차단 되었습니다" HTML 이 돌아온다.
+     * (Java 기본값인 "Java/25" 도 차단된다)
+     */
+    private static final String USER_AGENT =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            + "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
     private final RestClient restClient;
     private final FestivalPublicApiProperties properties;
     private final ObjectMapper objectMapper;
@@ -38,7 +52,29 @@ public class FestivalPublicApiClient {
         /** RestClient는 타임아웃 설정용 requestFactory를 먼저 조립해야 해서 필드 초기화가 아니라 생성자 안에서 만든다 **/
         this.restClient = RestClient.builder()
             .requestFactory(timeoutRequestFactory())
+            .defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT)
+            .configureMessageConverters(converters ->
+                converters.withJsonConverter(htmlTolerantJsonConverter()))
             .build();
+    }
+
+    /**
+     * 이 API는 정상 응답도 Content-Type 을 text/html 로 내려준다. 본문은 JSON 인데 헤더만 틀린 것이다.
+     * 기본 Jackson 컨버터는 application/json 만 처리해서
+     * "no suitable HttpMessageConverter found ... content type [text/html]" 로 실패한다.
+     * 그래서 text/html 도 JSON 으로 읽는 컨버터로 갈아 끼운다.
+     *
+     * 주입받은 objectMapper 대신 기본 생성자를 쓰는 이유: 이 컨버터는 JsonMapper 를 받는데
+     * 여기서 하는 일은 응답을 JsonNode 트리로 읽는 것뿐이라 매퍼 설정이 결과에 영향을 주지 않는다.
+     * 실제 POJO 변환은 아래 parse() 에서 주입받은 objectMapper 로 한다.
+     */
+    private JacksonJsonHttpMessageConverter htmlTolerantJsonConverter() {
+        JacksonJsonHttpMessageConverter converter = new JacksonJsonHttpMessageConverter();
+        converter.setSupportedMediaTypes(List.of(
+            MediaType.APPLICATION_JSON,
+            MediaType.TEXT_HTML
+        ));
+        return converter;
     }
 
     /**
@@ -59,15 +95,7 @@ public class FestivalPublicApiClient {
         JsonNode body;
         try {
             body = restClient.get()
-                /** uri: 실제로 요청을 보낼 주소(URL). base path + 쿼리 파라미터(KEY, Type, pIndex, pSize)를 조립해서
-                 "https://openapi.gg.go.kr/GGCULTUREVENTSTUS?KEY=...&Type=json&pIndex=1&pSize=100" 형태로 완성한다 **/
-                .uri(uriBuilder -> uriBuilder
-                    .path(properties.url())
-                    .queryParam("KEY", properties.serviceKey())
-                    .queryParam("Type", "json")
-                    .queryParam("pIndex", pIndex)
-                    .queryParam("pSize", pSize)
-                    .build())
+                .uri(buildUri(pIndex, pSize))
                 .retrieve()
                 .body(JsonNode.class);
         }  catch (Exception e) {
@@ -75,6 +103,26 @@ public class FestivalPublicApiClient {
             throw new BusinessException(FestivalExceptionCode.PUBLIC_API_CALL_FAILED);
         }
         return parse(body);
+    }
+
+    /**
+     * 요청 주소를 조립한다.
+     * "https://openapi.gg.go.kr/GGCULTUREVENTSTUS?KEY=...&Type=json&pIndex=1&pSize=100"
+     *
+     * properties.url()은 스킴과 호스트까지 들어 있는 전체 주소다.
+     * 이걸 uriBuilder.path()에 넣으면 경로 조각으로 취급돼 "//"가 "/"로 줄어든다.
+     * 그러면 "https:/openapi.gg.go.kr/..."가 되어 호스트가 사라지고
+     * "protocol = https host = null"로 연결 자체가 실패한다.
+     * 그래서 전체 주소를 fromUriString으로 파싱한 뒤 쿼리만 덧붙인다.
+     */
+    private URI buildUri(int pIndex, int pSize) {
+        return UriComponentsBuilder.fromUriString(properties.url())
+            .queryParam("KEY", properties.serviceKey())
+            .queryParam("Type", "json")
+            .queryParam("pIndex", pIndex)
+            .queryParam("pSize", pSize)
+            .build()
+            .toUri();
     }
 
     /** 응답이 {"GGCULTUREVENTSTUS": [ {head: [...]}, {row: [...]} ]} 형태
