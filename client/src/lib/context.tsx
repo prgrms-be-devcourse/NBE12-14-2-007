@@ -10,10 +10,14 @@ import { createApi, setCurrentMember, type Api } from "./api";
 import type { Member, Mode } from "./types";
 
 /**
- * 로그인·마이페이지는 항상 실제 백엔드를 사용한다.
- * 아직 API가 없는 행사 탐색·후기 화면만 예시 데이터로 채우기 위해 남겨둔 값.
+ * API 모드는 실제 백엔드를 사용하고, preview 모드는 아직 API 연결이 끝나지 않은
+ * 화면을 예시 데이터로 확인하기 위해 사용한다.
  */
-const CONTENT_MODE: Mode = "preview";
+const CONTENT_MODE: Mode =
+  import.meta.env.VITE_CONTENT_MODE === "api" ||
+  sessionStorage.getItem("eventus.mode") === "api"
+    ? "api"
+    : "preview";
 
 interface AppContextValue {
   mode: Mode;

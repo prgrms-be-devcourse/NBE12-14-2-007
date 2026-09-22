@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
-  ArrowRight,
   CalendarDays,
   Check,
   ChevronRight,
@@ -11,7 +10,6 @@ import {
   Plus,
   Search,
   Send,
-  UsersRound,
 } from "lucide-react";
 import { useApp, useLoad } from "../lib/context";
 import { dateText, errorText, period, regions } from "../lib/format";
@@ -19,127 +17,17 @@ import type { SubmissionInput, SubmissionDetail } from "../lib/types";
 import {
   Badge,
   Empty,
-  EventCard,
   ErrorState,
   Field,
   FormError,
   Loading,
   LoginRequired,
   PageTitle,
-  Pagination,
   Photo,
   SubmitButton,
   Upload,
 } from "../components/ui";
 
-export function Submissions() {
-  const { member, authLoading, mode } = useApp();
-  return (
-    <div className="container page-space">
-      <PageTitle
-        eyebrow="GOOD THINGS, TOGETHER"
-        title="행사 제보"
-        description="이웃들이 전한 행사를 둘러보고, 알고 있는 소식도 함께 나눠요."
-        action={
-          <Link className="btn primary" to="/submissions/new">
-            <Plus size={17} />
-            행사 제보하기
-          </Link>
-        }
-      />
-      <div className="submission-intro">
-        <span className="route-icon sage">
-          <UsersRound size={31} />
-        </span>
-        <div>
-          <h3>작은 소식이 누군가에겐 특별한 하루가 돼요.</h3>
-          <p>
-            동네 플리마켓부터 이색 체험까지, 함께 나누고 싶은 행사를 알려주세요.
-          </p>
-        </div>
-        <span className="intro-flower" aria-hidden="true">
-          ✳
-        </span>
-      </div>
-      {authLoading ? (
-        <Loading />
-      ) : !member ? (
-        <LoginRequired />
-      ) : mode === "api" ? (
-        <Empty
-          title="이웃의 행사 제보 조회를 준비하고 있어요"
-          description="디자인 미리보기에서 이웃들이 전한 행사를 둘러볼 수 있어요."
-        />
-      ) : (
-        <CommunitySubmissions />
-      )}
-    </div>
-  );
-}
-function CommunitySubmissions() {
-  const { api } = useApp();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [page, setPage] = useState(0);
-  const { data, loading, error, reload } = useLoad(
-    () => api.submittedEvents(page, query, status),
-    [api, page, query, status],
-  );
-  return (
-    <>
-      <div className="section-heading">
-        <h2>
-          이웃이 전한 행사{" "}
-          <span className="count">{data?.totalElements ?? 0}</span>
-        </h2>
-        <select
-          className="plain-select"
-          aria-label="제보 행사 상태 필터"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(0);
-          }}
-        >
-          <option value="ALL">모든 일정</option>
-          <option value="OPEN">종료 전</option>
-          <option value="CLOSED">종료</option>
-        </select>
-      </div>
-      <div className="inline-search">
-        <Search size={18} />
-        <input
-          aria-label="제보된 행사 검색"
-          placeholder="이웃이 제보한 행사 검색"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(0);
-          }}
-        />
-      </div>
-      {loading ? (
-        <Loading cards />
-      ) : error ? (
-        <ErrorState message={error} retry={reload} />
-      ) : data?.content.length ? (
-        <>
-          <div className="event-grid">
-            {data.content.map((event) => (
-              <EventCard event={event} key={event.festivalId} />
-            ))}
-          </div>
-          <Pagination page={page} total={data.totalPages} onChange={setPage} />
-        </>
-      ) : (
-        <Empty
-          title="조건에 맞는 제보가 없어요"
-          description="다른 검색 조건으로 찾아보거나 새로운 행사를 제보해 주세요."
-        />
-      )}
-    </>
-  );
-}
 export function SubmissionList({ compact = false }: { compact?: boolean }) {
   const { api } = useApp();
   const { data, loading, error, reload } = useLoad(
@@ -247,15 +135,17 @@ export function SubmissionFormPage() {
     <div className="container page-space">
       <Link
         className="back-link"
-        to={submissionId ? `/submissions/${submissionId}` : "/submissions"}
+        to={submissionId ? `/submissions/${submissionId}` : "/explore"}
       >
         <ArrowLeft size={16} />
-        제보 {submissionId ? "상세" : "목록"}로
+        {submissionId ? "제보 상세로" : "행사 목록으로"}
       </Link>
       <PageTitle
         eyebrow="SHARE A LITTLE JOY"
-        title={submissionId ? "행사 제보 수정" : "새로운 즐거움을 알려주세요"}
-        description="정확한 행사 정보는 함께 즐길 수 있는 하루의 시작이에요."
+        title={
+          submissionId ? "행사 제보 수정" : "당신의 제보가 새로운 탈출의 시작이에요"
+        }
+        description="알고 있는 행사 정보를 이웃과 공유해 주세요."
       />
       {authLoading ? (
         <Loading />
@@ -298,16 +188,14 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
   const navigate = useNavigate();
   const current = existing?.submission;
   const [form, setForm] = useState<SubmissionInput>(() => ({
-    title: "",
-    category: "축제",
-    manager: "",
+    name: "",
+    category: "",
     festivalContent: "",
-    region: "GYEONGGI_SUWON",
+    region: "",
     regionDetail: "",
     beginDe: "",
     endDe: "",
     eventTmInfo: "",
-    submissionContent: "",
     instNm: "",
     referenceUrl: "",
     imgUrl: "",
@@ -319,7 +207,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
           Object.entries(current.festival).map(([k, v]) => [k, v ?? ""]),
         )
       : {}),
-    ...(current ? { submissionContent: current.submissionContent } : {}),
+    ...(current ? { name: current.festival.title } : {}),
   }));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -328,8 +216,23 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
     setForm((f) => ({ ...f, [name]: value }));
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setError("");
-    if (new Date(form.endDe) < new Date(form.beginDe)) {
+    const requiredFields = {
+      name: "행사 이름",
+      category: "행사 종류",
+      region: "지역",
+      beginDe: "시작 일시",
+      endDe: "종료 일시",
+      referenceUrl: "행사 참고 링크",
+    } as const;
+    for (const [key, label] of Object.entries(requiredFields)) {
+      if (!form[key as keyof typeof requiredFields].trim()) {
+        setError(`${label} 항목을 입력해 주세요.`);
+        return;
+      }
+    }
+    if (form.endDe < form.beginDe) {
       setError("종료 일시는 시작 일시보다 빠를 수 없어요.");
       return;
     }
@@ -340,19 +243,16 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
     setBusy(true);
     try {
       const payload: SubmissionInput = {
-        title: form.title.trim(),
+        name: form.name.trim(),
         category: form.category.trim(),
-        manager: form.manager.trim(),
-        festivalContent: form.festivalContent.trim(),
+        festivalContent: form.festivalContent?.trim(),
         region: form.region,
-        regionDetail: form.regionDetail.trim(),
-        beginDe:
-          form.beginDe.length === 16 ? `${form.beginDe}:00` : form.beginDe,
-        endDe: form.endDe.length === 16 ? `${form.endDe}:00` : form.endDe,
-        eventTmInfo: form.eventTmInfo.trim(),
-        submissionContent: form.submissionContent.trim(),
+        regionDetail: form.regionDetail?.trim(),
+        beginDe: `${form.beginDe.slice(0, 10)}T00:00:00`,
+        endDe: `${form.endDe.slice(0, 10)}T23:59:59`,
+        eventTmInfo: form.eventTmInfo?.trim(),
         instNm: form.instNm?.trim(),
-        referenceUrl: form.referenceUrl?.trim(),
+        referenceUrl: form.referenceUrl.trim(),
         imgUrl: form.imgUrl,
         partcptExpnInfo: form.partcptExpnInfo?.trim(),
         telnoInfo: form.telnoInfo?.trim(),
@@ -372,6 +272,9 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
   return (
     <div className="form-layout">
       <form className="editor-form" onSubmit={submit}>
+        <p className="muted">
+          * 표시된 항목은 필수입니다.
+        </p>
         <section className="form-section">
           <div className="form-section-title">
             <span>01</span>
@@ -382,35 +285,41 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             <Field label="행사 이름" required wide>
               <input
                 required
-                value={form.title}
-                onChange={(e) => change("title", e.target.value)}
+                value={form.name}
+                onChange={(e) => change("name", e.target.value)}
                 placeholder="행사 이름을 알려주세요"
               />
             </Field>
-            <Field label="행사 종류" required>
-              <input
-                list="event-categories"
-                required
-                maxLength={50}
-                value={form.category}
-                onChange={(e) => change("category", e.target.value)}
-              />
-              <datalist id="event-categories">
-                {["축제", "공연", "전시", "체험", "플리마켓", "교육"].map(
-                  (c) => (
-                    <option key={c} value={c} />
-                  ),
-                )}
-              </datalist>
-            </Field>
-            <Field label="행사 담당자" required>
-              <input
-                required
-                value={form.manager}
-                onChange={(e) => change("manager", e.target.value)}
-                placeholder="담당자 또는 운영팀"
-              />
-            </Field>
+            <div className="field wide">
+              <span>
+                행사 종류<b className="required">*</b>
+              </span>
+              <div
+                className="category-tabs"
+                role="group"
+                aria-label="행사 종류"
+              >
+                {[
+                  "축제",
+                  "공연",
+                  "전시",
+                  "체험",
+                  "플리마켓",
+                  "교육",
+                  "기타",
+                ].map((category) => (
+                  <button
+                    type="button"
+                    key={category}
+                    className={form.category === category ? "active" : ""}
+                    aria-pressed={form.category === category}
+                    onClick={() => change("category", category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Field label="주최 기관">
               <input
                 value={form.hostInstNm || ""}
@@ -425,11 +334,10 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 placeholder="행사를 운영하는 곳"
               />
             </Field>
-            <Field label="행사 소개" required wide>
+            <Field label="행사 소개" wide>
               <textarea
-                required
                 rows={6}
-                value={form.festivalContent}
+                value={form.festivalContent || ""}
                 onChange={(e) => change("festivalContent", e.target.value)}
                 placeholder="행사의 내용과 즐길 거리를 자세히 소개해 주세요."
               />
@@ -450,27 +358,28 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             <h2>언제, 어디서 열리나요?</h2>
           </div>
           <div className="form-grid">
-            <Field label="시작 일시" required>
+            <Field label="시작일" required>
               <input
                 required
-                type="datetime-local"
-                value={form.beginDe.slice(0, 16)}
+                type="date"
+                value={form.beginDe.slice(0, 10)}
                 onChange={(e) => change("beginDe", e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker?.()}
               />
             </Field>
-            <Field label="종료 일시" required>
+            <Field label="종료일" required>
               <input
                 required
-                type="datetime-local"
-                min={form.beginDe.slice(0, 16)}
-                value={form.endDe.slice(0, 16)}
+                type="date"
+                min={form.beginDe.slice(0, 10)}
+                value={form.endDe.slice(0, 10)}
                 onChange={(e) => change("endDe", e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker?.()}
               />
             </Field>
-            <Field label="운영 시간 안내" required wide>
+            <Field label="운영 시간 안내" wide>
               <input
-                required
-                value={form.eventTmInfo}
+                value={form.eventTmInfo || ""}
                 onChange={(e) => change("eventTmInfo", e.target.value)}
                 placeholder="예: 매일 10:00 ~ 18:00, 월요일 휴무"
               />
@@ -481,6 +390,9 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 value={form.region}
                 onChange={(e) => change("region", e.target.value)}
               >
+                <option value="" disabled>
+                  지역을 선택해 주세요
+                </option>
                 {Object.entries(regions).map(([key, name]) => (
                   <option key={key} value={key}>
                     {name}
@@ -488,16 +400,18 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 ))}
               </select>
             </Field>
-            <Field label="상세 주소" required>
+            <Field label="상세 주소">
               <input
-                required
                 maxLength={255}
-                value={form.regionDetail}
+                value={form.regionDetail || ""}
                 onChange={(e) => change("regionDetail", e.target.value)}
                 placeholder="도로명 주소, 장소 이름"
               />
             </Field>
-            <Field label="참가 비용">
+            <Field
+              label="참가 비용"
+              hint="비용을 모르면 비워두세요. 무료 행사라면 '무료'라고 적어주세요."
+            >
               <input
                 value={form.partcptExpnInfo || ""}
                 onChange={(e) => change("partcptExpnInfo", e.target.value)}
@@ -512,8 +426,14 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 placeholder="행사 관련 문의가 가능한 번호"
               />
             </Field>
-            <Field label="행사 참고 링크" wide>
+            <Field
+              label="행사 참고 링크"
+              required
+              wide
+              hint="내용과 일정을 확인할 수 있는 행사 홈페이지나 SNS 안내 링크를 넣어주세요."
+            >
               <input
+                required
                 type="url"
                 maxLength={2048}
                 value={form.referenceUrl || ""}
@@ -523,25 +443,6 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             </Field>
           </div>
         </section>
-        <section className="form-section">
-          <div className="form-section-title">
-            <span>03</span>
-            <h2>제보 이야기를 남겨주세요</h2>
-          </div>
-          <Field
-            label="제보 내용"
-            required
-            hint="행사 소개와 별도로, 제보하게 된 이유나 확인한 정보를 알려주세요."
-          >
-            <textarea
-              required
-              rows={4}
-              value={form.submissionContent}
-              onChange={(e) => change("submissionContent", e.target.value)}
-              placeholder="이 행사를 어떻게 알게 되었나요?"
-            />
-          </Field>
-        </section>
         <label className="checkbox-label">
           <input
             type="checkbox"
@@ -549,7 +450,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
           />
-          일정과 장소를 확인했으며, 정확한 정보를 제보합니다.
+          행사 일정과 안내 링크를 확인했으며, 정확한 정보를 제보합니다.
         </label>
         <FormError message={error} />
         <div className="form-actions">
@@ -558,7 +459,7 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
             to={
               current
                 ? `/submissions/${current.festivalSubmissionId}`
-                : "/submissions"
+                : "/explore"
             }
           >
             취소
@@ -572,28 +473,24 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
       <aside className="form-aside">
         <div>
           <Lightbulb size={28} />
-          <h3>좋은 제보를 위한 작은 팁</h3>
+          <h3>방구석 탈출 제보 TIP</h3>
           <p>
             <Check size={16} />
-            행사 이름을 정확하게 적어주세요.
+            정확한 행사 이름!
           </p>
           <p>
             <Check size={16} />
-            일정과 장소를 한 번 더 확인해요.
+            확실한 일정과 장소!
           </p>
           <p>
             <Check size={16} />
-            공식 안내 링크가 있으면 좋아요.
+            믿을 수 있는 안내 링크!
           </p>
           <p>
             <Check size={16} />
-            직접 촬영한 사진도 환영해요.
+            현장 사진은 보너스!
           </p>
-          <span>
-            함께 만드는 즐거운 일상,
-            <br />
-            당신의 제보로 시작됩니다.
-          </span>
+          <span>당신의 제보로 탈출 준비 완료!</span>
         </div>
       </aside>
     </div>

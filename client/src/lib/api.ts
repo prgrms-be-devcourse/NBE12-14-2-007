@@ -19,6 +19,8 @@ import type {
   AdminMemberQuery,
   Role,
   EventView,
+  FestivalSearchInput,
+  FestivalSearchItem,
 } from "./types";
 import {
   demoEvents,
@@ -29,6 +31,24 @@ import {
   type ReviewSort,
 } from "./demo";
 import { parseDateTime } from "./format";
+import { matchesRegion } from "./regions";
+
+// 선택 항목을 비운 등록·수정 요청은 DB에 빈 문자열 대신 null로 저장합니다.
+function submissionPayload(input: SubmissionInput) {
+  const optional = (value?: string) => value?.trim() || null;
+  return {
+    ...input,
+    festivalContent: optional(input.festivalContent),
+    regionDetail: optional(input.regionDetail),
+    eventTmInfo: optional(input.eventTmInfo),
+    instNm: optional(input.instNm),
+    referenceUrl: input.referenceUrl.trim(),
+    imgUrl: optional(input.imgUrl),
+    partcptExpnInfo: optional(input.partcptExpnInfo),
+    telnoInfo: optional(input.telnoInfo),
+    hostInstNm: optional(input.hostInstNm),
+  };
+}
 
 export class ApiError extends Error {
   constructor(
@@ -155,6 +175,30 @@ function pageOf<T>(items: T[], page: number, size: number): Page<T> {
   };
 }
 
+function toEventView(item: FestivalSearchItem): EventView {
+  return {
+    festivalId: item.festivalId,
+    source: item.providerType,
+    title: item.title,
+    category: item.category,
+    instNm: item.instNm,
+    manager: null,
+    festivalContent: null,
+    referenceUrl: null,
+    region: item.region,
+    regionDetail: "",
+    imgUrl: item.imgUrl,
+    beginDe: item.beginDe,
+    endDe: item.endDe,
+    eventTmInfo: null,
+    partcptExpnInfo: null,
+    telnoInfo: null,
+    hostInstNm: null,
+    writngDe: null,
+    status: item.status,
+  };
+}
+
 export function createApi(mode: Mode) {
   const demo = mode === "preview";
   return {
@@ -184,6 +228,55 @@ export function createApi(mode: Mode) {
     async me() {
       return transport<Member>("/members/me");
     },
+    async festivals(input: FestivalSearchInput = {}): Promise<Page<EventView>> {
+      const page = Math.max(0, input.page || 0);
+      const keyword = input.keyword?.trim().toLowerCase() || "";
+
+      if (demo) {
+        const items = demoEvents
+          .filter(
+            (event) =>
+              (!keyword ||
+                `${event.title} ${event.instNm || ""} ${event.regionDetail}`
+                  .toLowerCase()
+                  .includes(keyword)) &&
+              (!input.region || matchesRegion(event.region, input.region)) &&
+              (!input.providerType || event.source === input.providerType) &&
+              (!input.category || event.category === input.category) &&
+              (!input.date ||
+                (event.beginDe.slice(0, 10) <= input.date &&
+                  event.endDe.slice(0, 10) >= input.date)) &&
+              (!input.excludeClosed || event.status !== "CLOSED"),
+          )
+          .sort((a, b) =>
+            input.sort === "name"
+              ? a.title.localeCompare(b.title, "ko")
+              : a.beginDe.localeCompare(b.beginDe),
+          );
+
+        return pageOf(items, page, 9);
+      }
+
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "9",
+      });
+      if (input.keyword?.trim()) params.set("keyword", input.keyword.trim());
+      if (input.region) params.set("region", input.region);
+      if (input.providerType) params.set("providerType", input.providerType);
+      if (input.category) params.set("category", input.category);
+      if (input.date) params.set("date", input.date);
+      if (input.excludeClosed) params.set("excludeClosed", "true");
+      if (input.sort === "name") params.set("sort", "title,asc");
+
+      const result = await transport<Page<FestivalSearchItem>>(
+        `/festivals?${params.toString()}`,
+      );
+      return {
+        ...result,
+        content: result.content.map(toEventView),
+      };
+    },
     async updateMe(input: {
       nickname?: string;
       phone?: string;
@@ -203,25 +296,6 @@ export function createApi(mode: Mode) {
     },
     async submissions(): Promise<SubmissionSummary[]> {
       return transport("/members/me/submissions");
-    },
-    async submittedEvents(
-      page = 0,
-      query = "",
-      status = "ALL",
-    ): Promise<Page<EventView>> {
-      if (!demo) {
-        throw new ApiError("전체 행사 제보 조회 기능을 준비하고 있어요.");
-      }
-      return pageOf(
-        previewSubmittedEvents().filter(
-          (event) =>
-            (!query.trim() ||
-              event.title.toLowerCase().includes(query.trim().toLowerCase())) &&
-            (status === "ALL" || event.status === status),
-        ),
-        page,
-        6,
-      );
     },
     async event(festivalId: number): Promise<EventView> {
       if (!demo) {
@@ -244,13 +318,13 @@ export function createApi(mode: Mode) {
         festivalId: number;
         festivalSubmissionId: string;
         status: string;
-      }>("/festivals/submissions", "POST", input);
+      }>("/festivals/submissions", "POST", submissionPayload(input));
     },
     async updateSubmission(submissionId: string, input: SubmissionInput) {
       return transport<SubmissionDetail>(
         `/members/me/submissions/${encodeURIComponent(submissionId)}`,
         "PATCH",
-        input,
+        submissionPayload(input),
       );
     },
     async deleteSubmission(submissionId: string) {

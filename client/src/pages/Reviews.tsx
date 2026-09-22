@@ -586,7 +586,7 @@ export function ReviewFormPage() {
               <Link className="btn primary" to="/explore">
                 지역 문화행사 보기
               </Link>
-              <Link className="btn secondary" to="/submissions">
+              <Link className="btn secondary" to="/explore?providerType=MEMBER">
                 제보된 행사 보기
               </Link>
             </div>

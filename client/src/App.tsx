@@ -1,9 +1,9 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Empty } from "./components/ui";
 import { Home } from "./pages/Home";
 import { Explore } from "./pages/Explore";
-import { SubmissionFormPage, Submissions } from "./pages/Submissions";
+import { SubmissionFormPage } from "./pages/Submissions";
 import { EventDetailPage } from "./pages/EventDetail";
 import { Reviews, ReviewDetailPage, ReviewFormPage } from "./pages/Reviews";
 import { MyPage } from "./pages/MyPage";
@@ -45,7 +45,10 @@ export function App() {
         <Route index element={<Home />} />
         <Route path="explore" element={<Explore />} />
         <Route path="events/:eventId" element={<EventDetailPage />} />
-        <Route path="submissions" element={<Submissions />} />
+        <Route
+          path="submissions"
+          element={<Navigate to="/submissions/new" replace />}
+        />
         <Route path="submissions/new" element={<SubmissionFormPage />} />
         <Route path="submissions/:submissionId" element={<EventDetailPage />} />
         <Route

@@ -98,7 +98,7 @@ public class Festival extends SoftDeletableEntity {
 	//TODO 로 나중에 코드를 좀더 이쁘게 해봅시다
 	public void updateDetails(
 			String instNm, String title, String category,
-			String manager, String content, String referenceUrl,
+			String content, String referenceUrl,
 			FestivalRegion region, String regionDetail, String imgUrl,
 			LocalDateTime beginDe, LocalDateTime endDe,
 			String eventTmInfo, String partcptExpnInfo,
@@ -107,7 +107,6 @@ public class Festival extends SoftDeletableEntity {
 		this.instNm = instNm;
 		this.title = title;
 		this.category = category;
-		this.manager = manager;
 		this.content = content;
 		this.url = referenceUrl;
 		this.region = region;

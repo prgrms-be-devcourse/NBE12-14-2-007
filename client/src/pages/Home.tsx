@@ -84,6 +84,7 @@ export function Home() {
             value={region}
             onChange={setRegion}
             variant="discovery"
+            supportedOnly={mode === "api"}
           />
           <label>
             <CalendarDays size={20} />
@@ -128,14 +129,14 @@ export function Home() {
             </div>
             <ArrowRight size={20} />
           </Link>
-          <Link to="/submissions" className="route-card">
+          <Link to="/submissions/new" className="route-card">
             <span className="route-icon sage">
               <UsersRound size={28} />
             </span>
             <div>
               <span className="mini-label">좋은 소식은 함께 나눠요</span>
               <h2>행사 제보</h2>
-              <p>이웃이 전한 행사를 발견하고, 좋은 소식도 나눠요.</p>
+              <p>알고 있는 좋은 행사를 이웃에게 알려주세요.</p>
             </div>
             <ArrowRight size={20} />
           </Link>
@@ -186,8 +187,8 @@ export function Home() {
               title="새로운 행사를 준비하고 있어요"
               description="문화행사 둘러보기가 열리면 이곳에서 만나볼 수 있어요."
               action={
-                <Link to="/submissions" className="btn secondary">
-                  이웃의 행사 제보 둘러보기 <ArrowRight size={16} />
+                <Link to="/explore" className="btn secondary">
+                  행사 둘러보기 <ArrowRight size={16} />
                 </Link>
               }
             />

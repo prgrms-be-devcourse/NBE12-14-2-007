@@ -21,22 +21,45 @@ export function Logo() {
   return (
     <span className="logo">
       <span className="logo-mark">
-        <svg viewBox="0 0 40 40" aria-hidden="true">
-          <path d="M7 17 20 6l13 11v17H7Z" fill="currentColor" />
+        <svg viewBox="0 0 48 40" aria-hidden="true">
+          <path d="M14 5h20v31H14Z" fill="#bcecff" />
           <path
-            d="m14 20 6 6 6-6"
+            d="M14 5h20v31H14"
             fill="none"
-            stroke="white"
-            strokeWidth="3"
+            stroke="#5f6c68"
+            strokeWidth="2.4"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
-            d="M17 9V5h6v4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
+            d="M14 7 3 11v26l11-3Z"
+            fill="#fffdf8"
+            stroke="#7c8783"
+            strokeWidth="1.8"
             strokeLinejoin="round"
+          />
+          <path
+            d="m34 7 11 4v26l-11-3Z"
+            fill="#fffdf8"
+            stroke="#7c8783"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6 18 14 16M6 29l8-1M34 16l8 2M34 28l8 1"
+            fill="none"
+            stroke="#c7ceca"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+          <circle cx="11" cy="23" r="1.3" fill="#bb5a1b" />
+          <circle cx="37" cy="23" r="1.3" fill="#bb5a1b" />
+          <path
+            d="m18 35-4 4M24 35v5M30 35l4 4"
+            fill="none"
+            stroke="#ffd37a"
+            strokeWidth="1.5"
+            strokeLinecap="round"
           />
         </svg>
       </span>
@@ -145,6 +168,7 @@ export function EventCard({
           <span>
             {event.source === "PUBLIC" ? "지역 문화행사" : "회원 제보"}
           </span>
+          {event.status === "CLOSED" && <Badge tone="gray">종료</Badge>}
           {event.preview && <span className="example-label">예시</span>}
         </div>
         <h3>{event.title}</h3>

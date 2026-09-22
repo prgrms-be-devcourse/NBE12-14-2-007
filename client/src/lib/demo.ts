@@ -159,6 +159,7 @@ export function previewSubmittedEvents(): EventView[] {
     ...demoCommunityEvents,
     ...data.submissions.map(({ submission }) => ({
       ...submission.festival,
+      manager: null,
       submissionId: undefined,
       source: "MEMBER" as const,
       preview: true,
@@ -182,8 +183,6 @@ const initial: DemoState = {
     .map((e) => ({
       submission: {
         festivalSubmissionId: e.submissionId!,
-        submissionContent:
-          "주말에 함께 즐기기 좋은 행사라 제보합니다. (미리보기 예시)",
         createdAt: "2026-09-15T10:00:00",
         updatedAt: "2026-09-15T10:00:00",
         festival: e,

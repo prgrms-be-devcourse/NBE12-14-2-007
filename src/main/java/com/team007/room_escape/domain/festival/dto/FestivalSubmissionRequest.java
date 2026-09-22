@@ -20,33 +20,28 @@ public class FestivalSubmissionRequest {
             @Schema(description = "기관명", example = "방구석탈출")
             String instNm,
 
-            @NotBlank(message = "행사 제목은 필수입니다.")
-            @Schema(description = "행사 제목", example = "성수 독립 플리마켓")
-            String title,
+            @NotBlank(message = "행사 이름은 필수입니다.")
+            @Schema(description = "행사 이름", example = "성수 독립 플리마켓")
+            String name,
 
             @NotBlank(message = "제보 행사 카테고리는 필수입니다.")
             @Size(max = 50, message = "제보 행사 카테고리는 50자 이하여야 합니다.")
             @Schema(description = "제보 행사 카테고리", example = "플리마켓")
             String category,
 
-            @NotBlank(message = "관리자 정보는 필수입니다.")
-            @Schema(description = "행사 관리자", example = "홍길동")
-            String manager,
-
-            @NotBlank(message = "행사 내용은 필수입니다.")
             @Schema(description = "공개할 행사 상세 내용")
             String festivalContent,
 
+            @NotBlank(message = "행사 참고 링크는 필수입니다.")
             @Size(max = 2048, message = "행사 참고 링크는 2,048자 이하여야 합니다.")
             @Schema(description = "행사 정보를 확인할 수 있는 참고 링크",
                     example = "https://www.instagram.com/example-event")
             String referenceUrl,
 
             @NotNull(message = "행사 지역은 필수입니다.")
-            @Schema(description = "행사 지역", example = "GYEONGGI_SUWON")
+            @Schema(description = "행사 지역", example = "GYEONGGI")
             FestivalRegion region,
 
-            @NotBlank(message = "행사 상세 주소는 필수입니다.")
             @Size(max = 255, message = "행사 상세 주소는 255자 이하여야 합니다.")
             @Schema(description = "행사 상세 주소", example = "팔달구 효원로 1")
             String regionDetail,
@@ -63,7 +58,6 @@ public class FestivalSubmissionRequest {
             @Schema(description = "행사 종료 일시", example = "2026-09-20T18:00:00")
             LocalDateTime endDe,
 
-            @NotBlank(message = "행사 시간 정보는 필수입니다.")
             @Schema(description = "행사 시간 정보", example = "10:00~18:00")
             String eventTmInfo,
 
@@ -74,11 +68,7 @@ public class FestivalSubmissionRequest {
             String telnoInfo,
 
             @Schema(description = "주최기관명", example = "방구석탈출")
-            String hostInstNm,
-
-            @NotBlank(message = "행사 제보 내용은 필수입니다.")
-            @Schema(description = "행사 제보 내용")
-            String submissionContent
+            String hostInstNm
     ) {
 
         @AssertTrue(message = "행사 종료 일시는 시작 일시보다 빠를 수 없습니다.")
