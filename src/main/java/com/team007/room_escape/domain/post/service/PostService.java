@@ -18,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -55,8 +54,15 @@ public class PostService {
 		return PostResponse.CreateResponse.from(post);
 	}
 
+	// TODO 추후에 N+1 문제 해결 할 것
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> getPosts(Long festivalId, Pageable page) {
+	public Page<PostResponse.ListResponse> getPosts(Pageable page) {
+		return postRepository.findAllOrderByLikeCount(page)
+				.map(PostResponse.ListResponse::from);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<PostResponse.ListResponse> getPostsByFestival(Long festivalId, Pageable page) {
 		return postRepository.findAllByFestivalId(festivalId, page)
 				.map(PostResponse.ListResponse::from);
 	}

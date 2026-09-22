@@ -29,4 +29,20 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     )
     Page<Post> findAllByFestivalId(Long festivalId, Pageable page);
     Optional<Post> findByIdAndDeletedAtIsNull(UUID id);
+    @Query(
+            value = """
+        SELECT p
+        FROM Post p
+        LEFT JOIN Like l ON l.post = p
+        WHERE p.deletedAt IS NULL
+        GROUP BY p
+        ORDER BY COUNT(l.id) DESC, p.createdAt DESC
+        """,
+            countQuery = """
+        SELECT COUNT(p)
+        FROM Post p
+        WHERE p.deletedAt IS NULL
+        """
+    )
+    Page<Post> findAllOrderByLikeCount(Pageable page);
 }
