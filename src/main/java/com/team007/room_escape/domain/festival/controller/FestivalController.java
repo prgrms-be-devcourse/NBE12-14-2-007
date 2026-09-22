@@ -63,7 +63,9 @@ public class FestivalController {
 	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> getPublicFestival(
 			@PathVariable Long festivalId
 	) {
-		return ResponseEntity.ok(ApiResponse.success(festivalService.getPublicFestival(festivalId)));
+		FestivalResponse.DetailResponse response = festivalService.getPublicFestival(festivalId);
+
+		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	@Operation(summary = "공공 행사 수동 동기화",
