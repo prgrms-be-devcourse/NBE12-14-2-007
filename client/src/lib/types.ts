@@ -169,6 +169,16 @@ export interface AdminInquiryDetail extends AdminInquiryListItem {
   answer: string | null;
   updatedAt: string;
 }
+/** 관리자 회원 검색 조건. 비운 항목은 조건을 걸지 않는다. */
+export interface AdminMemberQuery {
+  /** 닉네임 또는 이메일 부분 일치 */
+  keyword?: string;
+  role?: Role;
+  includeDeleted?: boolean;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 /** 관리자 문의 검색 조건. 비운 항목은 조건을 걸지 않는다. */
 export interface AdminInquiryQuery {
   title?: string;

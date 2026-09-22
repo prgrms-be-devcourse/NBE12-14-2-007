@@ -15,6 +15,9 @@ import type {
   AdminInquiryListItem,
   AdminInquiryDetail,
   AdminInquiryQuery,
+  AdminMemberInfo,
+  AdminMemberQuery,
+  Role,
   EventView,
 } from "./types";
 import {
@@ -453,6 +456,37 @@ export function createApi(mode: Mode) {
       }
       return transport<Page<AdminInquiryListItem>>(
         `/admin/inquiries?${params}`,
+      );
+    },
+    /** [ADMIN] 회원 목록. 닉네임·이메일 부분 일치 검색. */
+    async adminMembers(query: AdminMemberQuery = {}) {
+      const {
+        page = 0,
+        size = 20,
+        sort = "createdAt,desc",
+        ...filters
+      } = query;
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sort,
+      });
+      // 빈 문자열을 그대로 보내면 서버가 enum으로 변환하다 400을 낸다.
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined || value === "") continue;
+        params.set(key, String(value));
+      }
+      return transport<Page<AdminMemberInfo>>(`/admin/members?${params}`);
+    },
+    /**
+     * [ADMIN] 회원 등급 변경.
+     * 본인·관리자 계정·탈퇴 회원은 서버가 거부한다(403/409).
+     */
+    async changeMemberRole(memberId: string, role: Role) {
+      return transport<AdminMemberInfo>(
+        `/admin/members/${encodeURIComponent(memberId)}/role`,
+        "PATCH",
+        { role },
       );
     },
     /** [ADMIN] 문의 상세. 목록에 없는 본문·첨부·답변이 여기서 온다. */

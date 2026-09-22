@@ -8,7 +8,11 @@ import {
 } from "react";
 import { useApp } from "../lib/context";
 import { dateText, errorText } from "../lib/format";
-import type { AdminInquiryListItem, Role } from "../lib/types";
+import type {
+  AdminInquiryListItem,
+  AdminMemberInfo,
+  Role,
+} from "../lib/types";
 
 export const roleNames: Record<Role, string> = {
   ROLE_UNVERIFIED: "미인증",
@@ -29,6 +33,10 @@ export interface AdminMember {
   email: string;
   role: Role;
   joined: string;
+  /** 공개 URL. 없으면 닉네임 첫 글자로 아바타를 그린다 */
+  profileImg: string | null;
+  /** 탈퇴 시각. 탈퇴하지 않았으면 null */
+  deletedAt: string | null;
 }
 export interface ContentItem {
   id: string;
@@ -61,80 +69,25 @@ export interface Activity {
   target: string;
   reason: string;
 }
-/** 아직 API가 없어 브라우저에만 두는 예시 데이터. 문의(tickets)는 여기 없다. */
+/**
+ * 아직 API가 없어 브라우저에만 두는 예시 데이터.
+ * 회원(members)과 문의(tickets)는 실제 서버에서 오므로 여기 없다.
+ */
 interface AdminState {
-  version: 2;
-  members: AdminMember[];
+  version: 3;
   events: ContentItem[];
   reviews: ContentItem[];
   activity: Activity[];
 }
-/** 화면이 받아 쓰는 데이터. tickets만 실제 서버에서 온다. */
+/** 화면이 받아 쓰는 데이터. members와 tickets는 실제 서버에서 온다. */
 interface AdminData extends AdminState {
+  members: AdminMember[];
   tickets: Ticket[];
 }
-const storageKey = "eventus.admin.mock.v2";
+const storageKey = "eventus.admin.mock.v3";
 function seed(): AdminState {
   return {
-    version: 2,
-    members: [
-      {
-        id: "M-1008",
-        name: "산책하는 하루",
-        email: "walk@example.com",
-        role: "ROLE_NORMAL",
-        joined: "2026-09-21",
-      },
-      {
-        id: "M-1007",
-        name: "동네탐험가",
-        email: "explore@example.com",
-        role: "ROLE_UNVERIFIED",
-        joined: "2026-09-21",
-      },
-      {
-        id: "M-1006",
-        name: "주말의 기록",
-        email: "weekend@example.com",
-        role: "ROLE_TRUSTED",
-        joined: "2026-09-20",
-      },
-      {
-        id: "M-1005",
-        name: "꽃길따라",
-        email: "flower@example.com",
-        role: "ROLE_NORMAL",
-        joined: "2026-09-19",
-      },
-      {
-        id: "M-1004",
-        name: "문화산책",
-        email: "culture@example.com",
-        role: "ROLE_TRUSTED",
-        joined: "2026-09-18",
-      },
-      {
-        id: "M-1003",
-        name: "오늘의 행사",
-        email: "today@example.com",
-        role: "ROLE_WARNING",
-        joined: "2026-09-17",
-      },
-      {
-        id: "M-1002",
-        name: "가을바람",
-        email: "autumn@example.com",
-        role: "ROLE_NORMAL",
-        joined: "2026-09-15",
-      },
-      {
-        id: "M-1001",
-        name: "방구석탈출 운영팀",
-        email: "admin@example.com",
-        role: "ROLE_ADMIN",
-        joined: "2026-09-01",
-      },
-    ],
+    version: 3,
     events: [
       {
         id: "E-2008",
@@ -310,25 +263,27 @@ function read(): AdminState {
   try {
     const data = JSON.parse(sessionStorage.getItem(storageKey) || "null");
     if (
-      data?.version === 2 &&
-      ["members", "events", "reviews", "activity"].every((k) =>
-        Array.isArray(data[k]),
-      )
+      data?.version === 3 &&
+      ["events", "reviews", "activity"].every((k) => Array.isArray(data[k]))
     ) {
-      // Keep existing preview edits while updating the built-in operator name.
-      return {
-        ...data,
-        members: data.members.map((member: AdminMember) =>
-          member.id === "M-1001" && member.role === "ROLE_ADMIN"
-            ? { ...member, name: "방구석탈출 운영팀" }
-            : member,
-        ),
-      };
+      return data as AdminState;
     }
   } catch {
     /* An unavailable or older demo store starts with fresh examples. */
   }
   return seed();
+}
+/** 서버 회원 한 줄을 화면이 쓰는 AdminMember 모양으로 바꾼다. */
+function toMember(item: AdminMemberInfo): AdminMember {
+  return {
+    id: item.id,
+    name: item.nickname,
+    email: item.email,
+    role: item.role,
+    joined: dateText(item.createdAt),
+    profileImg: item.profileImg,
+    deletedAt: item.deletedAt,
+  };
 }
 /** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
 function toTicket(item: AdminInquiryListItem): Ticket {
@@ -347,7 +302,14 @@ function toTicket(item: AdminInquiryListItem): Ticket {
 }
 interface AdminContextValue {
   data: AdminData;
-  changeRole: (id: string, role: Role, reason: string) => void;
+  /**
+   * 등급 변경. 서버에 저장하므로 실패할 수 있다.
+   *
+   * TODO reason을 서버로 보낼 것. 저장할 이력 테이블이 없어 지금은
+   *      입력칸을 잠가 뒀고(MemberDialog), 운영 기록(로컬)에만 남는다.
+   *      파라미터는 이력 테이블이 생기면 바로 쓰려고 남겨 둔다.
+   */
+  changeRole: (id: string, role: Role, reason: string) => Promise<void>;
   moderate: (
     kind: "events" | "reviews",
     id: string,
@@ -356,6 +318,10 @@ interface AdminContextValue {
   ) => void;
   /** 답변 등록. 서버에 저장하므로 실패할 수 있다. */
   answer: (id: string, answer: string) => Promise<void>;
+  /** 회원 목록을 서버에서 다시 불러온다. */
+  reloadMembers: () => void;
+  membersLoading: boolean;
+  membersError: string;
   /** 문의 목록을 서버에서 다시 불러온다. */
   reloadTickets: () => void;
   ticketsLoading: boolean;
@@ -369,12 +335,42 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(read);
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState(false);
+  const [members, setMembers] = useState<AdminMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
+  const [membersError, setMembersError] = useState("");
+  const [membersRevision, setMembersRevision] = useState(0);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [ticketsError, setTicketsError] = useState("");
   const [ticketsRevision, setTicketsRevision] = useState(0);
   // 토큰 복구가 끝나기 전에 부르면 첫 요청이 401로 한 번 헛돈다.
   const ready = !authLoading && signedInAdmin?.role === "ROLE_ADMIN";
+  useEffect(() => {
+    if (!ready) {
+      setMembers([]);
+      setMembersLoading(authLoading);
+      return;
+    }
+    let active = true;
+    setMembersLoading(true);
+    setMembersError("");
+    api
+      // 문의와 같은 이유로 한 번에 받아 두고 화면에서 거른다.
+      // size는 서버 max-page-size(50)가 상한이다.
+      .adminMembers({ size: 50, includeDeleted: true })
+      .then((page) => {
+        if (active) setMembers(page.content.map(toMember));
+      })
+      .catch((error) => {
+        if (active) setMembersError(errorText(error));
+      })
+      .finally(() => {
+        if (active) setMembersLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, ready, authLoading, membersRevision]);
   useEffect(() => {
     if (!ready) {
       // 관리자가 아니면 목록을 부를 이유가 없다. 로딩 표시도 끝내야 한다.
@@ -437,40 +433,50 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setMessage("Mock 데이터에 반영했습니다.");
   }
   // 매 렌더마다 새 객체를 만들면 data를 의존성에 넣은 쪽이 계속 다시 돈다.
-  const value = useMemo(() => ({ ...data, tickets }), [data, tickets]);
+  const value = useMemo(
+    () => ({ ...data, members, tickets }),
+    [data, members, tickets],
+  );
   return (
     <Context.Provider
       value={{
         data: value,
+        membersLoading,
+        membersError,
+        reloadMembers() {
+          setMembersRevision((current) => current + 1);
+        },
         ticketsLoading,
         ticketsError,
         reloadTickets() {
           setTicketsRevision((current) => current + 1);
         },
-        changeRole(id, role, reason) {
-          const member = data.members.find((item) => item.id === id);
+        async changeRole(id, role, reason) {
+          const member = members.find((item) => item.id === id);
+          // 아래 조건은 서버도 똑같이 막는다. 여기서 거르는 건 헛된 요청을 줄이기 위함이다.
           if (
             !member ||
             member.role === "ROLE_ADMIN" ||
             role === "ROLE_ADMIN" ||
-            role === member.role ||
-            !reason.trim()
+            role === member.role
           )
             return;
-          commit(
-            (current) => ({
-              ...current,
-              members: current.members.map((item) =>
-                item.id === id ? { ...item, role } : item,
-              ),
-            }),
-            {
-              area: "회원",
-              action: "등급 변경",
-              target: member.name,
-              reason: `${roleNames[member.role]} → ${roleNames[role]} · ${reason.trim()}`,
-            },
+          const saved = await api.changeMemberRole(id, role);
+          // 서버가 돌려준 값으로 갈아끼운다. 낙관적 갱신을 하면
+          // 저장에 실패했을 때 화면만 바뀐 채로 남는다.
+          setMembers((current) =>
+            current.map((item) => (item.id === id ? toMember(saved) : item)),
           );
+          const change = `${roleNames[member.role]} → ${roleNames[role]}`;
+          record({
+            area: "회원",
+            action: "등급 변경",
+            target: member.name,
+            // TODO 사유가 서버에 저장되면 항상 붙여서 남길 것.
+            //      지금은 입력칸을 잠가 둬서 reason이 항상 빈 문자열로 들어온다.
+            reason: reason.trim() ? `${change} · ${reason.trim()}` : change,
+          });
+          setMessage("회원 등급을 변경했습니다.");
         },
         moderate(kind, id, status, reason) {
           const item = data[kind].find((item) => item.id === id);

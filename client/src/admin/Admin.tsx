@@ -358,19 +358,27 @@ function DetailLine({
 function Reason({
   value,
   onChange,
+  disabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
+  /** 저장할 곳이 없어 잠가 둔 경우. 입력은 막고 자리만 보여준다. */
+  disabled?: boolean;
 }) {
   return (
-    <Field label="처리 사유" required>
+    <Field label="처리 사유" required={!disabled}>
       <textarea
-        required
+        required={!disabled}
+        disabled={disabled}
         maxLength={500}
         rows={3}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="운영 기록에 남길 사유를 입력해 주세요."
+        placeholder={
+          disabled
+            ? "사유 기록 기능은 준비 중입니다."
+            : "운영 기록에 남길 사유를 입력해 주세요."
+        }
       />
     </Field>
   );
@@ -595,7 +603,7 @@ export function AdminDashboard() {
 }
 
 export function AdminMembers() {
-  const { data } = useAdmin();
+  const { data, membersLoading, membersError, reloadMembers } = useAdmin();
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -644,8 +652,26 @@ export function AdminMembers() {
           </select>
         </Toolbar>
         <div className="adm-result-count">
-          검색 결과 <strong>{items.length}</strong>명
+          {membersLoading ? (
+            "불러오는 중…"
+          ) : (
+            <>
+              검색 결과 <strong>{items.length}</strong>명
+            </>
+          )}
         </div>
+        {membersError && (
+          <p className="adm-dialog-note" role="alert">
+            {membersError}{" "}
+            <button
+              type="button"
+              className="adm-row-button"
+              onClick={reloadMembers}
+            >
+              다시 시도
+            </button>
+          </p>
+        )}
         <Table
           label="회원 목록"
           headers={["회원", "이메일", "신뢰 등급", "가입일", "관리"]}
@@ -655,13 +681,24 @@ export function AdminMembers() {
             <tr key={member.id}>
               <td>
                 <div className="adm-person">
-                  <span
-                    className={`adm-avatar ${member.role === "ROLE_ADMIN" ? "admin" : ""}`}
-                  >
-                    {member.name[0]}
-                  </span>
+                  {member.profileImg ? (
+                    <img
+                      className="adm-avatar"
+                      src={member.profileImg}
+                      alt=""
+                    />
+                  ) : (
+                    <span
+                      className={`adm-avatar ${member.role === "ROLE_ADMIN" ? "admin" : ""}`}
+                    >
+                      {member.name[0]}
+                    </span>
+                  )}
                   <div>
-                    <strong>{member.name}</strong>
+                    <strong>
+                      {member.name}
+                      {member.deletedAt && " (탈퇴)"}
+                    </strong>
                     <small>{member.id}</small>
                   </div>
                 </div>
@@ -699,29 +736,50 @@ function MemberDialog({
   onClose: () => void;
 }) {
   const { changeRole } = useAdmin();
+  const { member: signedInAdmin } = useApp();
   const [role, setRole] = useState<Role>(member.role);
   const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const isAdmin = member.role === "ROLE_ADMIN";
+  const isSelf = signedInAdmin?.id === member.id;
+  const isDeleted = !!member.deletedAt;
+  // 서버가 막는 조건과 같다. 여기서 먼저 걸러 헛된 요청을 줄인다.
+  const blocked = isAdmin
+    ? "관리자 계정의 등급은 변경할 수 없습니다."
+    : isSelf
+      ? "본인의 등급은 변경할 수 없습니다."
+      : isDeleted
+        ? "탈퇴한 회원의 등급은 변경할 수 없습니다."
+        : "";
   return (
     <Modal title="회원 상세 관리" onClose={onClose}>
       <dl className="adm-details">
         <DetailLine label="닉네임">{member.name}</DetailLine>
         <DetailLine label="이메일">{member.email}</DetailLine>
         <DetailLine label="회원 ID">{member.id}</DetailLine>
+        <DetailLine label="가입일">{member.joined}</DetailLine>
         <DetailLine label="현재 등급">
           <Badge tone={tone(member.role)}>{roleNames[member.role]}</Badge>
         </DetailLine>
       </dl>
-      {isAdmin ? (
-        <p className="adm-dialog-note">
-          시스템 관리자 계정의 권한은 이 미리보기에서 변경하지 않습니다.
-        </p>
+      {blocked ? (
+        <p className="adm-dialog-note">{blocked}</p>
       ) : (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            changeRole(member.id, role, reason);
-            onClose();
+            setSaving(true);
+            setSaveError("");
+            try {
+              await changeRole(member.id, role, reason);
+              onClose();
+            } catch (error) {
+              // 실패하면 닫지 않는다. 고른 등급이 남아 있어야 다시 시도한다.
+              setSaveError(errorText(error));
+            } finally {
+              setSaving(false);
+            }
           }}
         >
           <Field label="변경할 등급">
@@ -738,10 +796,22 @@ function MemberDialog({
                 ))}
             </select>
           </Field>
-          <Reason value={reason} onChange={setReason} />
+          {/*
+            TODO 사유 입력칸 살리기.
+                 저장할 이력 테이블이 없어서 지금은 잠가 두고 등급만 바꾼다.
+                 서버에 PATCH /admin/members/{id}/role 의 body로 reason을 받는
+                 이력 테이블이 생기면 disabled를 떼고 required로 되돌릴 것.
+                 백엔드 쪽 TODO는 Member.changeRole() 과 AdminMemberService 참고.
+          */}
+          <Reason value={reason} onChange={setReason} disabled />
           {role === "ROLE_WARNING" && (
             <p className="adm-dialog-note">
               주의 등급은 행사 등록 등 주요 기능이 제한되는 등급입니다.
+            </p>
+          )}
+          {saveError && (
+            <p className="adm-dialog-note" role="alert">
+              {saveError}
             </p>
           )}
           <div className="adm-dialog-actions">
@@ -750,9 +820,9 @@ function MemberDialog({
             </button>
             <button
               className="btn primary"
-              disabled={role === member.role || !reason.trim()}
+              disabled={role === member.role || saving}
             >
-              등급 변경
+              {saving ? "변경 중…" : "등급 변경"}
             </button>
           </div>
         </form>
