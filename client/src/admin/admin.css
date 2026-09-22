@@ -776,12 +776,49 @@ img.adm-avatar {
   border-color: #8d9f7a;
   background: #f6f8f1;
 }
+/*
+  탭 줄 + 오른쪽 액션. 밑줄은 이 줄 전체에 걸려야 해서
+  border-bottom을 .adm-tabs 에서 여기로 올렸다.
+*/
+.adm-tab-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #e7ebdf;
+  padding-right: 24px;
+}
+.adm-tab-row > .adm-tabs {
+  flex: 1;
+  min-width: 0;
+}
 .adm-tabs {
   display: flex;
   gap: 26px;
-  border-bottom: 1px solid #e7ebdf;
   padding: 0 24px;
   overflow-x: auto;
+}
+/* 탭 줄 오른쪽 끝 액션 버튼. 탭 높이 안에 들어가도록 작게 잡는다. */
+.adm-tab-action {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid #dfe4d5;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5c42;
+  white-space: nowrap;
+}
+.adm-tab-action:hover:not(:disabled) {
+  border-color: #c76a2b;
+  color: #a94d18;
+}
+.adm-tab-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .adm-tabs button {
   display: flex;

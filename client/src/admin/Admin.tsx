@@ -19,6 +19,7 @@ import {
   Flag,
   LayoutDashboard,
   MessageSquare,
+  RefreshCw,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -320,24 +321,30 @@ function Tabs({
   value,
   onChange,
   options,
+  action,
 }: {
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string; count: number }[];
+  /** 탭 줄 오른쪽 끝에 붙는 액션. 상태 필터가 아니므로 group 밖에 둔다. */
+  action?: ReactNode;
 }) {
   return (
-    <div className="adm-tabs" role="group" aria-label="상태 필터">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          className={value === option.value ? "active" : ""}
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-          <span>{option.count}</span>
-        </button>
-      ))}
+    <div className="adm-tab-row">
+      <div className="adm-tabs" role="group" aria-label="상태 필터">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            className={value === option.value ? "active" : ""}
+            aria-pressed={value === option.value}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+            <span>{option.count}</span>
+          </button>
+        ))}
+      </div>
+      {action}
     </div>
   );
 }
@@ -831,6 +838,42 @@ function MemberDialog({
   );
 }
 
+/**
+ * 공공 행사 수동 동기화 버튼.
+ *
+ * 바꾸는 건 유입 경로가 '지역 문화행사'인 행사뿐이고 회원 제보는 건드리지 않는다.
+ * 그래서 라벨에 '공공'을 붙여 범위를 드러낸다.
+ */
+function SyncButton() {
+  const { api, toast } = useApp();
+  const [running, setRunning] = useState(false);
+  return (
+    <button
+      type="button"
+      className="adm-tab-action"
+      // 공공 API를 통째로 훑어서 오래 걸린다. 연타하면 서버가 409로 튕긴다.
+      disabled={running}
+      onClick={async () => {
+        setRunning(true);
+        try {
+          const result = await api.syncFestivals();
+          // 무엇이 바뀌었는지 알려주지 않으면 눌러도 결과를 알 수 없다.
+          toast(
+            `동기화 완료 · 새 행사 ${result.savedFestivals.length}건 저장, ${result.closedFestivals.length}건 종료 처리`,
+          );
+        } catch (error) {
+          toast(errorText(error));
+        } finally {
+          setRunning(false);
+        }
+      }}
+    >
+      {/* .spin 은 styles.css 전역 유틸이다. */}
+      <RefreshCw size={14} className={running ? "spin" : ""} />
+      {running ? "동기화 중…" : "공공 행사 동기화"}
+    </button>
+  );
+}
 export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
   const { data } = useAdmin();
   const [params, setParams] = useSearchParams();
@@ -879,6 +922,8 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
               count: records.filter((r) => r.status === value).length,
             })),
           ]}
+          // 후기 탭에는 동기화할 공공 데이터가 없다.
+          action={isEvent && <SyncButton />}
         />
         <Toolbar
           query={query}

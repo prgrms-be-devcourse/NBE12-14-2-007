@@ -188,6 +188,13 @@ export interface AdminInquiryDetail extends AdminInquiryListItem {
   answer: string | null;
   updatedAt: string;
 }
+/** 공공 행사 수동 동기화 결과. 서버 FestivalResponse.SyncResponse와 같은 모양. */
+export interface SyncResult {
+  /** 종료 처리(CLOSED)된 행사 */
+  closedFestivals: { festivalId: number; title: string }[];
+  /** 새로 저장된 행사 */
+  savedFestivals: { festivalId: number; title: string }[];
+}
 /** 관리자 회원 검색 조건. 비운 항목은 조건을 걸지 않는다. */
 export interface AdminMemberQuery {
   /** 닉네임 또는 이메일 부분 일치 */
