@@ -3,6 +3,7 @@ package com.team007.room_escape.domain.festival.dto;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
+import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -17,6 +18,9 @@ public class FestivalResponse {
     public record ListResponse(
             @Schema(description = "행사 번호")
             Long festivalId,
+
+            @Schema(description = "데이터 출처", example = "PUBLIC")
+            ProviderType providerType,
 
             @Schema(description = "행사 제목")
             String title,
@@ -46,6 +50,7 @@ public class FestivalResponse {
         public static ListResponse from(Festival festival) {
             return ListResponse.builder()
                     .festivalId(festival.getId())
+                    .providerType(festival.getProviderType())
                     .title(festival.getTitle())
                     .category(festival.getCategory())
                     .instNm(festival.getInstNm())
@@ -57,4 +62,5 @@ public class FestivalResponse {
                     .build();
         }
     }
+
 }
