@@ -1927,18 +1927,24 @@ select {
   font-size: 13px;
 }
 .detail-hero {
-  height: 365px;
   border-radius: 13px;
   overflow: hidden;
   position: relative;
   background: #e9eddf;
+  display: flex;
+  justify-content: center;
 }
-.detail-hero > img,
+.detail-hero > img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 420px;
+}
 .detail-hero > .photo-fallback {
   width: 100%;
-  height: 100%;
+  height: 260px;
   object-fit: cover;
-  object-position: center 48%;
 }
 .detail-hero-overlay {
   position: absolute;
@@ -2158,11 +2164,13 @@ select {
   border: 1px solid #e4e9db;
   border-radius: 10px;
   background: #fbfcf8;
+  text-align: center;
 }
 .detail-summary > div {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   color: #28382f;
 }
 .detail-summary > div > svg {
@@ -2183,6 +2191,10 @@ select {
 }
 .detail-description {
   padding-top: 26px;
+}
+.detail-description > .btn,
+.detail-description > .aside-note {
+  margin-top: 18px;
 }
 .prose {
   font-size: 15px;
@@ -3348,9 +3360,6 @@ select {
   .editor-form {
     padding: 25px;
   }
-  .detail-hero {
-    height: 300px;
-  }
   .detail-layout {
     grid-template-columns: 1fr;
     gap: 30px;
@@ -4295,7 +4304,6 @@ select {
     width: 13px;
   }
   .detail-hero {
-    height: 240px;
     border-radius: 10px;
   }
   .detail-hero-copy {
