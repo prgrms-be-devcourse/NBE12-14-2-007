@@ -63,7 +63,7 @@ public class InquiryService {
 	/** 내가 쓴 문의 목록. 최신순. 남의 문의는 애초에 조회 대상이 아니다. */
 	@Transactional(readOnly = true)
 	public List<InquiryResponse.Info> findMine(UUID memberId) {
-		return inquiryRepository.findAllByMember_IdOrderByCreatedAtDesc(memberId).stream()
+		return inquiryRepository.findAllByMember_IdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId).stream()
 			.map(inquiry -> InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg())))
 			.toList();
 	}
@@ -76,7 +76,7 @@ public class InquiryService {
 	 */
 	@Transactional(readOnly = true)
 	public InquiryResponse.Info findMineById(UUID inquiryId, UUID memberId) {
-		Inquiry inquiry = inquiryRepository.findById(inquiryId)
+		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
 			.filter(found -> found.isWrittenBy(memberId))
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
@@ -91,7 +91,7 @@ public class InquiryService {
 	 */
 	@Transactional
 	public InquiryResponse.Info update(UUID inquiryId, UUID memberId, InquiryRequest.Update request) {
-		Inquiry inquiry = inquiryRepository.findById(inquiryId)
+		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
 		// 수정은 관리자에게도 열지 않는다. 남의 문의 내용을 고칠 이유가 없다.
@@ -113,7 +113,7 @@ public class InquiryService {
 	/** 문의를 삭제한다. 작성자 본인과 관리자가 삭제할 수 있다. */
 	@Transactional
 	public void delete(UUID inquiryId, UUID memberId, boolean isAdmin) {
-		Inquiry inquiry = inquiryRepository.findById(inquiryId)
+		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
 		if (!inquiry.isWrittenBy(memberId) && !isAdmin) {

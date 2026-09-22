@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
 import com.team007.room_escape.domain.festival.dto.FestivalResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalSearchRequest;
 import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClient;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -87,11 +89,43 @@ public class FestivalService {
 		return new FestivalResponse.SyncResponse(closedFestivals, savedFestivals);
 	}
 
-	/** 지역 + 날짜를 선택하면 해당 지역에서 그 날짜에 진행 중인 공공 행사 목록을 조회 **/
+	/** 검색어와 선택 필터로 공공행사와 사용자 등록 행사를 통합 검색한다*/
 	@Transactional(readOnly = true)
-	public Page<FestivalResponse.ListResponse> getPublicFestivalsByRegion(FestivalRegion region, LocalDate date, Pageable page) {
-		return festivalRepository.findOngoingByProviderTypeAndRegion(ProviderType.PUBLIC, region, date.atStartOfDay(), page)
-			.map(FestivalResponse.ListResponse::from);
+	public Page<FestivalResponse.ListResponse> searchFestivals(
+			FestivalSearchRequest request,
+			Pageable pageable
+	) {
+		String keyword = normalize(request.keyword());
+		String category = normalize(request.category());
+
+		LocalDateTime dateStart = request.date() == null
+				? null
+				: request.date().atStartOfDay();
+
+		LocalDateTime dateEnd = request.date() == null
+				? null
+				: request.date().plusDays(1).atStartOfDay();
+
+		return festivalRepository.searchFestivals(
+				keyword != null,
+				keyword,
+
+				request.region() != null,
+				request.region(),
+
+				request.providerType() != null,
+				request.providerType(),
+
+				category != null,
+				category,
+
+				request.date() != null,
+				dateStart,
+				dateEnd,
+				Boolean.TRUE.equals(request.excludeClosed()),
+
+				pageable
+		).map(FestivalResponse.ListResponse::from);
 	}
 
 	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신하고, 갱신된 행사 목록을 돌려준다 **/
@@ -185,6 +219,17 @@ public class FestivalService {
 		if (endDe == null) {
 			return FestivalStatus.OPEN;
 		}
-		return endDe.isBefore(LocalDateTime.now()) ? FestivalStatus.CLOSED : FestivalStatus.OPEN;
+
+		return endDe.isBefore(LocalDateTime.now())
+				? FestivalStatus.CLOSED
+				: FestivalStatus.OPEN;
+	}
+	/** 입력값의 앞뒤 공백을 제거하고, 빈 문자열은 검색 조건에서 제외한다.*/
+	private String normalize(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+
+		return value.trim().toLowerCase(Locale.ROOT);
 	}
 }

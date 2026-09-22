@@ -24,16 +24,44 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	long countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
 		ProviderType providerType, LocalDateTime yearStart, LocalDateTime yearEnd);
 
-	/** 지역 + 선택한 날짜에 진행 중인 행사 목록 조회 (beginDe <= date <= endDe, 삭제된 행사 제외)
-	 *  endDe가 없는 행사(비어있는 API 데이터)는 종료일 미상으로 보고 계속 진행 중인 것으로 취급 */
-	@Query("SELECT f FROM Festival f "
-		+ "WHERE f.providerType = :providerType AND f.region = :region AND f.deletedAt IS NULL "
-		+ "AND f.beginDe <= :date AND (f.endDe IS NULL OR f.endDe >= :date)")
-	Page<Festival> findOngoingByProviderTypeAndRegion(
-		@Param("providerType") ProviderType providerType,
-		@Param("region") FestivalRegion region,
-		@Param("date") LocalDateTime date,
-		Pageable pageable);
+	/** 검색 조건에 맞는 행사를 조회하고, 요청한 경우에만 종료된 행사를 제외한다. */
+	@Query("""
+        SELECT f
+        FROM Festival f
+        WHERE f.deletedAt IS NULL
+          AND (:hasKeyword = false
+                OR LOWER(COALESCE(f.title, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.instNm, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.regionDetail, ''))
+                    LIKE CONCAT('%', :keyword, '%'))
+          AND (:hasRegion = false OR f.region = :region)
+          AND (:hasProviderType = false OR f.providerType = :providerType)
+          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+        """)
+	Page<Festival> searchFestivals(
+			@Param("hasKeyword") boolean hasKeyword,
+			@Param("keyword") String keyword,
+
+			@Param("hasRegion") boolean hasRegion,
+			@Param("region") FestivalRegion region,
+
+			@Param("hasProviderType") boolean hasProviderType,
+			@Param("providerType") ProviderType providerType,
+
+			@Param("hasCategory") boolean hasCategory,
+			@Param("category") String category,
+
+			@Param("hasDate") boolean hasDate,
+			@Param("dateStart") LocalDateTime dateStart,
+			@Param("dateEnd") LocalDateTime dateEnd,
+			@Param("excludeClosed") boolean excludeClosed,
+
+			Pageable pageable
+	);
 
 	/** 종료일이 지났는데 아직 OPEN인 행사 조회 (CLOSED로 갱신하기 전에, 어떤 행사가 바뀌는지 응답에 담으려고) */
 	@Query("SELECT f FROM Festival f "
