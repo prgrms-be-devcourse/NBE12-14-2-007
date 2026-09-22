@@ -17,6 +17,7 @@ import type {
   AdminInquiryQuery,
   AdminMemberInfo,
   AdminMemberQuery,
+  SyncResult,
   Role,
   EventView,
   FestivalSearchInput,
@@ -531,6 +532,15 @@ export function createApi(mode: Mode) {
       return transport<Page<AdminInquiryListItem>>(
         `/admin/inquiries?${params}`,
       );
+    },
+    /**
+     * [ADMIN] 공공 행사 수동 동기화.
+     *
+     * 공공 API를 통째로 훑어서 오래 걸린다. transport의 15초 타임아웃에 걸릴 수 있다.
+     * 이미 실행 중이면 409(SYNC_ALREADY_RUNNING)가 온다.
+     */
+    async syncFestivals() {
+      return transport<SyncResult>("/festivals/sync", "POST");
     },
     /** [ADMIN] 회원 목록. 닉네임·이메일 부분 일치 검색. */
     async adminMembers(query: AdminMemberQuery = {}) {
