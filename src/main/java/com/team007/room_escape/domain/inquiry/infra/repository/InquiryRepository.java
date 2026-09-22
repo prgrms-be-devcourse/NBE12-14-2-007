@@ -26,6 +26,18 @@ public interface InquiryRepository extends JpaRepository<Inquiry, UUID> {
 	Optional<Inquiry> findByIdAndDeletedAtIsNull(UUID id);
 
 	/**
+	 * 관리자용 문의 단건. 작성자까지 함께 가져온다.
+	 * 삭제 여부를 가리지 않는다. 관리자는 삭제된 문의도 열어볼 수 있어야 한다.
+	 */
+	@Query("""
+		SELECT i
+		FROM Inquiry i
+		LEFT JOIN FETCH i.member
+		WHERE i.id = :id
+		""")
+	Optional<Inquiry> findDetailById(@Param("id") UUID id);
+
+	/**
 	 * 관리자용 문의 검색. 모든 조건은 선택이며, 비우면 그 조건을 걸지 않는다.
 	 * includeDeleted 가 true면 삭제된 문의까지 함께 조회한다.
 	 *

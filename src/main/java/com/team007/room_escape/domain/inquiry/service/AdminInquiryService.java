@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.inquiry.service;
 
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.team007.room_escape.domain.inquiry.dto.AdminInquiryRequest;
 import com.team007.room_escape.domain.inquiry.dto.AdminInquiryResponse;
+import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
 import com.team007.room_escape.domain.inquiry.infra.repository.InquiryRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.response.code.InquiryExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 
 import lombok.RequiredArgsConstructor;
@@ -51,6 +54,50 @@ public class AdminInquiryService {
 				? null
 				: imageUrlResolver.resolve(inquiry.getMember().getProfileImg())
 		));
+	}
+
+	/**
+	 * 관리자 문의 상세. 삭제된 문의도 열어볼 수 있다.
+	 * 신고 내용을 지웠다고 해서 관리자가 못 보면 신고 처리 이력을 확인할 수 없다.
+	 */
+	@Transactional(readOnly = true)
+	public AdminInquiryResponse.Detail findById(UUID inquiryId) {
+		return toDetail(findOrThrow(inquiryId));
+	}
+
+	/**
+	 * 관리자 답변을 등록한다. 이미 답변이 있으면 덮어쓴다.
+	 *
+	 * 삭제된 문의에는 답변하지 않는다. 작성자가 이미 지운 글이라
+	 * 답변을 남겨도 작성자에게 보이지 않기 때문이다.
+	 */
+	@Transactional
+	public AdminInquiryResponse.Detail answer(UUID inquiryId, AdminInquiryRequest.Answer request) {
+		Inquiry inquiry = findOrThrow(inquiryId);
+
+		if (inquiry.isDeleted()) {
+			throw new BusinessException(InquiryExceptionCode.INQUIRY_ALREADY_DELETED);
+		}
+
+		inquiry.answer(request.trimmed());
+
+		return toDetail(inquiry);
+	}
+
+	private Inquiry findOrThrow(UUID inquiryId) {
+		return inquiryRepository.findDetailById(inquiryId)
+			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
+	}
+
+	/** 저장된 key를 공개 URL로 바꿔 채운다. 회원이 없으면 프로필 URL도 없다. */
+	private AdminInquiryResponse.Detail toDetail(Inquiry inquiry) {
+		return AdminInquiryResponse.Detail.from(
+			inquiry,
+			imageUrlResolver.resolve(inquiry.getImg()),
+			inquiry.getMember() == null
+				? null
+				: imageUrlResolver.resolve(inquiry.getMember().getProfileImg())
+		);
 	}
 
 	private void validateSort(Sort sort) {

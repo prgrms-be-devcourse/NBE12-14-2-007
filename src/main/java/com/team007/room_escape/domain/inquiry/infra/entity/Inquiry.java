@@ -76,6 +76,17 @@ public class Inquiry extends SoftDeletableEntity {
 	}
 
 	/**
+	 * 관리자 답변을 단다. 답변과 상태를 항상 함께 바꾼다.
+	 * 둘 중 하나만 바뀌면 isAnswered()의 두 조건이 어긋나기 때문이다.
+	 *
+	 * 이미 답변이 있으면 덮어쓴다. 잘못 쓴 답변을 관리자가 고칠 수 있어야 한다.
+	 */
+	public void answer(String answer) {
+		this.answer = answer;
+		this.status = InquiryStatus.ANSWERED;
+	}
+
+	/**
 	 * 문의 수정. PATCH 의미에 맞춰 null인 값은 건드리지 않는다.
 	 * img는 빈 문자열이면 첨부를 지운다.
 	 *
