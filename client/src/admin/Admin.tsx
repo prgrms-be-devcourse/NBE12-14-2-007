@@ -32,10 +32,12 @@ import type { Role } from "../lib/types";
 import {
   AdminProvider,
   roleNames,
+  statusNames,
   useAdmin,
   visibilityNames,
   type AdminMember,
   type ContentItem,
+  type RunState,
   type Ticket,
   type Visibility,
 } from "./store";
@@ -249,8 +251,8 @@ function PanelTitle({
     </div>
   );
 }
-function Status({ status }: { status: Visibility }) {
-  return <Badge tone={tone(status)}>{visibilityNames[status]}</Badge>;
+function Status({ status }: { status: Visibility | RunState }) {
+  return <Badge tone={tone(status)}>{statusNames[status]}</Badge>;
 }
 function Table({
   label,
@@ -875,15 +877,16 @@ function SyncButton() {
   );
 }
 export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
-  const { data } = useAdmin();
+  const { data, eventsLoading, eventsError, reloadEvents } = useAdmin();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("");
   const status = params.get("status") || "";
   const isEvent = kind === "events";
   const records = data[kind];
-  const statuses: Visibility[] = isEvent
-    ? ["PENDING", "PUBLISHED", "HIDDEN"]
+  // 행사는 서버가 노출 상태를 갖고 있지 않아 진행 상태(OPEN/CLOSED)로 나눈다.
+  const statuses: (Visibility | RunState)[] = isEvent
+    ? ["OPEN", "CLOSED"]
     : ["PUBLISHED", "HIDDEN"];
   const items = records.filter(
     (item) =>
@@ -918,7 +921,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
             { value: "", label: "전체", count: records.length },
             ...statuses.map((value) => ({
               value,
-              label: visibilityNames[value],
+              label: statusNames[value],
               count: records.filter((r) => r.status === value).length,
             })),
           ]}
@@ -947,8 +950,26 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
           )}
         </Toolbar>
         <div className="adm-result-count">
-          검색 결과 <strong>{items.length}</strong>건
+          {isEvent && eventsLoading ? (
+            "불러오는 중…"
+          ) : (
+            <>
+              검색 결과 <strong>{items.length}</strong>건
+            </>
+          )}
         </div>
+        {isEvent && eventsError && (
+          <p className="adm-dialog-note" role="alert">
+            {eventsError}{" "}
+            <button
+              type="button"
+              className="adm-row-button"
+              onClick={reloadEvents}
+            >
+              다시 시도
+            </button>
+          </p>
+        )}
         <Table
           label={isEvent ? "행사 목록" : "후기 목록"}
           headers={[
@@ -1056,36 +1077,56 @@ function ContentDialog({
       {item.reason && (
         <p className="adm-dialog-note">최근 처리 사유: {item.reason}</p>
       )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          moderate(kind, item.id, status, reason);
-          onClose();
-        }}
-      >
-        <Field label="변경할 노출 상태">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as Visibility)}
-          >
-            <option value="PUBLISHED">공개</option>
-            <option value="HIDDEN">숨김</option>
-            {kind === "events" && <option value="PENDING">검토 대기</option>}
-          </select>
-        </Field>
-        <Reason value={reason} onChange={setReason} />
-        <div className="adm-dialog-actions">
-          <button className="btn secondary" type="button" onClick={onClose}>
-            취소
-          </button>
-          <button
-            className="btn primary"
-            disabled={status === item.status || !reason.trim()}
-          >
-            처리 내용 저장
-          </button>
-        </div>
-      </form>
+      {kind === "events" ? (
+        /*
+          TODO 행사 노출 관리 붙이기.
+               서버에 노출 상태 컬럼이 없어 숨김·복구를 저장할 방법이 없다.
+               여기서 바꿔봤자 새로고침하면 되돌아가므로 폼 자체를 띄우지 않는다.
+               festival 에 visibility 컬럼과 PATCH API가 생기면 아래 후기용 폼을
+               그대로 쓰면 된다.
+        */
+        <>
+          <p className="adm-dialog-note">
+            행사 노출 관리 기능은 준비 중입니다. 현재 상태는 종료일로 계산된
+            진행 상태입니다.
+          </p>
+          <div className="adm-dialog-actions">
+            <button className="btn secondary" type="button" onClick={onClose}>
+              닫기
+            </button>
+          </div>
+        </>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            moderate(kind, item.id, status, reason);
+            onClose();
+          }}
+        >
+          <Field label="변경할 노출 상태">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Visibility)}
+            >
+              <option value="PUBLISHED">공개</option>
+              <option value="HIDDEN">숨김</option>
+            </select>
+          </Field>
+          <Reason value={reason} onChange={setReason} />
+          <div className="adm-dialog-actions">
+            <button className="btn secondary" type="button" onClick={onClose}>
+              취소
+            </button>
+            <button
+              className="btn primary"
+              disabled={status === item.status || !reason.trim()}
+            >
+              처리 내용 저장
+            </button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }
@@ -1163,7 +1204,11 @@ export function AdminTickets() {
         {ticketsError && (
           <p className="adm-dialog-note" role="alert">
             {ticketsError}{" "}
-            <button type="button" className="adm-row-button" onClick={reloadTickets}>
+            <button
+              type="button"
+              className="adm-row-button"
+              onClick={reloadTickets}
+            >
               다시 시도
             </button>
           </p>
@@ -1293,7 +1338,7 @@ function TicketDialog({
           <Eye size={18} />
           <span>
             <small>
-              신고된 콘텐츠 {target && `· ${visibilityNames[target.status]}`}
+              신고된 콘텐츠 {target && `· ${statusNames[target.status]}`}
             </small>
             <strong>{ticket.target.title}</strong>
           </span>
