@@ -1,7 +1,6 @@
 package com.team007.room_escape.domain.festival.infra.entity;
 
 import com.team007.room_escape.global.entity.SoftDeletableEntity;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -32,10 +31,4 @@ public class FestivalSubmission extends SoftDeletableEntity {
     @JoinColumn(name = "festival_id", nullable = false)
     private Festival festival;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String content;
-
-    public void updateContent(String content) {
-        this.content = content;
-    }
 }

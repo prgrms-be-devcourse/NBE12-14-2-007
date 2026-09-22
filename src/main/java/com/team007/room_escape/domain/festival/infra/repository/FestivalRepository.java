@@ -24,7 +24,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	long countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
 		ProviderType providerType, LocalDateTime yearStart, LocalDateTime yearEnd);
 
-	/** 검색 조건에 맞는 행사를 조회하고, 요청한 경우에만 종료된 행사를 제외한다. */
+	// TODO: PostgreSQL의 null 파라미터 타입 오류로 사용 중인 hasXxx 플래그를 QueryDSL 도입 시 제거
 	@Query("""
         SELECT f
         FROM Festival f

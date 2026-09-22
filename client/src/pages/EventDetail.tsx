@@ -95,20 +95,14 @@ function SubmissionDetailLoader({ id }: { id: string }) {
       key={id}
       event={{
         ...data.submission.festival,
+        manager: null,
         source: "MEMBER",
         submissionId: id,
       }}
-      submissionContent={data.submission.submissionContent}
     />
   ) : null;
 }
-function EventDetail({
-  event,
-  submissionContent,
-}: {
-  event: EventView;
-  submissionContent?: string;
-}) {
+function EventDetail({ event }: { event: EventView }) {
   const { api, toast } = useApp();
   const navigate = useNavigate();
   const [tab, setTab] = useState("about");
@@ -117,11 +111,7 @@ function EventDetail({
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
-  const back = event.submissionId
-    ? "/mypage?tab=submissions"
-    : event.source === "MEMBER"
-      ? "/submissions"
-      : "/explore";
+  const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
   async function share() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -297,14 +287,6 @@ function EventDetail({
                     )}
                   </dl>
                 </section>
-                {submissionContent && (
-                  <section className="detail-section">
-                    <h2>내가 남긴 제보 내용</h2>
-                    <div className="submission-content prose">
-                      {submissionContent}
-                    </div>
-                  </section>
-                )}
                 <div className="detail-source">
                   <Landmark size={19} />
                   <p>

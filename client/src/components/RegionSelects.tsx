@@ -5,12 +5,17 @@ export function RegionSelects({
   value,
   onChange,
   variant = "filter",
+  supportedOnly = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   variant?: "filter" | "discovery";
+  supportedOnly?: boolean;
 }) {
   const { province, district } = selectedRegion(value);
+  const districts = supportedOnly
+    ? province?.districts.filter((option) => !option.value.includes(":"))
+    : province?.districts;
   const className =
     variant === "filter" ? "filter-select region-select" : "region-select";
   return (
@@ -40,11 +45,11 @@ export function RegionSelects({
           <select
             aria-label="시·군·구 선택"
             value={district}
-            disabled={!province?.districts.length}
+            disabled={!districts?.length}
             onChange={(e) => onChange(e.target.value || province?.value || "")}
           >
             <option value="">{province ? "전체" : "시·도 먼저 선택"}</option>
-            {province?.districts.map((option) => (
+            {districts?.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

@@ -52,7 +52,16 @@ export const regions: Record<string, string> = {
     ].map(([key, name]) => [`GYEONGGI_${key}`, `경기도 ${name}`]),
   ),
 };
-export const categories = ["전체", "축제", "공연", "전시", "체험", "플리마켓"];
+export const categories = [
+  "전체",
+  "축제",
+  "공연",
+  "전시",
+  "체험",
+  "플리마켓",
+  "교육",
+  "기타",
+];
 export const roleNames: Record<string, string> = {
   ROLE_WARNING: "활동 제한",
   ROLE_UNVERIFIED: "새로운 이웃",

@@ -10,7 +10,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-브라우저에서 http://localhost:3001 을 엽니다. 로그인·회원가입·마이페이지는 항상 `API_PROXY_TARGET`의 실제 백엔드를 호출하므로, 이 화면을 쓰려면 백엔드를 함께 실행해야 합니다. 아직 API가 없는 행사 탐색·후기 화면만 예시 데이터로 표시하며, 화면 안에 `예시` 표시가 붙습니다.
+브라우저에서 http://localhost:3001 을 엽니다. `VITE_CONTENT_MODE=api`로 실행하면 행사 검색을 포함한 연결 완료 기능이 `API_PROXY_TARGET`의 실제 백엔드를 호출하므로 백엔드를 함께 실행해야 합니다.
 
 ```powershell
 pnpm build
@@ -24,11 +24,11 @@ pnpm test
 
 ## 이름을 정한 근거
 
-| 화면 이름     | 백엔드의 실제 의미                                              | 구현                                                                                  |
-| ------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 지역 문화행사 | `ProviderType.PUBLIC`: 경기도 문화행사 Open API에서 수집한 정보 | 미리보기의 목록·검색·지역·날짜·종류 필터·상세. 실제 모드는 준비 중 상태               |
-| 행사 제보     | `ProviderType.MEMBER`: 회원이 알려온 행사 정보                  | 전체 회원 제보 목록·검색·상태 필터·공개 행사 상세는 Mock, 등록 API 연결               |
-| 행사 후기     | 행사에 연결된 후기                                              | 전체 후기 feed·행사 상세 이동은 Mock, 행사별 후기·작성·수정·삭제·댓글·좋아요 API 연결 |
+| 화면 이름     | 백엔드의 실제 의미                             | 구현                                                                                  |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 지역 문화행사 | 공공데이터와 회원 제보 행사의 통합 검색        | 검색어·지역·날짜·출처·종류·종료 행사 제외 필터와 9개 단위 페이징                      |
+| 행사 제보     | `ProviderType.MEMBER`: 회원이 알려온 행사 정보 | 전체 회원 제보 목록·검색·상태 필터·공개 행사 상세는 Mock, 등록 API 연결               |
+| 행사 후기     | 행사에 연결된 후기                             | 전체 후기 feed·행사 상세 이동은 Mock, 행사별 후기·작성·수정·삭제·댓글·좋아요 API 연결 |
 
 `PUBLIC/MEMBER`는 주최자의 공공/민간 구분이 아니라 **데이터의 유입 경로**입니다. 미리보기의 행사 제보 탭에서는 다른 회원의 제보를 포함한 행사 정보를 둘러봅니다. 개인 제보 내용 및 수정·삭제는 **마이페이지 → 내 행사 제보**에서 관리하며, 행사 탐색 화면에는 개인 제보 내용과 회원 이메일·연락처를 표시하지 않습니다.
 
@@ -87,19 +87,20 @@ API 요청이 실패해도 예시 데이터로 대체하지 않습니다. access
 | 로그인·가입·재발급·로그아웃 | `POST /auth/login`, `/signup`, `/refresh`, `/logout`                                   | 응답 `data.accessToken`, Authorization Bearer, cookie 포함                |
 | 내 정보                     | `GET/PATCH /members/me`                                                                | `id,email,nickname,profileImg,phone,role,createdAt,updatedAt`             |
 | 비밀번호 변경               | `POST /members/me/password/verification-code`, `/verify`, `PATCH /members/me/password` | 자동 발송하지 않으며 사용자가 버튼을 눌러 진행                            |
-| 행사 제보                   | `POST /festivals/submissions`                                                          | `festivalContent`, `submissionContent` 분리. 참가 신청 아님               |
+| 행사 제보                   | `POST /festivals/submissions`                                                          | 행사 정보 등록 기능. 참가 신청 아님                                       |
 | 내 제보                     | `GET /members/me/submissions`, `GET/PATCH/DELETE /members/me/submissions/{id}`         | 상세 응답은 `data.submission.festival`                                    |
 | 후기                        | `GET/POST /festivals/{id}/posts`, `GET/PATCH/DELETE /posts/{id}`                       | 목록은 Spring Page, 제목 2~30자, 별점 필드 없음                           |
 | 댓글                        | `GET/POST /posts/{id}/comments`, `PATCH/DELETE /comments/{id}`                         | 목록은 배열, 페이지 크기 20, 내용 최대 500자                              |
 | 좋아요                      | `GET /posts/{id}/likes`, `POST/DELETE /posts/{id}/likes/me`                            | 개수는 Long, 등록/취소는 `{likeCount}`. 내 상태 조회 API 없음             |
 | 문의·신고                   | `GET /inquiries/me`, `POST /inquiries`, `GET/PATCH/DELETE /inquiries/{id}`             | `QUESTION/REPORT`, `PENDING/ANSWERED`, 답변 후 수정 제한                  |
 | 이미지                      | `POST /images`                                                                         | multipart `file`, `type=POST/PROFILE/INQUIRY/FESTIVAL`, 5MB, JPG/PNG/WEBP |
+| 행사 통합 검색              | `GET /festivals`                                                                       | 검색어·지역·출처·카테고리·날짜·종료 제외, Spring Page                     |
 
 이미지는 **프로필·문의에 `key`**, 행사·후기에 해당 DTO가 요구하는 **`url`**을 전달합니다. 백엔드의 image API 설명은 key 저장을 권장하지만, 현재 Festival/Post Service는 URL 문자열을 그대로 저장하고 응답하므로 해당 DTO/Service에 맞췄습니다.
 
 최초 확인 당시 8080 서버의 OpenAPI에는 소스에 있는 **문의 API와 좋아요 취소 DELETE가 나타나지 않았습니다**. 이 두 기능은 서버와 소스 버전을 맞춘 뒤 실제 연동 확인이 필요합니다. 이번 폴더 변경에서는 백엔드 서버를 재시작하지 않았습니다.
 
-`GET /api/v1/festivals` 지역 문화행사 목록은 `region`과 `date`가 필수라 현재 탐색 화면의 필터와 맞지 않고, 전체 후기·전체 회원 제보 목록·공개 행사 상세 조회 API는 백엔드에 없습니다. 해당 탐색 화면은 예시 데이터로 제공하며, 존재하지 않는 조회 API는 호출하지 않습니다. 이 변경의 범위는 프론트엔드이며 백엔드 변경은 없습니다.
+`GET /api/v1/festivals` 행사 통합 검색은 모든 검색 조건을 선택값으로 전달하며, 실제 API 모드에서 검색 결과를 페이지당 9개씩 표시합니다. 공개 행사 상세 조회 API는 아직 연결되지 않았습니다.
 
 지역 선택 데이터는 `src/lib/regions.ts`, 공통 선택 UI는 `src/components/RegionSelects.tsx`에서 관리합니다. 17개 시·도 아래에 시·군·구 옵션을 두며, 세종은 시 전체로 선택합니다. 경기도의 기존 `GYEONGGI_*` 검색 URL은 유지합니다. 그 외 세부 지역의 `시도코드:지역명` 값은 프론트 검색용으로만 사용하고 제보 등록 DTO에는 추가하지 않습니다. 현재 예시 문화행사는 경기도에만 있어 다른 지역을 선택하면 빈 결과를 표시합니다. 서울 자치구는 [서울시 안내](https://www.seoul.go.kr/seoul/autonomy.do), 인천의 제물포구·영종구·검단구는 [인천시 행정체제 개편 안내](https://www.incheon.go.kr/IC010601/2187729)를 참고했습니다.
 

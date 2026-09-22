@@ -41,19 +41,39 @@ export interface EventView extends Festival {
   preview?: boolean;
   submissionId?: string;
 }
-export interface SubmissionInput {
+export interface FestivalSearchInput {
+  keyword?: string;
+  region?: string;
+  providerType?: "PUBLIC" | "MEMBER";
+  category?: string;
+  date?: string;
+  excludeClosed?: boolean;
+  page?: number;
+  sort?: "soon" | "name";
+}
+export interface FestivalSearchItem {
+  festivalId: number;
+  providerType: "PUBLIC" | "MEMBER";
   title: string;
   category: string;
-  manager: string;
-  festivalContent: string;
-  region: string;
-  regionDetail: string;
+  instNm: string | null;
+  imgUrl: string | null;
   beginDe: string;
   endDe: string;
-  eventTmInfo: string;
-  submissionContent: string;
+  region: string;
+  status: "OPEN" | "CLOSED";
+}
+export interface SubmissionInput {
+  name: string;
+  category: string;
+  festivalContent?: string;
+  region: string;
+  regionDetail?: string;
+  beginDe: string;
+  endDe: string;
+  eventTmInfo?: string;
   instNm?: string;
-  referenceUrl?: string;
+  referenceUrl: string;
   imgUrl?: string;
   partcptExpnInfo?: string;
   telnoInfo?: string;
@@ -73,10 +93,9 @@ export interface SubmissionSummary {
 export interface SubmissionDetail {
   submission: {
     festivalSubmissionId: string;
-    submissionContent: string;
     createdAt: string;
     updatedAt: string;
-    festival: Festival;
+    festival: Omit<Festival, "manager">;
   };
 }
 export interface PostInput {

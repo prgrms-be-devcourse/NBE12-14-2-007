@@ -36,7 +36,6 @@ test("API mode shows pending views without calling unavailable or private browse
   });
   for (const [path, heading] of [
     ["/reviews", "전체 후기 조회를 준비하고 있어요"],
-    ["/submissions", "이웃의 행사 제보 조회를 준비하고 있어요"],
     ["/events/72", "행사 상세 조회를 준비하고 있어요"],
   ]) {
     await page.goto(path);
@@ -95,48 +94,12 @@ test("review feed includes multiple events and keeps review and event links sepa
   await expect(page).toHaveURL("/events/1001");
 });
 
-test("community submissions include other members while private editing stays in mypage", async ({
-  page,
-}) => {
+test("submission menu opens the registration form", async ({ page }) => {
   await page.goto("/submissions");
+  await expect(page).toHaveURL("/submissions/new");
   await expect(
-    page.getByRole("heading", { name: /이웃이 전한 행사/ }),
-  ).toContainText("4");
-  await expect(
-    page.getByRole("heading", { name: /내가 제보한 행사/ }),
-  ).toHaveCount(0);
-  await expect(page.getByText("제보자 · 소소한 여행자")).toBeVisible();
-  await page.getByLabel("제보된 행사 검색").fill("낭독회");
-  await expect(page.locator(".event-card")).toHaveCount(1);
-  await page.getByRole("link", { name: /동네 책방, 가을 낭독회/ }).click();
-  await expect(page).toHaveURL("/events/3001");
-  await expect(
-    page.getByRole("heading", { name: "동네 책방, 가을 낭독회", exact: true }),
+    page.getByRole("heading", { name: "새로운 즐거움을 알려주세요" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "제보 수정" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "내 제보 삭제" })).toHaveCount(
-    0,
-  );
-  await page.getByRole("tab", { name: "행사 후기", exact: true }).click();
-  await page.getByRole("link", { name: "후기 쓰기", exact: true }).click();
-  await expect(page).toHaveURL("/reviews/new?festival=3001");
-  await page.getByLabel("후기 제목").fill("이웃의 낭독회 방문 후기");
-  await page
-    .getByLabel("후기 내용")
-    .fill("다른 회원이 제보한 행사에도 후기를 남길 수 있어요.");
-  await page.getByRole("button", { name: "후기 등록하기" }).click();
-  await expect(page.locator(".review-event-title")).toHaveText(
-    "동네 책방, 가을 낭독회",
-  );
-  await page.goto("/mypage?tab=submissions");
-  await expect(page.locator(".submission-row")).toHaveCount(2);
-  await expect(
-    page.getByRole("link", { name: /동네 책방, 가을 낭독회/ }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("link", { name: /이웃과 함께하는 주말 플리마켓/ })
-    .click();
-  await expect(page.getByRole("link", { name: "제보 수정" })).toBeVisible();
 });
 
 test("comment timestamps show Seoul hours and minutes for local and UTC data", async ({
@@ -185,7 +148,7 @@ test("active navigation underline stays below the text at desktop and tablet wid
     for (const [path, label] of [
       ["/", "홈"],
       ["/explore", "지역 문화행사"],
-      ["/submissions", "행사 제보"],
+      ["/submissions/new", "행사 제보"],
       ["/reviews", "행사 후기"],
     ]) {
       await page.goto(path);
@@ -216,7 +179,7 @@ test("community pages remain accessible and fit small screens", async ({
 }) => {
   for (const [path, name] of [
     ["/reviews", "reviews-feed"],
-    ["/submissions", "community-submissions"],
+    ["/submissions/new", "submission-form"],
     ["/events/3001", "community-detail"],
   ]) {
     await page.goto(path);
@@ -235,7 +198,7 @@ test("community pages remain accessible and fit small screens", async ({
     for (const path of [
       "/reviews",
       "/reviews/new",
-      "/submissions",
+      "/submissions/new",
       "/events/3001",
       "/reviews/demo-post-1",
     ]) {

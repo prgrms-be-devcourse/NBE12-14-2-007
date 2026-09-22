@@ -39,9 +39,8 @@ public class FestivalSubmissionService {
                 .member(member)
                 .providerType(ProviderType.MEMBER)
                 .instNm(request.instNm())
-                .title(request.title())
+                .title(request.name())
                 .category(request.category())
-                .manager(request.manager())
                 .content(request.festivalContent())
                 .url(request.referenceUrl())
                 .region(request.region())
@@ -61,7 +60,6 @@ public class FestivalSubmissionService {
 
         FestivalSubmission festivalSubmission = FestivalSubmission.builder()
                 .festival(savedFestival)
-                .content(request.submissionContent())
                 .build();
 
         FestivalSubmission savedFestivalSubmission =
@@ -109,9 +107,8 @@ public class FestivalSubmissionService {
 
         submission.getFestival().updateDetails(
                 request.instNm(),
-                request.title(),
+                request.name(),
                 request.category(),
-                request.manager(),
                 request.festivalContent(),
                 request.referenceUrl(),
                 request.region(),
@@ -124,8 +121,6 @@ public class FestivalSubmissionService {
                 request.telnoInfo(),
                 request.hostInstNm()
         );
-        submission.updateContent(request.submissionContent());
-
         return FindFestivalSubmissionResponse.from(submission);
     }
 

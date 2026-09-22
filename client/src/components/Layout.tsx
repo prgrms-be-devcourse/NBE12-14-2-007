@@ -30,7 +30,7 @@ export function Layout() {
               홈
             </NavLink>
             <NavLink to="/explore">지역 문화행사</NavLink>
-            <NavLink to="/submissions">행사 제보</NavLink>
+            <NavLink to="/submissions/new">행사 제보</NavLink>
             <NavLink to="/reviews">행사 후기</NavLink>
           </nav>
           <div className="header-actions">
@@ -77,7 +77,7 @@ export function Layout() {
             </div>
             <div className="footer-links">
               <Link to="/explore">지역 문화행사</Link>
-              <Link to="/submissions">행사 제보</Link>
+              <Link to="/submissions/new">행사 제보</Link>
               <Link to="/reviews">행사 후기</Link>
               <Link to="/mypage?tab=inquiries">문의하기</Link>
               <Link to="/admin">시스템 관리자 미리보기</Link>

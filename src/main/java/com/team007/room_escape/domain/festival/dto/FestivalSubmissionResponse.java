@@ -104,7 +104,6 @@ public class FestivalSubmissionResponse {
                     .submission(
                             FestivalSubmissionDetail.builder()
                                     .festivalSubmissionId(festivalSubmission.getId())
-                                    .submissionContent(festivalSubmission.getContent())
                                     .createdAt(festivalSubmission.getCreatedAt())
                                     .updatedAt(festivalSubmission.getUpdatedAt())
                                     .festival(
@@ -113,7 +112,6 @@ public class FestivalSubmissionResponse {
                                                     .category(festival.getCategory())
                                                     .instNm(festival.getInstNm())
                                                     .title(festival.getTitle())
-                                                    .manager(festival.getManager())
                                                     .festivalContent(festival.getContent())
                                                     .referenceUrl(festival.getUrl())
                                                     .region(festival.getRegion())
@@ -141,9 +139,6 @@ public class FestivalSubmissionResponse {
             @Schema(description = "행사 제보 번호")
             UUID festivalSubmissionId,
 
-            @Schema(description = "행사 제보 내용")
-            String submissionContent,
-
             @Schema(description = "행사 제보 일시")
             LocalDateTime createdAt,
 
@@ -169,9 +164,6 @@ public class FestivalSubmissionResponse {
 
             @Schema(description = "행사 종류")
             String category,
-
-            @Schema(description = "행사 관리자")
-            String manager,
 
             @Schema(description = "행사 상세 내용")
             String festivalContent,
