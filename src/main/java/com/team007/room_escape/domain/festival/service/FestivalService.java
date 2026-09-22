@@ -11,6 +11,8 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -88,6 +90,14 @@ public class FestivalService {
 	public Page<FestivalResponse.ListResponse> getPublicFestivalsByRegion(FestivalRegion region, LocalDate date, Pageable page) {
 		return festivalRepository.findOngoingByProviderTypeAndRegion(ProviderType.PUBLIC, region, date.atStartOfDay(), page)
 			.map(FestivalResponse.ListResponse::from);
+	}
+
+	/** 공공 행사 1건의 상세 정보를 조회. 없거나 삭제됐거나 공공 행사가 아니면 FESTIVAL_NOT_FOUND **/
+	@Transactional(readOnly = true)
+	public FestivalResponse.DetailResponse getPublicFestival(Long festivalId) {
+		Festival festival = festivalRepository.findActiveById(festivalId, ProviderType.PUBLIC)
+			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
+		return FestivalResponse.DetailResponse.from(festival);
 	}
 
 	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신 **/

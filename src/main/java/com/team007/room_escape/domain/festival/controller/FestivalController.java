@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,5 +36,13 @@ public class FestivalController {
 		Page<FestivalResponse.ListResponse> response = festivalService.getPublicFestivalsByRegion(region, date, page);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
+	}
+
+	@Operation(summary = "공공 행사 상세 조회", description = "공공 행사 1건의 상세 정보를 조회합니다.")
+	@GetMapping("/{festivalId}")
+	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> getPublicFestival(
+			@PathVariable Long festivalId
+	) {
+		return ResponseEntity.ok(ApiResponse.success(festivalService.getPublicFestival(festivalId)));
 	}
 }

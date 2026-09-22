@@ -52,6 +52,7 @@ public class SecurityConfig {
 				//      가입 화면 외의 용도가 늘어나기 전에 업로드 제한(IP별 횟수 등)을 붙일 것.
 				.requestMatchers(HttpMethod.POST, "/api/v1/images").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/festivals").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/festivals/{festivalId:\\d+}").permitAll()
 				.requestMatchers(
 					"/v3/api-docs/**",
 					"/swagger-ui/**",
