@@ -877,6 +877,16 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* 문의 첨부 이미지. 세로로 긴 사진이 모달을 넘치지 않게 높이를 제한한다. */
+.adm-content-image {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  margin: 0 0 22px;
+  border: 1px solid #e8eddf;
+  border-radius: 8px;
+  object-fit: contain;
+}
 .adm-target-link {
   display: flex;
   align-items: center;
