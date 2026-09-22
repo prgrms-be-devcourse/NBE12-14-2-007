@@ -12,6 +12,8 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -128,11 +130,19 @@ public class FestivalService {
 		).map(FestivalResponse.ListResponse::from);
 	}
 
+	/** 공공 행사 1건의 상세 정보를 조회. 없거나 삭제됐거나 공공 행사가 아니면 FESTIVAL_NOT_FOUND **/
+	@Transactional(readOnly = true)
+	public FestivalResponse.DetailResponse getPublicFestival(Long festivalId) {
+		Festival festival = festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(festivalId, ProviderType.PUBLIC)
+			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
+		return FestivalResponse.DetailResponse.from(festival);
+	}
+
 	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신하고, 갱신된 행사 목록을 돌려준다 **/
 	private List<FestivalResponse.SyncedFestival> closeExpiredFestivals() {
 		LocalDateTime now = LocalDateTime.now();
 		// 일괄 UPDATE는 어떤 행이 바뀌었는지 돌려주지 않아서, 같은 시각(now)으로 갱신 전에 목록을 먼저 뽑아둔다
-		List<FestivalResponse.SyncedFestival> closed = festivalRepository.findExpiredOpen(now).stream()
+		List<FestivalResponse.SyncedFestival> closed = festivalRepository.findByStatusAndEndDeBefore(FestivalStatus.OPEN, now).stream()
 			.map(FestivalResponse.SyncedFestival::from)
 			.toList();
 		festivalRepository.closeExpiredFestivals(now);

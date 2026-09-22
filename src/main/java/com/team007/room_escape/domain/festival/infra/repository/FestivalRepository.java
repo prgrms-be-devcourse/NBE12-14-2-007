@@ -2,6 +2,7 @@ package com.team007.room_escape.domain.festival.infra.repository;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 
 import java.time.LocalDateTime;
@@ -64,9 +65,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	);
 
 	/** 종료일이 지났는데 아직 OPEN인 행사 조회 (CLOSED로 갱신하기 전에, 어떤 행사가 바뀌는지 응답에 담으려고) */
-	@Query("SELECT f FROM Festival f "
-		+ "WHERE f.status = com.team007.room_escape.domain.festival.infra.entity.FestivalStatus.OPEN AND f.endDe < :now")
-	List<Festival> findExpiredOpen(@Param("now") LocalDateTime now);
+	List<Festival> findByStatusAndEndDeBefore(FestivalStatus status, LocalDateTime now);
 
 	/** endDe가 지난 OPEN 행사를 CLOSED로 일괄 갱신 (반환값: 갱신된 건수)
 	 *  clearAutomatically=true: 벌크 UPDATE는 영속성 컨텍스트를 거치지 않아서,
@@ -76,6 +75,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		+ "WHERE f.status = com.team007.room_escape.domain.festival.infra.entity.FestivalStatus.OPEN AND f.endDe < :now")
 	int closeExpiredFestivals(@Param("now") LocalDateTime now);
 
+	/** 삭제되지 않은 행사 1건 조회 (공공/민간 구분은 providerType으로) */
 	Optional<Festival> findByIdAndProviderTypeAndDeletedAtIsNull(
 			Long festivalId,
 			ProviderType providerType

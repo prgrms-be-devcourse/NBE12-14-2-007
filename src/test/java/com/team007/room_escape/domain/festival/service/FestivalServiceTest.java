@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -19,6 +20,8 @@ import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -260,7 +263,7 @@ class FestivalServiceTest {
 	void returnsClosedAndSavedFestivals() {
 		FestivalApiRow row1 = rowInCurrentYear("0101", "29991231");
 		FestivalApiRow row2 = rowInCurrentYear("0102", "29991231");
-		when(festivalRepository.findExpiredOpen(any(LocalDateTime.class)))
+		when(festivalRepository.findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), any(LocalDateTime.class)))
 			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회"), expiredOpenFestival(4L, "지난 전시회")));
 		when(festivalPublicApiClient.fetch(1, 1000))
 			.thenReturn(new FestivalApiResult(2, List.of(row1, row2)));
@@ -292,7 +295,7 @@ class FestivalServiceTest {
 		ArgumentCaptor<LocalDateTime> lookupNow = ArgumentCaptor.forClass(LocalDateTime.class);
 		ArgumentCaptor<LocalDateTime> updateNow = ArgumentCaptor.forClass(LocalDateTime.class);
 		InOrder inOrder = Mockito.inOrder(festivalRepository);
-		inOrder.verify(festivalRepository).findExpiredOpen(lookupNow.capture());
+		inOrder.verify(festivalRepository).findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), lookupNow.capture());
 		inOrder.verify(festivalRepository).closeExpiredFestivals(updateNow.capture());
 		assertThat(updateNow.getValue()).isEqualTo(lookupNow.getValue());
 	}
@@ -304,7 +307,7 @@ class FestivalServiceTest {
 	@DisplayName("새 행사가 없으면 저장 목록은 비고 종료 처리 목록만 담긴다")
 	void returnsEmptySavedWhenNoNewFestivals() {
 		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
-		when(festivalRepository.findExpiredOpen(any(LocalDateTime.class)))
+		when(festivalRepository.findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), any(LocalDateTime.class)))
 			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회")));
 		when(festivalPublicApiClient.fetch(1, 1000))
 			.thenReturn(new FestivalApiResult(1, List.of(existing)));
@@ -519,5 +522,71 @@ class FestivalServiceTest {
 		assertThat(response.title()).isEqualTo("경기 행사");
 		assertThat(response.region()).isEqualTo(FestivalRegion.GYEONGGI);
 		assertThat(response.providerType()).isEqualTo(ProviderType.PUBLIC);
+	}
+
+	/**
+	 * 상세 조회는 PUBLIC 타입으로만 찾고, 응답에 상세 화면용 필드가 그대로 담기는지 확인한다.
+	 */
+	@Test
+	@DisplayName("공공 행사 상세 조회 시 PUBLIC 타입으로 찾고 상세 필드를 응답에 담는다")
+	void getPublicFestivalReturnsDetail() {
+		LocalDate today = LocalDate.now();
+		Festival festival = Festival.builder()
+			.id(7L)
+			.providerType(ProviderType.PUBLIC)
+			.title("남한산성문화제")
+			.category("행사")
+			.instNm("경기문화재단")
+			.hostInstNm("광주시")
+			.eventTmInfo("10:00~18:00")
+			.partcptExpnInfo("무료")
+			.telnoInfo("031-000-0000")
+			.url("https://example.com/1")
+			.hmpgUrl("https://example.com")
+			.imgUrl("https://example.com/img.jpg")
+			.beginDe(today.minusDays(1).atStartOfDay())
+			.endDe(today.plusDays(1).atStartOfDay())
+			.region(FestivalRegion.GYEONGGI)
+			.build();
+		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(7L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(festival));
+
+		FestivalResponse.DetailResponse detail = festivalService.getPublicFestival(7L);
+
+		assertThat(detail.festivalId()).isEqualTo(7L);
+		assertThat(detail.title()).isEqualTo("남한산성문화제");
+		assertThat(detail.hostInstNm()).isEqualTo("광주시");
+		assertThat(detail.eventTmInfo()).isEqualTo("10:00~18:00");
+		assertThat(detail.partcptExpnInfo()).isEqualTo("무료");
+		assertThat(detail.telnoInfo()).isEqualTo("031-000-0000");
+		assertThat(detail.hmpgUrl()).isEqualTo("https://example.com");
+		assertThat(detail.region()).isEqualTo(FestivalRegion.GYEONGGI);
+		assertThat(detail.status()).isEqualTo(FestivalStatus.OPEN);
+	}
+
+	/**
+	 * 존재하지 않거나 삭제됐거나 공공 행사가 아니면 리포지토리가 빈 값을 주고, 서비스는 FESTIVAL_NOT_FOUND를 던진다.
+	 */
+	@Test
+	@DisplayName("행사를 찾을 수 없으면 FESTIVAL_NOT_FOUND 예외가 발생한다")
+	void getPublicFestivalThrowsWhenNotFound() {
+		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(999L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.empty());
+
+		assertThatThrownBy(() -> festivalService.getPublicFestival(999L))
+			.isInstanceOf(BusinessException.class)
+			.extracting(e -> ((BusinessException) e).getExceptionCode())
+			.isEqualTo(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
+	}
+
+	/**
+	 * 저장된 status가 낡아도(OPEN) 응답은 종료일 기준으로 다시 계산해서 CLOSED로 내려야 한다.
+	 */
+	@Test
+	@DisplayName("상세 응답의 status도 저장된 값이 아니라 endDe 기준으로 계산된다")
+	void getPublicFestivalComputesStatusFromEndDe() {
+		LocalDateTime pastEndDe = LocalDate.now().minusDays(1).atStartOfDay();
+		Festival stale = publicFestival(FestivalRegion.GYEONGGI, pastEndDe.minusDays(5), pastEndDe, FestivalStatus.OPEN);
+		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(1L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(stale));
+
+		assertThat(festivalService.getPublicFestival(1L).status()).isEqualTo(FestivalStatus.CLOSED);
 	}
 }

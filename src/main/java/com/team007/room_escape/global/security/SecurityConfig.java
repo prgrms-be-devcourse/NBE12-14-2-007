@@ -51,7 +51,8 @@ public class SecurityConfig {
 				// TODO 누구나 호출할 수 있어 R2 용량을 소진시키는 남용이 가능하다.
 				//      가입 화면 외의 용도가 늘어나기 전에 업로드 제한(IP별 횟수 등)을 붙일 것.
 				.requestMatchers(HttpMethod.POST, "/api/v1/images").permitAll()
-				.requestMatchers(HttpMethod.GET, "/api/v1/festivals").permitAll()
+				// TODO url 한꺼번에 정리하기 (지금은 공개 API가 늘어날 때마다 규칙을 한 줄씩 추가하고 있음)
+				.requestMatchers(HttpMethod.GET, "/api/v1/festivals/**").permitAll()
 				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 				.requestMatchers(
 					"/v3/api-docs/**",
