@@ -233,41 +233,79 @@ class FestivalServiceTest {
 		inOrder.verify(publicFestivalSourceRepository).save(any());
 	}
 
+	/** 종료 처리 대상으로 조회될 (종료일이 지났는데 아직 OPEN인) 행사를 만드는 헬퍼. */
+	private Festival expiredOpenFestival(Long id, String title) {
+		return Festival.builder()
+			.id(id)
+			.providerType(ProviderType.PUBLIC)
+			.title(title)
+			.endDe(LocalDate.now().minusDays(1).atStartOfDay())
+			.status(FestivalStatus.OPEN)
+			.build();
+	}
+
 	/**
-	 * 수동 동기화 버튼에 돌려줄 결과: 종료 처리한 건수와 새로 저장한 건수가 정확히 나오는지 확인한다.
+	 * 수동 동기화 버튼에 돌려줄 결과: 종료 처리한 행사 목록과 새로 저장한 행사 목록(행사명 포함)이 담기는지 확인한다.
 	 */
 	@Test
-	@DisplayName("동기화 결과에 종료 처리 건수와 새로 저장한 건수가 담긴다")
-	void returnsClosedAndSavedCounts() {
+	@DisplayName("동기화 결과에 종료 처리된 행사 목록과 새로 저장한 행사 목록이 담긴다")
+	void returnsClosedAndSavedFestivals() {
 		FestivalApiRow row1 = rowInCurrentYear("0101", "29991231");
 		FestivalApiRow row2 = rowInCurrentYear("0102", "29991231");
-		when(festivalRepository.closeExpiredFestivals(any(LocalDateTime.class))).thenReturn(3);
+		when(festivalRepository.findExpiredOpen(any(LocalDateTime.class)))
+			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회"), expiredOpenFestival(4L, "지난 전시회")));
 		when(festivalPublicApiClient.fetch(1, 1000))
 			.thenReturn(new FestivalApiResult(2, List.of(row1, row2)));
 		stubYearCount(0L);
 
 		FestivalResponse.SyncResponse result = festivalService.syncPublicFestivals();
 
-		assertThat(result.closedCount()).isEqualTo(3);
-		assertThat(result.savedCount()).isEqualTo(2);
+		assertThat(result.closedFestivals())
+			.extracting(FestivalResponse.SyncedFestival::title)
+			.containsExactly("지난 음악회", "지난 전시회");
+		assertThat(result.savedFestivals())
+			.extracting(FestivalResponse.SyncedFestival::title)
+			.containsExactly("남한산성문화제", "남한산성문화제");
 	}
 
 	/**
-	 * 새 행사가 없으면 저장 건수는 0이지만, 종료 처리한 건수는 그대로 응답해야 한다.
+	 * 종료 처리 목록을 뽑은 뒤, 같은 시각(now)으로 일괄 갱신까지 호출되는지 확인한다.
 	 */
 	@Test
-	@DisplayName("새 행사가 없으면 저장 건수는 0이고 종료 처리 건수만 담긴다")
-	void returnsZeroSavedWhenNoNewFestivals() {
+	@DisplayName("종료 대상 목록을 조회한 뒤 같은 시각으로 CLOSED 일괄 갱신을 호출한다")
+	void closesExpiredFestivalsWithSameNowAsLookup() {
 		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
-		when(festivalRepository.closeExpiredFestivals(any(LocalDateTime.class))).thenReturn(1);
+		when(festivalPublicApiClient.fetch(1, 1000))
+			.thenReturn(new FestivalApiResult(1, List.of(existing)));
+		stubYearCount(1L);
+
+		festivalService.syncPublicFestivals();
+
+		ArgumentCaptor<LocalDateTime> lookupNow = ArgumentCaptor.forClass(LocalDateTime.class);
+		ArgumentCaptor<LocalDateTime> updateNow = ArgumentCaptor.forClass(LocalDateTime.class);
+		InOrder inOrder = Mockito.inOrder(festivalRepository);
+		inOrder.verify(festivalRepository).findExpiredOpen(lookupNow.capture());
+		inOrder.verify(festivalRepository).closeExpiredFestivals(updateNow.capture());
+		assertThat(updateNow.getValue()).isEqualTo(lookupNow.getValue());
+	}
+
+	/**
+	 * 새 행사가 없으면 저장 목록은 비어 있지만, 종료 처리한 행사 목록은 그대로 응답해야 한다.
+	 */
+	@Test
+	@DisplayName("새 행사가 없으면 저장 목록은 비고 종료 처리 목록만 담긴다")
+	void returnsEmptySavedWhenNoNewFestivals() {
+		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
+		when(festivalRepository.findExpiredOpen(any(LocalDateTime.class)))
+			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회")));
 		when(festivalPublicApiClient.fetch(1, 1000))
 			.thenReturn(new FestivalApiResult(1, List.of(existing)));
 		stubYearCount(1L);
 
 		FestivalResponse.SyncResponse result = festivalService.syncPublicFestivals();
 
-		assertThat(result.closedCount()).isEqualTo(1);
-		assertThat(result.savedCount()).isZero();
+		assertThat(result.closedFestivals()).hasSize(1);
+		assertThat(result.savedFestivals()).isEmpty();
 	}
 
 	/** saveAll(List)에 실제로 넘어간 Festival 목록을 잡아내는 공통 헬퍼. */

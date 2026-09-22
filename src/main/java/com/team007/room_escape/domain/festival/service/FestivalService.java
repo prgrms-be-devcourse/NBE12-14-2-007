@@ -41,7 +41,7 @@ public class FestivalService {
 	@Transactional
 	public FestivalResponse.SyncResponse syncPublicFestivals() {
 		/** API 호출과 무관하게, 기존에 저장된 행사 중 종료일이 지난 건 먼저 CLOSED로 갱신 **/
-		int closedCount = closeExpiredFestivals();
+		List<FestivalResponse.SyncedFestival> closedFestivals = closeExpiredFestivals();
 
 		List<FestivalApiRow> allRows = fetchAllRows();
 
@@ -65,10 +65,10 @@ public class FestivalService {
 		int n = (int) (currentYearRows.size() - dbCount);
 		if (n <= 0) {
 			log.info("신규 행사 없음 ({}년 {}건, 저장된 {}건)", currentYear, currentYearRows.size(), dbCount);
-			return new FestivalResponse.SyncResponse(closedCount, 0);
+			return new FestivalResponse.SyncResponse(closedFestivals, List.of());
 		}
 
-		int savedCount = 0;
+		List<FestivalResponse.SyncedFestival> savedFestivals = List.of();
 		/** 이 블록에서 예외가 나도 밖으로 던지지 않아야, 트랜잭션이 정상 종료되면서
 		 *  위에서 먼저 저장해둔 원본 스냅샷(saveRawSource)이 롤백되지 않고 커밋된다 **/
 		try {
@@ -78,12 +78,13 @@ public class FestivalService {
 				.toList();
 
 			festivalRepository.saveAll(festivals);
-			savedCount = festivals.size();
-			log.info("공공 행사 {}건 저장 완료", savedCount);
+			// 저장이 끝난 뒤에 만들어야 DB가 붙여준 행사 번호(id)가 채워져 있다
+			savedFestivals = festivals.stream().map(FestivalResponse.SyncedFestival::from).toList();
+			log.info("공공 행사 {}건 저장 완료", savedFestivals.size());
 		} catch (Exception e) {
 			log.error("신규 행사 저장 실패, 원본 스냅샷은 반영됨", e);
 		}
-		return new FestivalResponse.SyncResponse(closedCount, savedCount);
+		return new FestivalResponse.SyncResponse(closedFestivals, savedFestivals);
 	}
 
 	/** 지역 + 날짜를 선택하면 해당 지역에서 그 날짜에 진행 중인 공공 행사 목록을 조회 **/
@@ -93,11 +94,16 @@ public class FestivalService {
 			.map(FestivalResponse.ListResponse::from);
 	}
 
-	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신 **/
-	private int closeExpiredFestivals() {
-		int closedCount = festivalRepository.closeExpiredFestivals(LocalDateTime.now());
-		log.info("종료된 행사 {}건 CLOSED로 갱신", closedCount);
-		return closedCount;
+	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신하고, 갱신된 행사 목록을 돌려준다 **/
+	private List<FestivalResponse.SyncedFestival> closeExpiredFestivals() {
+		LocalDateTime now = LocalDateTime.now();
+		// 일괄 UPDATE는 어떤 행이 바뀌었는지 돌려주지 않아서, 같은 시각(now)으로 갱신 전에 목록을 먼저 뽑아둔다
+		List<FestivalResponse.SyncedFestival> closed = festivalRepository.findExpiredOpen(now).stream()
+			.map(FestivalResponse.SyncedFestival::from)
+			.toList();
+		festivalRepository.closeExpiredFestivals(now);
+		log.info("종료된 행사 {}건 CLOSED로 갱신", closed.size());
+		return closed;
 	}
 
 	/** API 1회 요청 최대 건수를 넘는 전체 데이터를,

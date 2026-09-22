@@ -27,7 +27,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FestivalSyncExecutorTest {
 
-	private static final FestivalResponse.SyncResponse RESULT = new FestivalResponse.SyncResponse(1, 2);
+	private static final FestivalResponse.SyncResponse RESULT = new FestivalResponse.SyncResponse(
+		java.util.List.of(new FestivalResponse.SyncedFestival(1L, "종료된 행사")),
+		java.util.List.of(new FestivalResponse.SyncedFestival(2L, "새 행사")));
 
 	@Mock
 	private FestivalService festivalService;
