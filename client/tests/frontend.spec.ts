@@ -166,7 +166,7 @@ test("preview submission can be created, edited and deleted", async ({
   await apiMode(page, async (route, path, method) => {
     if (path === "/festivals/submissions" && method === "POST") {
       const input = route.request().postDataJSON();
-      saved.submission.festival.title = input.name;
+      saved.submission.festival.title = input.title;
       saved.submission.festival.category = input.category;
       saved.submission.festival.referenceUrl = input.referenceUrl;
       saved.submission.festival.region = input.region;
@@ -186,7 +186,7 @@ test("preview submission can be created, edited and deleted", async ({
       }
       if (method === "PATCH") {
         const input = route.request().postDataJSON();
-        saved.submission.festival.title = input.name;
+        saved.submission.festival.title = input.title;
         await json(route, ok(saved));
         return true;
       }
@@ -206,8 +206,8 @@ test("preview submission can be created, edited and deleted", async ({
   await page
     .getByLabel("지역", { exact: false })
     .selectOption("GYEONGGI_SUWON");
-  await page.getByLabel("운영 시간 안내 (선택)").fill("10시부터 18시");
-  await page.getByLabel("상세 주소 (선택)").fill("테스트 공원");
+  await page.getByLabel("운영 시간 안내").fill("10시부터 18시");
+  await page.getByLabel("상세 주소").fill("테스트 공원");
   await page.getByLabel("행사 참고 링크").fill("https://example.com/event");
   await page.getByRole("checkbox").check();
   await page
@@ -323,6 +323,18 @@ test("live mode keeps private submissions in mypage and loads the festival catal
       );
       return true;
     }
+    if (path === `/festivals/${festival.festivalId}`) {
+      await json(
+        route,
+        ok({
+          ...festival,
+          providerType: "MEMBER",
+          url: festival.referenceUrl,
+          hmpgUrl: null,
+        }),
+      );
+      return true;
+    }
     return false;
   });
   await page.goto("/mypage?tab=submissions");
@@ -341,7 +353,17 @@ test("live mode keeps private submissions in mypage and loads the festival catal
   await expect(
     page.getByText("API로 받은 행사", { exact: true }),
   ).toBeVisible();
+  await page.getByRole("link", { name: /API로 받은 행사/ }).click();
+  await expect(page).toHaveURL(`/events/${festival.festivalId}`);
+  await expect(
+    page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("실제 응답 구조를 사용하는 테스트 행사"),
+  ).toBeVisible();
+  await expect(page.locator(".detail-location")).toContainText("효원로 1");
   expect(requested).toContain("/festivals");
+  expect(requested).toContain(`/festivals/${festival.festivalId}`);
 });
 
 test("live festival search displays nine events per page", async ({ page }) => {
@@ -441,7 +463,7 @@ test("live form sends actual DTO names and ISO local datetimes", async ({
   await page.getByRole("button", { name: "수정한 내용 저장" }).click();
   await expect(page).toHaveURL(`/submissions/${submissionId}`);
   expect(payload).toMatchObject({
-    name: "수정한 API 행사",
+    title: "수정한 API 행사",
     festivalContent: festival.festivalContent,
     referenceUrl: "https://example.com/event",
     region: "GYEONGGI",
@@ -488,7 +510,7 @@ test("submission accepts required fields only and sends optional fields as null"
     .click();
   await expect(page).toHaveURL(`/submissions/${submissionId}`);
   expect(payload).toMatchObject({
-    name: "동네 축제",
+    title: "동네 축제",
     category: "기타",
     region: "GYEONGGI",
     beginDe: "2026-10-10T00:00:00",

@@ -70,11 +70,17 @@ public class FestivalResponse {
             @Schema(description = "행사 번호")
             Long festivalId,
 
+            @Schema(description = "데이터 출처", example = "MEMBER")
+            ProviderType providerType,
+
             @Schema(description = "행사 제목")
             String title,
 
             @Schema(description = "행사 종류")
             String category,
+
+            @Schema(description = "행사 소개")
+            String festivalContent,
 
             @Schema(description = "기관명")
             String instNm,
@@ -90,6 +96,9 @@ public class FestivalResponse {
 
             @Schema(description = "행사 홈페이지 URL")
             String hmpgUrl,
+
+            @Schema(description = "사용자에게 안내할 행사 참고 링크")
+            String referenceUrl,
 
             @Schema(description = "행사 시작 일시")
             LocalDateTime beginDe,
@@ -109,6 +118,9 @@ public class FestivalResponse {
             @Schema(description = "행사 지역")
             FestivalRegion region,
 
+            @Schema(description = "행사 상세 주소")
+            String regionDetail,
+
             @Schema(description = "행사 상태", example = "OPEN")
             FestivalStatus status
     ) {
@@ -116,19 +128,25 @@ public class FestivalResponse {
         public static DetailResponse from(Festival festival) {
             return DetailResponse.builder()
                     .festivalId(festival.getId())
+                    .providerType(festival.getProviderType())
                     .title(festival.getTitle())
                     .category(festival.getCategory())
+                    .festivalContent(festival.getContent())
                     .instNm(festival.getInstNm())
                     .hostInstNm(festival.getHostInstNm())
                     .imgUrl(festival.getImgUrl())
                     .url(festival.getUrl())
                     .hmpgUrl(festival.getHmpgUrl())
+                    .referenceUrl(festival.getHmpgUrl() != null && !festival.getHmpgUrl().isBlank()
+                            ? festival.getHmpgUrl()
+                            : festival.getUrl())
                     .beginDe(festival.getBeginDe())
                     .endDe(festival.getEndDe())
                     .eventTmInfo(festival.getEventTmInfo())
                     .partcptExpnInfo(festival.getPartcptExpnInfo())
                     .telnoInfo(festival.getTelnoInfo())
                     .region(festival.getRegion())
+                    .regionDetail(festival.getRegionDetail())
                     .status(FestivalStatus.from(festival.getEndDe()))
                     .build();
         }

@@ -39,7 +39,7 @@ public class FestivalSubmissionService {
                 .member(member)
                 .providerType(ProviderType.MEMBER)
                 .instNm(request.instNm())
-                .title(request.name())
+                .title(request.title())
                 .category(request.category())
                 .content(request.festivalContent())
                 .url(request.referenceUrl())
@@ -107,7 +107,7 @@ public class FestivalSubmissionService {
 
         submission.getFestival().updateDetails(
                 request.instNm(),
-                request.name(),
+                request.title(),
                 request.category(),
                 request.festivalContent(),
                 request.referenceUrl(),

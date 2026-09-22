@@ -525,11 +525,11 @@ class FestivalServiceTest {
 	}
 
 	/**
-	 * 상세 조회는 PUBLIC 타입으로만 찾고, 응답에 상세 화면용 필드가 그대로 담기는지 확인한다.
+	 * 상세 조회 시 출처와 상세 화면용 필드가 그대로 담기는지 확인한다.
 	 */
 	@Test
-	@DisplayName("공공 행사 상세 조회 시 PUBLIC 타입으로 찾고 상세 필드를 응답에 담는다")
-	void getPublicFestivalReturnsDetail() {
+	@DisplayName("행사 상세 조회 시 출처와 상세 필드를 응답에 담는다")
+	void getFestivalReturnsDetail() {
 		LocalDate today = LocalDate.now();
 		Festival festival = Festival.builder()
 			.id(7L)
@@ -548,11 +548,12 @@ class FestivalServiceTest {
 			.endDe(today.plusDays(1).atStartOfDay())
 			.region(FestivalRegion.GYEONGGI)
 			.build();
-		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(7L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(festival));
+		when(festivalRepository.findByIdAndDeletedAtIsNull(7L)).thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getPublicFestival(7L);
+		FestivalResponse.DetailResponse detail = festivalService.getFestival(7L);
 
 		assertThat(detail.festivalId()).isEqualTo(7L);
+		assertThat(detail.providerType()).isEqualTo(ProviderType.PUBLIC);
 		assertThat(detail.title()).isEqualTo("남한산성문화제");
 		assertThat(detail.hostInstNm()).isEqualTo("광주시");
 		assertThat(detail.eventTmInfo()).isEqualTo("10:00~18:00");
@@ -563,15 +564,47 @@ class FestivalServiceTest {
 		assertThat(detail.status()).isEqualTo(FestivalStatus.OPEN);
 	}
 
+	@Test
+	@DisplayName("회원 제보 행사도 제보 시 입력한 상세 정보를 조회한다")
+	void getMemberFestivalReturnsSubmissionDetails() {
+		Festival festival = Festival.builder()
+			.id(8L)
+			.providerType(ProviderType.MEMBER)
+			.title("동네 플리마켓")
+			.category("플리마켓")
+			.content("이웃과 함께하는 주말 장터")
+			.url("https://example.com/market")
+			.region(FestivalRegion.GYEONGGI)
+			.regionDetail("수원시 중앙공원")
+			.beginDe(LocalDate.now().atStartOfDay())
+			.endDe(LocalDate.now().plusDays(1).atStartOfDay())
+			.eventTmInfo("10:00~17:00")
+			.partcptExpnInfo("무료")
+			.hostInstNm("우리동네 모임")
+			.build();
+		when(festivalRepository.findByIdAndDeletedAtIsNull(8L))
+			.thenReturn(java.util.Optional.of(festival));
+
+		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L);
+
+		assertThat(detail.providerType()).isEqualTo(ProviderType.MEMBER);
+		assertThat(detail.festivalContent()).isEqualTo("이웃과 함께하는 주말 장터");
+		assertThat(detail.referenceUrl()).isEqualTo("https://example.com/market");
+		assertThat(detail.regionDetail()).isEqualTo("수원시 중앙공원");
+		assertThat(detail.eventTmInfo()).isEqualTo("10:00~17:00");
+		assertThat(detail.partcptExpnInfo()).isEqualTo("무료");
+		assertThat(detail.hostInstNm()).isEqualTo("우리동네 모임");
+	}
+
 	/**
 	 * 존재하지 않거나 삭제됐거나 공공 행사가 아니면 리포지토리가 빈 값을 주고, 서비스는 FESTIVAL_NOT_FOUND를 던진다.
 	 */
 	@Test
 	@DisplayName("행사를 찾을 수 없으면 FESTIVAL_NOT_FOUND 예외가 발생한다")
 	void getPublicFestivalThrowsWhenNotFound() {
-		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(999L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.empty());
+		when(festivalRepository.findByIdAndDeletedAtIsNull(999L)).thenReturn(java.util.Optional.empty());
 
-		assertThatThrownBy(() -> festivalService.getPublicFestival(999L))
+		assertThatThrownBy(() -> festivalService.getFestival(999L))
 			.isInstanceOf(BusinessException.class)
 			.extracting(e -> ((BusinessException) e).getExceptionCode())
 			.isEqualTo(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
@@ -585,8 +618,8 @@ class FestivalServiceTest {
 	void getPublicFestivalComputesStatusFromEndDe() {
 		LocalDateTime pastEndDe = LocalDate.now().minusDays(1).atStartOfDay();
 		Festival stale = publicFestival(FestivalRegion.GYEONGGI, pastEndDe.minusDays(5), pastEndDe, FestivalStatus.OPEN);
-		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(1L, ProviderType.PUBLIC)).thenReturn(java.util.Optional.of(stale));
+		when(festivalRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(java.util.Optional.of(stale));
 
-		assertThat(festivalService.getPublicFestival(1L).status()).isEqualTo(FestivalStatus.CLOSED);
+		assertThat(festivalService.getFestival(1L).status()).isEqualTo(FestivalStatus.CLOSED);
 	}
 }

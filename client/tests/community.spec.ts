@@ -98,7 +98,9 @@ test("submission menu opens the registration form", async ({ page }) => {
   await page.goto("/submissions");
   await expect(page).toHaveURL("/submissions/new");
   await expect(
-    page.getByRole("heading", { name: "새로운 즐거움을 알려주세요" }),
+    page.getByRole("heading", {
+      name: "당신의 제보가 새로운 탈출의 시작이에요",
+    }),
   ).toBeVisible();
 });
 

@@ -50,12 +50,12 @@ public class FestivalController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "공공 행사 상세 조회", description = "공공 행사 1건의 상세 정보를 조회합니다.")
+	@Operation(summary = "행사 상세 조회", description = "공공행사 또는 회원 제보 행사 1건의 상세 정보를 조회합니다.")
 	@GetMapping("/{festivalId}")
-	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> getPublicFestival(
+	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> getFestival(
 			@PathVariable Long festivalId
 	) {
-		FestivalResponse.DetailResponse response = festivalService.getPublicFestival(festivalId);
+		FestivalResponse.DetailResponse response = festivalService.getFestival(festivalId);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
