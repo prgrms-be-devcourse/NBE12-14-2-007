@@ -214,6 +214,52 @@ export interface SyncResult {
   savedFestivals: { festivalId: number; title: string }[];
 }
 /**
+ * 운영 대시보드 집계.
+ *
+ * 전용 API가 없어서 각 목록 API에 size=1을 던지고 totalElements만 쓴다.
+ * 서버는 COUNT만 돌리므로 비용은 전용 API와 같고, HTTP 왕복만 더 든다.
+ * 행사·후기에 노출 상태가 생기면 GET /admin/overview 하나로 합칠 것.
+ */
+export interface AdminStats {
+  memberTotal: number;
+  memberTrusted: number;
+  memberWarning: number;
+  inquiryPending: number;
+  inquiryReport: number;
+  festivalTotal: number;
+  festivalOpen: number;
+  postTotal: number;
+}
+/**
+ * 관리자 행사 상세. 서버 FestivalResponse.DetailResponse와 같은 모양.
+ *
+ * 공개 화면이 쓰는 FestivalDetailItem과 따로 두는 이유:
+ * 그쪽 변환기(toDetailEvent)가 providerType과 festivalContent를 버리고
+ * 값을 고정해 버려서 관리자 화면에 필요한 정보가 남지 않는다.
+ */
+export interface AdminFestivalDetail {
+  festivalId: number;
+  providerType: "PUBLIC" | "MEMBER";
+  title: string;
+  category: string;
+  /** 행사 소개 본문 */
+  festivalContent: string | null;
+  instNm: string | null;
+  hostInstNm: string | null;
+  imgUrl: string | null;
+  url: string | null;
+  hmpgUrl: string | null;
+  referenceUrl: string | null;
+  beginDe: string;
+  endDe: string;
+  eventTmInfo: string | null;
+  partcptExpnInfo: string | null;
+  telnoInfo: string | null;
+  region: string;
+  regionDetail: string | null;
+  status: "OPEN" | "CLOSED";
+}
+/**
  * 관리자 행사 검색 조건. 비운 항목은 조건을 걸지 않는다.
  * 공개 화면과 같은 GET /festivals 를 쓰지만 페이지 크기가 달라 따로 둔다.
  */
