@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
 import { AppProvider, useApp, useLoad } from "../lib/context";
-import { errorText, period, safeUrl } from "../lib/format";
+import { errorText, period, regions, safeUrl } from "../lib/format";
 import type { AdminFestivalDetail, Role } from "../lib/types";
 import {
   AdminProvider,
@@ -964,6 +964,8 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("");
+  // 삭제된 행사는 기본적으로 숨긴다. 복구할 때만 켜서 본다.
+  const [showDeleted, setShowDeleted] = useState(false);
   const status = params.get("status") || "";
   const isEvent = kind === "events";
   const records = data[kind];
@@ -987,10 +989,11 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
         keyword: query.trim() || undefined,
         providerType: (source as "PUBLIC" | "MEMBER") || undefined,
         excludeClosed: status === "OPEN",
+        includeDeleted: showDeleted,
       });
     }, 300);
     return () => clearTimeout(timer);
-  }, [isEvent, query, source, status, setEventQuery]);
+  }, [isEvent, query, source, status, showDeleted, setEventQuery]);
   // 행사는 서버가 이미 걸러서 보냈다. 후기는 아직 예시 데이터라 화면에서 거른다.
   const items = isEvent
     ? records
@@ -1063,6 +1066,16 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
               <option value="MEMBER">회원 제보</option>
             </select>
           )}
+          {isEvent && (
+            <label className="adm-toggle">
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={(e) => setShowDeleted(e.target.checked)}
+              />
+              삭제된 행사 포함
+            </label>
+          )}
         </Toolbar>
         <div className="adm-result-count">
           {isEvent && eventsLoading ? (
@@ -1121,7 +1134,10 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
                     </div>
                   )}
                   <div>
-                    <strong>{item.title}</strong>
+                    <strong>
+                      {item.title}
+                      {item.deletedAt && " (삭제됨)"}
+                    </strong>
                     <small>
                       {item.id} · {item.category}
                     </small>
@@ -1242,6 +1258,334 @@ function EventDetailBody({
     </>
   );
 }
+/** "2026-10-01T10:00:00" → datetime-local 입력이 받는 "2026-10-01T10:00" */
+const toLocalInput = (value: string) => value.slice(0, 16);
+/** 빈 입력은 빈 문자열이 아니라 null로 보낸다. DB에 ""이 쌓이면 "없음"이 두 가지가 된다. */
+const orNull = (value: string) => value.trim() || null;
+/**
+ * 행사 수정 폼.
+ *
+ * 공공 API 데이터의 오기(장소·날짜·연락처)를 관리자가 바로잡는 용도다.
+ * 서버가 보낸 값을 전부 덮어쓰므로 상세를 받아 채운 뒤 통째로 보낸다.
+ */
+function EventEditForm({
+  festivalId,
+  detail,
+  onDone,
+  onCancel,
+}: {
+  festivalId: string;
+  detail: AdminFestivalDetail;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const { api, toast } = useApp();
+  const { reloadEvents } = useAdmin();
+  const [form, setForm] = useState({
+    title: detail.title,
+    category: detail.category,
+    festivalContent: detail.festivalContent ?? "",
+    region: detail.region,
+    regionDetail: detail.regionDetail ?? "",
+    beginDe: toLocalInput(detail.beginDe),
+    endDe: toLocalInput(detail.endDe),
+    eventTmInfo: detail.eventTmInfo ?? "",
+    partcptExpnInfo: detail.partcptExpnInfo ?? "",
+    telnoInfo: detail.telnoInfo ?? "",
+    instNm: detail.instNm ?? "",
+    hostInstNm: detail.hostInstNm ?? "",
+    referenceUrl: detail.referenceUrl ?? "",
+    imgUrl: detail.imgUrl ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const set = (key: keyof typeof form) => (value: string) =>
+    setForm((current) => ({ ...current, [key]: value }));
+  // 서버도 막지만 저장 버튼을 눌러보기 전에 알려주는 편이 낫다.
+  const badPeriod = !!form.beginDe && !!form.endDe && form.endDe < form.beginDe;
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        setError("");
+        try {
+          await api.updateFestival(festivalId, {
+            title: form.title.trim(),
+            category: form.category.trim(),
+            region: form.region,
+            // datetime-local은 초를 빼고 주므로 서버 형식에 맞춰 붙인다.
+            beginDe: `${form.beginDe}:00`,
+            endDe: `${form.endDe}:00`,
+            festivalContent: orNull(form.festivalContent),
+            regionDetail: orNull(form.regionDetail),
+            eventTmInfo: orNull(form.eventTmInfo),
+            partcptExpnInfo: orNull(form.partcptExpnInfo),
+            telnoInfo: orNull(form.telnoInfo),
+            instNm: orNull(form.instNm),
+            hostInstNm: orNull(form.hostInstNm),
+            referenceUrl: orNull(form.referenceUrl),
+            imgUrl: orNull(form.imgUrl),
+          });
+          // 제목·기간이 바뀌면 목록에도 반영돼야 한다.
+          reloadEvents();
+          toast("행사 정보를 수정했습니다.");
+          onDone();
+        } catch (saveError) {
+          // 실패하면 닫지 않는다. 입력한 내용이 남아 있어야 다시 시도한다.
+          setError(errorText(saveError));
+        } finally {
+          setSaving(false);
+        }
+      }}
+    >
+      <Field label="행사명" required>
+        <input
+          required
+          maxLength={255}
+          value={form.title}
+          onChange={(e) => set("title")(e.target.value)}
+        />
+      </Field>
+      <Field label="카테고리" required>
+        <input
+          required
+          maxLength={50}
+          value={form.category}
+          onChange={(e) => set("category")(e.target.value)}
+        />
+      </Field>
+      <Field label="행사 소개">
+        <textarea
+          rows={4}
+          value={form.festivalContent}
+          onChange={(e) => set("festivalContent")(e.target.value)}
+          placeholder="행사 상세 페이지에 노출되는 소개 글입니다."
+        />
+      </Field>
+      <Field label="지역" required>
+        <select
+          required
+          value={form.region}
+          onChange={(e) => set("region")(e.target.value)}
+        >
+          {Object.entries(regions).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="상세 주소">
+        <input
+          maxLength={255}
+          value={form.regionDetail}
+          onChange={(e) => set("regionDetail")(e.target.value)}
+        />
+      </Field>
+      <Field label="시작 일시" required>
+        <input
+          type="datetime-local"
+          required
+          value={form.beginDe}
+          onChange={(e) => set("beginDe")(e.target.value)}
+        />
+      </Field>
+      <Field label="종료 일시" required>
+        <input
+          type="datetime-local"
+          required
+          value={form.endDe}
+          onChange={(e) => set("endDe")(e.target.value)}
+        />
+      </Field>
+      {badPeriod && (
+        <p className="adm-dialog-note" role="alert">
+          종료 일시가 시작 일시보다 앞설 수 없습니다.
+        </p>
+      )}
+      <Field label="운영 시간">
+        <input
+          maxLength={255}
+          value={form.eventTmInfo}
+          onChange={(e) => set("eventTmInfo")(e.target.value)}
+          placeholder="10:00~18:00"
+        />
+      </Field>
+      <Field label="참가비">
+        <input
+          maxLength={255}
+          value={form.partcptExpnInfo}
+          onChange={(e) => set("partcptExpnInfo")(e.target.value)}
+          placeholder="무료"
+        />
+      </Field>
+      <Field label="기관명">
+        <input
+          maxLength={255}
+          value={form.instNm}
+          onChange={(e) => set("instNm")(e.target.value)}
+        />
+      </Field>
+      <Field label="주최 기관">
+        <input
+          maxLength={255}
+          value={form.hostInstNm}
+          onChange={(e) => set("hostInstNm")(e.target.value)}
+        />
+      </Field>
+      <Field label="문의 전화">
+        <input
+          maxLength={255}
+          value={form.telnoInfo}
+          onChange={(e) => set("telnoInfo")(e.target.value)}
+        />
+      </Field>
+      <Field label="참고 링크">
+        <input
+          type="url"
+          maxLength={2048}
+          value={form.referenceUrl}
+          onChange={(e) => set("referenceUrl")(e.target.value)}
+        />
+      </Field>
+      <Field label="이미지 URL">
+        <input
+          type="url"
+          maxLength={2048}
+          value={form.imgUrl}
+          onChange={(e) => set("imgUrl")(e.target.value)}
+        />
+      </Field>
+      <p className="adm-dialog-note">
+        데이터 출처와 진행 상태는 바꿀 수 없습니다. 진행 상태는 종료 일시로 다시
+        계산됩니다.
+      </p>
+      {error && (
+        <p className="adm-dialog-note" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="adm-dialog-actions">
+        <button type="button" className="btn secondary" onClick={onCancel}>
+          취소
+        </button>
+        <button className="btn primary" disabled={saving || badPeriod}>
+          {saving ? "저장 중…" : "수정 저장"}
+        </button>
+      </div>
+    </form>
+  );
+}
+/**
+ * 행사 상세 모달의 조치 버튼들.
+ *
+ * 삭제는 되돌릴 수 있지만(소프트 삭제) 한 번 더 확인을 받는다.
+ * 목록에서 사라지므로 실수로 누르면 바로 알아채기 어렵기 때문이다.
+ */
+function EventActions({
+  item,
+  canEdit,
+  onEdit,
+  onClose,
+}: {
+  item: ContentItem;
+  canEdit: boolean;
+  onEdit: () => void;
+  onClose: () => void;
+}) {
+  const { deleteEvent, restoreEvent } = useAdmin();
+  const { toast } = useApp();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const deleted = !!item.deletedAt;
+  // 회원이 직접 지웠을 수 있어 서버가 회원 제보 복구를 막는다.
+  const canRestore = deleted && item.source === "PUBLIC";
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await action();
+      onClose();
+    } catch (error) {
+      toast(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (confirming) {
+    return (
+      <>
+        <p className="adm-dialog-note" role="alert">
+          <strong>{item.title}</strong>을(를) 삭제하면 서비스 목록과 검색에서
+          사라집니다. 이 행사에 달린 후기는 지워지지 않으며, 나중에 복구할 수
+          있습니다.
+        </p>
+        <div className="adm-dialog-actions">
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => setConfirming(false)}
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            className="btn danger"
+            disabled={busy}
+            onClick={() => run(() => deleteEvent(item.id))}
+          >
+            {busy ? "삭제 중…" : "삭제합니다"}
+          </button>
+        </div>
+      </>
+    );
+  }
+  return (
+    <>
+      <p className="adm-dialog-note">
+        {deleted
+          ? canRestore
+            ? "삭제된 행사입니다. 복구하면 다시 서비스에 노출됩니다."
+            : "삭제된 회원 제보입니다. 작성자가 지웠을 수 있어 복구할 수 없습니다."
+          : "노출 관리(숨김) 기능은 준비 중입니다. 현재 상태는 종료일로 계산된 진행 상태입니다."}
+      </p>
+      <div className="adm-dialog-actions">
+        <button className="btn secondary" type="button" onClick={onClose}>
+          닫기
+        </button>
+        {deleted ? (
+          <button
+            type="button"
+            className="btn primary"
+            disabled={!canRestore || busy}
+            onClick={() => run(() => restoreEvent(item.id))}
+          >
+            {busy ? "복구 중…" : "복구"}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn danger"
+              onClick={() => setConfirming(true)}
+            >
+              삭제
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              // 상세를 받아야 수정 폼을 채울 수 있다.
+              disabled={!canEdit}
+              onClick={onEdit}
+            >
+              정보 수정
+            </button>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
 function ContentDialog({
   item,
   kind,
@@ -1263,6 +1607,20 @@ function ContentDialog({
     item.status === "PUBLISHED" ? "HIDDEN" : "PUBLISHED",
   );
   const [reason, setReason] = useState("");
+  const [editing, setEditing] = useState(false);
+  // 수정 중에는 아래 읽기용 본문을 숨긴다. 같은 값이 두 번 보이면 헷갈린다.
+  if (editing && detail.data) {
+    return (
+      <Modal title="행사 수정" onClose={onClose}>
+        <EventEditForm
+          festivalId={item.id}
+          detail={detail.data}
+          onDone={onClose}
+          onCancel={() => setEditing(false)}
+        />
+      </Modal>
+    );
+  }
   return (
     <Modal title={isEvent ? "행사 검토" : "후기 검토"} onClose={onClose}>
       {item.image && (
@@ -1288,24 +1646,12 @@ function ContentDialog({
         <p className="adm-dialog-note">최근 처리 사유: {item.reason}</p>
       )}
       {isEvent ? (
-        /*
-          TODO 행사 노출 관리 붙이기.
-               서버에 노출 상태 컬럼이 없어 숨김·복구를 저장할 방법이 없다.
-               여기서 바꿔봤자 새로고침하면 되돌아가므로 폼 자체를 띄우지 않는다.
-               festival 에 visibility 컬럼과 PATCH API가 생기면 아래 후기용 폼을
-               그대로 쓰면 된다.
-        */
-        <>
-          <p className="adm-dialog-note">
-            행사 노출 관리 기능은 준비 중입니다. 현재 상태는 종료일로 계산된
-            진행 상태입니다.
-          </p>
-          <div className="adm-dialog-actions">
-            <button className="btn secondary" type="button" onClick={onClose}>
-              닫기
-            </button>
-          </div>
-        </>
+        <EventActions
+          item={item}
+          canEdit={!detail.loading && !!detail.data}
+          onEdit={() => setEditing(true)}
+          onClose={onClose}
+        />
       ) : (
         <form
           onSubmit={(e) => {
