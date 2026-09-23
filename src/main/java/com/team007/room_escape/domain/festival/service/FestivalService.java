@@ -6,12 +6,16 @@ import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiCli
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
+import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.time.LocalDate;
@@ -19,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -38,6 +43,8 @@ public class FestivalService {
 	private static final int MAX_PAGE_SIZE = 1000; // API 문서상 1회 요청 최대 건수
 
 	private final FestivalRepository festivalRepository;
+	private final FestivalAccuracyVoteRepository accuracyVoteRepository;
+	private final LikeRepository likeRepository;
 	private final PublicFestivalSourceRepository publicFestivalSourceRepository; /** 원본 저장용 **/
 	private final FestivalPublicApiClient festivalPublicApiClient;
 	private final ObjectMapper objectMapper;
@@ -130,12 +137,46 @@ public class FestivalService {
 		).map(FestivalResponse.ListResponse::from);
 	}
 
-	/** 공공 행사 1건의 상세 정보를 조회. 없거나 삭제됐거나 공공 행사가 아니면 FESTIVAL_NOT_FOUND **/
+	/** 행사 상세와 정확도 평가·좋아요 정보를 한 번에 조회한다. */
 	@Transactional(readOnly = true)
-	public FestivalResponse.DetailResponse getFestival(Long festivalId) {
+	public FestivalResponse.DetailResponse getFestival(Long festivalId, UUID memberId) {
 		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
-		return FestivalResponse.DetailResponse.from(festival);
+
+		long accurateCount = 0;
+		long inaccurateCount = 0;
+		FestivalAccuracyVoteType myVote = null;
+
+		if (festival.getProviderType() == ProviderType.MEMBER) {
+			accurateCount = accuracyVoteRepository.countByFestivalAndVoteType(
+				festival,
+				FestivalAccuracyVoteType.ACCURATE
+			);
+			inaccurateCount = accuracyVoteRepository.countByFestivalAndVoteType(
+				festival,
+				FestivalAccuracyVoteType.INACCURATE
+			);
+
+			if (memberId != null) {
+				myVote = accuracyVoteRepository
+					.findByFestivalIdAndMemberId(festivalId, memberId)
+					.map(FestivalAccuracyVote::getVoteType)
+					.orElse(null);
+			}
+		}
+
+		long likeCount = likeRepository.countByFestivalId(festivalId);
+		boolean likedByMe = memberId != null
+			&& likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId);
+
+		return FestivalResponse.DetailResponse.from(
+			festival,
+			accurateCount,
+			inaccurateCount,
+			myVote,
+			likeCount,
+			likedByMe
+		);
 	}
 
 	/** 종료일이 지났는데도 OPEN으로 남아있는 행사를 CLOSED로 일괄 갱신하고, 갱신된 행사 목록을 돌려준다 **/

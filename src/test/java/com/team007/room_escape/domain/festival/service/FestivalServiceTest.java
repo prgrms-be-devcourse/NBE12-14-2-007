@@ -15,17 +15,23 @@ import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiCli
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
+import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +61,12 @@ class FestivalServiceTest {
 
 	@Mock
 	private FestivalRepository festivalRepository;
+
+	@Mock
+	private FestivalAccuracyVoteRepository accuracyVoteRepository;
+
+	@Mock
+	private LikeRepository likeRepository;
 
 	@Mock
 	private PublicFestivalSourceRepository publicFestivalSourceRepository;
@@ -550,7 +562,7 @@ class FestivalServiceTest {
 			.build();
 		when(festivalRepository.findByIdAndDeletedAtIsNull(7L)).thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(7L);
+		FestivalResponse.DetailResponse detail = festivalService.getFestival(7L, null);
 
 		assertThat(detail.festivalId()).isEqualTo(7L);
 		assertThat(detail.providerType()).isEqualTo(ProviderType.PUBLIC);
@@ -585,7 +597,7 @@ class FestivalServiceTest {
 		when(festivalRepository.findByIdAndDeletedAtIsNull(8L))
 			.thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L);
+		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L, null);
 
 		assertThat(detail.providerType()).isEqualTo(ProviderType.MEMBER);
 		assertThat(detail.festivalContent()).isEqualTo("이웃과 함께하는 주말 장터");
@@ -596,6 +608,44 @@ class FestivalServiceTest {
 		assertThat(detail.hostInstNm()).isEqualTo("우리동네 모임");
 	}
 
+	@Test
+	@DisplayName("회원 제보 상세 조회 시 정확도 평가와 좋아요 정보를 함께 응답한다")
+	void getMemberFestivalReturnsVoteAndLikeSummary() {
+		UUID memberId = UUID.randomUUID();
+		Festival festival = Festival.builder()
+			.id(8L)
+			.providerType(ProviderType.MEMBER)
+			.title("동네 플리마켓")
+			.region(FestivalRegion.GYEONGGI)
+			.beginDe(LocalDate.now().atStartOfDay())
+			.endDe(LocalDate.now().plusDays(1).atStartOfDay())
+			.build();
+		FestivalAccuracyVote vote = Mockito.mock(FestivalAccuracyVote.class);
+
+		when(festivalRepository.findByIdAndDeletedAtIsNull(8L)).thenReturn(Optional.of(festival));
+		when(accuracyVoteRepository.countByFestivalAndVoteType(
+			festival,
+			FestivalAccuracyVoteType.ACCURATE
+		)).thenReturn(3L);
+		when(accuracyVoteRepository.countByFestivalAndVoteType(
+			festival,
+			FestivalAccuracyVoteType.INACCURATE
+		)).thenReturn(1L);
+		when(accuracyVoteRepository.findByFestivalIdAndMemberId(8L, memberId))
+			.thenReturn(Optional.of(vote));
+		when(vote.getVoteType()).thenReturn(FestivalAccuracyVoteType.ACCURATE);
+		when(likeRepository.countByFestivalId(8L)).thenReturn(5L);
+		when(likeRepository.existsByFestivalIdAndMemberId(8L, memberId)).thenReturn(true);
+
+		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L, memberId);
+
+		assertThat(detail.accurateCount()).isEqualTo(3);
+		assertThat(detail.inaccurateCount()).isEqualTo(1);
+		assertThat(detail.myVote()).isEqualTo(FestivalAccuracyVoteType.ACCURATE);
+		assertThat(detail.likeCount()).isEqualTo(5);
+		assertThat(detail.likedByMe()).isTrue();
+	}
+
 	/**
 	 * 존재하지 않거나 삭제됐거나 공공 행사가 아니면 리포지토리가 빈 값을 주고, 서비스는 FESTIVAL_NOT_FOUND를 던진다.
 	 */
@@ -604,7 +654,7 @@ class FestivalServiceTest {
 	void getPublicFestivalThrowsWhenNotFound() {
 		when(festivalRepository.findByIdAndDeletedAtIsNull(999L)).thenReturn(java.util.Optional.empty());
 
-		assertThatThrownBy(() -> festivalService.getFestival(999L))
+		assertThatThrownBy(() -> festivalService.getFestival(999L, null))
 			.isInstanceOf(BusinessException.class)
 			.extracting(e -> ((BusinessException) e).getExceptionCode())
 			.isEqualTo(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
@@ -620,6 +670,6 @@ class FestivalServiceTest {
 		Festival stale = publicFestival(FestivalRegion.GYEONGGI, pastEndDe.minusDays(5), pastEndDe, FestivalStatus.OPEN);
 		when(festivalRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(java.util.Optional.of(stale));
 
-		assertThat(festivalService.getFestival(1L).status()).isEqualTo(FestivalStatus.CLOSED);
+		assertThat(festivalService.getFestival(1L, null).status()).isEqualTo(FestivalStatus.CLOSED);
 	}
 }

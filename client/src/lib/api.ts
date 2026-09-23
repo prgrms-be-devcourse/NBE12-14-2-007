@@ -218,10 +218,10 @@ function toDetailEvent(item: FestivalDetailItem): EventView {
     category: item.category,
     instNm: item.instNm,
     manager: null,
-    festivalContent: null,
-    referenceUrl: item.url,
+    festivalContent: item.festivalContent,
+    referenceUrl: item.referenceUrl,
     region: item.region,
-    regionDetail: "",
+    regionDetail: item.regionDetail || "",
     imgUrl: item.imgUrl,
     beginDe: item.beginDe,
     endDe: item.endDe,
@@ -231,6 +231,13 @@ function toDetailEvent(item: FestivalDetailItem): EventView {
     hostInstNm: item.hostInstNm,
     writngDe: null,
     status: item.status,
+    accuracyVote: {
+      accurateCount: item.accurateCount,
+      inaccurateCount: item.inaccurateCount,
+      myVote: item.myVote,
+    },
+    likeCount: item.likeCount,
+    likedByMe: item.likedByMe,
   };
 }
 
@@ -355,19 +362,6 @@ export function createApi(mode: Mode) {
       );
       return toDetailEvent(result);
     },
-    async accuracyVotes(festivalId: number): Promise<FestivalAccuracyVote> {
-      if (demo)
-        return (
-          demoAccuracyVotes.get(festivalId) ?? {
-            accurateCount: 0,
-            inaccurateCount: 0,
-            myVote: null,
-          }
-        );
-      return transport<FestivalAccuracyVote>(
-        `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes`,
-      );
-    },
     async voteAccuracy(
       festivalId: number,
       voteType: "ACCURATE" | "INACCURATE",
@@ -378,7 +372,11 @@ export function createApi(mode: Mode) {
           "PUT",
           { voteType },
         );
-      const current = await this.accuracyVotes(festivalId);
+      const current = demoAccuracyVotes.get(festivalId) ?? {
+        accurateCount: 0,
+        inaccurateCount: 0,
+        myVote: null,
+      };
       const next = {
         accurateCount:
           current.accurateCount +
@@ -401,7 +399,11 @@ export function createApi(mode: Mode) {
           `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes/me`,
           "DELETE",
         );
-      const current = await this.accuracyVotes(festivalId);
+      const current = demoAccuracyVotes.get(festivalId) ?? {
+        accurateCount: 0,
+        inaccurateCount: 0,
+        myVote: null,
+      };
       const next = {
         accurateCount:
           current.accurateCount - (current.myVote === "ACCURATE" ? 1 : 0),

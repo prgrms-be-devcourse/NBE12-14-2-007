@@ -109,16 +109,6 @@ public class LikeService {
 		return new LikeResponse(likeCount);
 	}
 
-	@Transactional(readOnly = true)
-	public Long getFestivalLikeCount(Long festivalId) {
-
-		if(!festivalRepository.existsById(festivalId)) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
-		}
-
-		return likeRepository.countByFestivalId(festivalId);
-	}
-
 	@Transactional
 	public LikeResponse deleteFestivalLike(Long festivalId, UUID memberId) {
 

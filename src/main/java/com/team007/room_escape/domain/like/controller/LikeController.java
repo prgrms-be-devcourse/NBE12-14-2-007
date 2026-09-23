@@ -66,14 +66,6 @@ public class LikeController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "행사 좋아요 개수 조회", description = "특정 행사의 좋아요 개수를 조회합니다.")
-	@GetMapping("/festivals/{id}/likes")
-	public ResponseEntity<ApiResponse<Long>> getFestivalLikeCount(@PathVariable Long id) {
-		long likeCount = likeService.getFestivalLikeCount(id);
-
-		return ResponseEntity.ok(ApiResponse.success(likeCount));
-	}
-
 	@Operation(summary = "행사 좋아요 취소", description = "특정 행사에 좋아요를 취소합니다.")
 	@DeleteMapping("/festivals/{id}/likes/me")
 	public ResponseEntity<ApiResponse<LikeResponse>> deleteFestivalLike(
