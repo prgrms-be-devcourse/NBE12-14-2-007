@@ -207,33 +207,6 @@ function EventDetail({ event }: { event: EventView }) {
           >
             {tab === "about" ? (
               <>
-                <section className="detail-section detail-link-section">
-                  {externalUrl ? (
-                    <a
-                      className="btn primary detail-primary-link"
-                      href={externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span className="door-link-icon" aria-hidden="true">
-                        <span className="door-frame">
-                          <span className="door-light" />
-                          <span className="door-panel door-panel-left">
-                            <span className="door-knob door-knob-left" />
-                          </span>
-                          <span className="door-panel door-panel-right">
-                            <span className="door-knob door-knob-right" />
-                          </span>
-                        </span>
-                      </span>
-                      행사 안내 페이지 보기
-                    </a>
-                  ) : (
-                    <p className="aside-note">
-                      등록된 행사 참고 링크가 없어요.
-                    </p>
-                  )}
-                </section>
                 <section className="detail-section">
                   <h2>요약 정보</h2>
                   <div className="detail-summary">
@@ -267,6 +240,20 @@ function EventDetail({ event }: { event: EventView }) {
                     {event.festivalContent ||
                       "아직 등록된 상세 소개가 없어요. 행사 참고 링크에서 자세한 내용을 확인해 주세요."}
                   </p>
+                  {externalUrl ? (
+                    <a
+                      className="btn primary"
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      행사 안내 페이지 보기
+                    </a>
+                  ) : (
+                    <p className="aside-note">
+                      등록된 행사 참고 링크가 없어요.
+                    </p>
+                  )}
                 </section>
                 <section className="detail-section">
                   <h2>상세 정보</h2>
@@ -291,8 +278,9 @@ function EventDetail({ event }: { event: EventView }) {
                         행사 장소
                       </dt>
                       <dd>
-                        {regions[event.region] || ""}{" "}
-                        {event.regionDetail || "별도 안내 없음"}
+                        {event.regionDetail
+                          ? `${regions[event.region] || ""} ${event.regionDetail}`
+                          : "행사 안내 페이지에서 확인"}
                       </dd>
                     </div>
                     <div>

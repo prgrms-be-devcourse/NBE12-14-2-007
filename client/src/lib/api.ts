@@ -202,13 +202,29 @@ function toEventView(item: FestivalSearchItem): EventView {
   };
 }
 
+// GET /api/v1/festivals/{id} 상세 조회는 공공 행사 전용이라 source가 항상 PUBLIC이고,
+// providerType·referenceUrl·festivalContent 필드는 응답에 아예 없다 (url/hmpgUrl로 온다).
 function toDetailEvent(item: FestivalDetailItem): EventView {
   return {
-    ...item,
-    source: item.providerType,
+    festivalId: item.festivalId,
+    source: "PUBLIC",
+    title: item.title,
+    category: item.category,
+    instNm: item.instNm,
     manager: null,
-    regionDetail: item.regionDetail || "",
+    festivalContent: null,
+    referenceUrl: item.url,
+    region: item.region,
+    regionDetail: "",
+    imgUrl: item.imgUrl,
+    beginDe: item.beginDe,
+    endDe: item.endDe,
+    eventTmInfo: item.eventTmInfo,
+    partcptExpnInfo: item.partcptExpnInfo,
+    telnoInfo: item.telnoInfo,
+    hostInstNm: item.hostInstNm,
     writngDe: null,
+    status: item.status,
   };
 }
 
