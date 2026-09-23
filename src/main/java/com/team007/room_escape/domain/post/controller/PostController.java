@@ -46,7 +46,7 @@ public class PostController {
 	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPosts(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
-			@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
 		Page<PostResponse.ListResponse> posts = postService.searchPosts(type, keyword, page);
@@ -59,7 +59,7 @@ public class PostController {
 	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPostsForAdmin(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
-			@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
 		Page<PostResponse.ListResponse> posts = postService.searchPostsForAdmin(type, keyword, page);
