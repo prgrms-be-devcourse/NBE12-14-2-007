@@ -16,8 +16,6 @@ import com.team007.room_escape.global.response.code.PostExceptionCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,10 +59,13 @@ public class PostService {
 	public Page<PostResponse.ListResponse> searchPosts(
 			PostSearchType type,
 			String keyword,
-			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		return postRepository.searchPosts(type.name(), keyword, page)
+		if(type == null || keyword == null || keyword.isBlank()) {
+			return postRepository.findAllNotDeleted(page)
+					.map(PostResponse.ListResponse::from);
+		}
+		return postRepository.searchPosts(type, keyword, page)
 				.map(PostResponse.ListResponse::from);
 	}
 
@@ -79,7 +80,7 @@ public class PostService {
 					.map(PostResponse.ListResponse::from);
 		}
 
-		return postRepository.searchPostsIncludingDeleted(type.name(), keyword, page)
+		return postRepository.searchPostsIncludingDeleted(type, keyword, page)
 				.map(PostResponse.ListResponse::from);
 	}
 
