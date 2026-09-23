@@ -63,9 +63,10 @@ export interface FestivalSearchItem {
   region: string;
   status: "OPEN" | "CLOSED";
 }
-// GET /api/v1/festivals/{festivalId} 응답 그대로의 모양 (공공 행사 상세 조회 전용, 항상 PUBLIC)
+// GET /api/v1/festivals/{festivalId} 응답 그대로의 모양
 export interface FestivalDetailItem {
   festivalId: number;
+  providerType: "PUBLIC" | "MEMBER";
   title: string;
   category: string;
   instNm: string | null;
@@ -80,6 +81,11 @@ export interface FestivalDetailItem {
   telnoInfo: string | null;
   region: string;
   status: "OPEN" | "CLOSED";
+}
+export interface FestivalAccuracyVote {
+  accurateCount: number;
+  inaccurateCount: number;
+  myVote: "ACCURATE" | "INACCURATE" | null;
 }
 export interface SubmissionInput {
   title: string;

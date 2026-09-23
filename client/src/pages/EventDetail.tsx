@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  AlertTriangle,
   CalendarDays,
   Check,
+  CheckCircle2,
   Clock3,
   Flag,
   Landmark,
@@ -155,9 +157,11 @@ function EventDetail({ event }: { event: EventView }) {
         <div className="detail-main">
           <div className="detail-title">
             <div className="action-row">
-              <Badge tone={event.source === "PUBLIC" ? "blue" : "orange"}>
-                {event.source === "PUBLIC" ? "지역 문화행사" : "회원 제보"}
-              </Badge>
+              <span
+                className={`source-badge ${event.source === "PUBLIC" ? "public" : "member"}`}
+              >
+                {event.source === "PUBLIC" ? "공공데이터" : "회원 제보"}
+              </span>
               <Badge tone="gray">{event.category || "행사"}</Badge>
               <span className="state-label">
                 {eventState(event.beginDe, event.endDe)}
@@ -329,10 +333,13 @@ function EventDetail({ event }: { event: EventView }) {
                       : event.submissionId
                         ? "내가 제보한 행사 정보입니다. 일정이 변경되었다면 제보 내용을 수정해 주세요."
                         : event.source === "MEMBER"
-                          ? "이웃이 제보한 행사 정보입니다. 방문 전 행사 안내를 확인해 주세요."
-                          : "제공 기관의 행사 정보입니다. 방문 전 행사 안내를 확인해 주세요."}
+                          ? "회원이 직접 제보한 행사 정보입니다. 방문 전 행사 안내 페이지에서 정확한 정보를 확인해 주세요."
+                          : "공공데이터를 통해 제공된 행사 정보입니다. 방문 전 행사 안내 페이지에서 최신 정보를 확인해 주세요."}
                   </p>
                 </div>
+                {event.source === "MEMBER" && (
+                  <AccuracyVotePanel festivalId={event.festivalId} />
+                )}
               </>
             ) : (
               <FestivalPosts festivalId={event.festivalId} />
@@ -394,5 +401,73 @@ function EventDetail({ event }: { event: EventView }) {
         </Modal>
       )}
     </>
+  );
+}
+
+function AccuracyVotePanel({ festivalId }: { festivalId: number }) {
+  const { api, member, authLoading, toast } = useApp();
+  const { data, loading, error: loadError, setData } = useLoad(
+    () => api.accuracyVotes(festivalId),
+    [api, festivalId, member?.id],
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function select(voteType: "ACCURATE" | "INACCURATE") {
+    if (!member) {
+      toast("로그인하면 행사 정보를 평가할 수 있어요.");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    try {
+      const result =
+        data?.myVote === voteType
+          ? await api.cancelAccuracyVote(festivalId)
+          : await api.voteAccuracy(festivalId, voteType);
+      setData(result);
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="accuracy-vote" aria-labelledby="accuracy-vote-title">
+      <div>
+        <h2 id="accuracy-vote-title">이 행사 정보가 정확한가요?</h2>
+        <p>직접 확인한 정보를 알려주시면 다른 사용자에게 도움이 돼요.</p>
+      </div>
+      <div className="accuracy-vote-actions">
+        <button
+          type="button"
+          className={data?.myVote === "ACCURATE" ? "selected accurate" : ""}
+          aria-pressed={data?.myVote === "ACCURATE"}
+          disabled={loading || busy || authLoading}
+          onClick={() => select("ACCURATE")}
+        >
+          <CheckCircle2 size={19} />
+          정확해요
+          <strong>{data?.accurateCount ?? 0}</strong>
+        </button>
+        <button
+          type="button"
+          className={data?.myVote === "INACCURATE" ? "selected inaccurate" : ""}
+          aria-pressed={data?.myVote === "INACCURATE"}
+          disabled={loading || busy || authLoading}
+          onClick={() => select("INACCURATE")}
+        >
+          <AlertTriangle size={19} />
+          부정확해요
+          <strong>{data?.inaccurateCount ?? 0}</strong>
+        </button>
+      </div>
+      {!member && !authLoading && (
+        <p className="accuracy-vote-login">로그인하면 평가할 수 있어요.</p>
+      )}
+      <FormError message={loadError || error} />
+    </section>
   );
 }

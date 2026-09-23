@@ -23,6 +23,7 @@ import type {
   SyncResult,
   Role,
   EventView,
+  FestivalAccuracyVote,
   FestivalDetailItem,
   FestivalSearchInput,
   FestivalSearchItem,
@@ -204,12 +205,10 @@ function toEventView(item: FestivalSearchItem): EventView {
   };
 }
 
-// GET /api/v1/festivals/{id} 상세 조회는 공공 행사 전용이라 source가 항상 PUBLIC이고,
-// providerType·referenceUrl·festivalContent 필드는 응답에 아예 없다 (url/hmpgUrl로 온다).
 function toDetailEvent(item: FestivalDetailItem): EventView {
   return {
     festivalId: item.festivalId,
-    source: "PUBLIC",
+    source: item.providerType,
     title: item.title,
     category: item.category,
     instNm: item.instNm,
@@ -232,6 +231,7 @@ function toDetailEvent(item: FestivalDetailItem): EventView {
 
 export function createApi(mode: Mode) {
   const demo = mode === "preview";
+  const demoAccuracyVotes = new Map<number, FestivalAccuracyVote>();
   return {
     async restore() {
       await refresh();
@@ -341,6 +341,64 @@ export function createApi(mode: Mode) {
         `/festivals/${encodeURIComponent(String(festivalId))}`,
       );
       return toDetailEvent(result);
+    },
+    async accuracyVotes(festivalId: number): Promise<FestivalAccuracyVote> {
+      if (demo)
+        return (
+          demoAccuracyVotes.get(festivalId) ?? {
+            accurateCount: 0,
+            inaccurateCount: 0,
+            myVote: null,
+          }
+        );
+      return transport<FestivalAccuracyVote>(
+        `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes`,
+      );
+    },
+    async voteAccuracy(
+      festivalId: number,
+      voteType: "ACCURATE" | "INACCURATE",
+    ): Promise<FestivalAccuracyVote> {
+      if (!demo)
+        return transport<FestivalAccuracyVote>(
+          `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes/me`,
+          "PUT",
+          { voteType },
+        );
+      const current = await this.accuracyVotes(festivalId);
+      const next = {
+        accurateCount:
+          current.accurateCount +
+          (voteType === "ACCURATE" ? 1 : 0) -
+          (current.myVote === "ACCURATE" ? 1 : 0),
+        inaccurateCount:
+          current.inaccurateCount +
+          (voteType === "INACCURATE" ? 1 : 0) -
+          (current.myVote === "INACCURATE" ? 1 : 0),
+        myVote: voteType,
+      };
+      demoAccuracyVotes.set(festivalId, next);
+      return next;
+    },
+    async cancelAccuracyVote(
+      festivalId: number,
+    ): Promise<FestivalAccuracyVote> {
+      if (!demo)
+        return transport<FestivalAccuracyVote>(
+          `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes/me`,
+          "DELETE",
+        );
+      const current = await this.accuracyVotes(festivalId);
+      const next = {
+        accurateCount:
+          current.accurateCount - (current.myVote === "ACCURATE" ? 1 : 0),
+        inaccurateCount:
+          current.inaccurateCount -
+          (current.myVote === "INACCURATE" ? 1 : 0),
+        myVote: null,
+      };
+      demoAccuracyVotes.set(festivalId, next);
+      return next;
     },
     async submission(submissionId: string) {
       return transport<SubmissionDetail>(
