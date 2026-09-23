@@ -14,7 +14,7 @@ import type {
   AdminInquiryListItem,
   AdminMemberInfo,
   AdminStats,
-  FestivalSearchItem,
+  AdminFestivalListItem,
   Role,
 } from "../lib/types";
 
@@ -71,6 +71,8 @@ export interface ContentItem {
   content: string;
   image?: string;
   reason?: string;
+  /** 삭제 시각. 삭제되지 않았으면 null. 후기는 아직 예시라 undefined */
+  deletedAt?: string | null;
 }
 export interface Ticket {
   id: string;
@@ -104,8 +106,8 @@ function sameQuery(a: AdminFestivalQuery, b: AdminFestivalQuery) {
   return (
     a.keyword === b.keyword &&
     a.providerType === b.providerType &&
-    a.category === b.category &&
     a.excludeClosed === b.excludeClosed &&
+    a.includeDeleted === b.includeDeleted &&
     a.page === b.page &&
     a.size === b.size
   );
@@ -247,7 +249,7 @@ function toMember(item: AdminMemberInfo): AdminMember {
  * status 는 노출 상태가 아니라 진행 상태(OPEN/CLOSED)다.
  * 행사에는 아직 노출 상태 컬럼이 없어서 숨김 처리를 표현할 수 없다.
  */
-function toEvent(item: FestivalSearchItem): ContentItem {
+function toEvent(item: AdminFestivalListItem): ContentItem {
   return {
     id: String(item.festivalId),
     title: item.title,
@@ -260,6 +262,7 @@ function toEvent(item: FestivalSearchItem): ContentItem {
     // 목록 응답에는 본문이 없다. 상세를 열 때 채워 넣는다.
     content: "",
     image: item.imgUrl ?? undefined,
+    deletedAt: item.deletedAt,
   };
 }
 /** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
@@ -306,6 +309,13 @@ interface AdminContextValue {
   stats: AdminStats | null;
   statsLoading: boolean;
   statsError: string;
+  /**
+   * 행사 삭제. 행을 지우지 않고 삭제 시각만 남기므로 되돌릴 수 있다.
+   * 서버에 저장하므로 실패할 수 있다.
+   */
+  deleteEvent: (id: string) => Promise<void>;
+  /** 삭제된 행사 복구. 회원 제보는 서버가 403으로 거부한다. */
+  restoreEvent: (id: string) => Promise<void>;
   /** 행사 목록을 서버에서 다시 불러온다. */
   reloadEvents: () => void;
   eventsLoading: boolean;
@@ -351,6 +361,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     page: 0,
     size: EVENT_PAGE_SIZE,
     excludeClosed: false,
+    includeDeleted: false,
   });
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
@@ -539,6 +550,32 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         setEventQuery,
         reloadEvents() {
           setEventsRevision((current) => current + 1);
+        },
+        async deleteEvent(id) {
+          await api.deleteFestival(id);
+          // 목록을 다시 받는다. 삭제 포함 보기가 꺼져 있으면 행이 사라지고,
+          // 켜져 있으면 (삭제) 표시로 바뀐다. 직접 갈아끼우면 둘을 구분해야 한다.
+          setEventsRevision((current) => current + 1);
+          setStatsRevision((current) => current + 1);
+          record({
+            area: "행사",
+            action: "삭제",
+            target: events.find((item) => item.id === id)?.title ?? id,
+            reason: "관리자 삭제",
+          });
+          setMessage("행사를 삭제했습니다.");
+        },
+        async restoreEvent(id) {
+          await api.restoreFestival(id);
+          setEventsRevision((current) => current + 1);
+          setStatsRevision((current) => current + 1);
+          record({
+            area: "행사",
+            action: "복구",
+            target: events.find((item) => item.id === id)?.title ?? id,
+            reason: "관리자 복구",
+          });
+          setMessage("행사를 복구했습니다.");
         },
         membersLoading,
         membersError,

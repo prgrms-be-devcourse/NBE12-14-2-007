@@ -61,4 +61,23 @@ public class MemberRequest {
 		String newPassword
 	) {
 	}
+
+	/**
+	 * 회원 탈퇴 요청.
+	 *
+	 * 비밀번호를 다시 받는 이유: 자리를 비운 사이 남이 브라우저를 만지거나
+	 * CSRF로 탈퇴가 호출되는 것을 막기 위해서다. 되돌리기 어려운 작업이라
+	 * 로그인 상태만으로는 부족하다.
+	 *
+	 * @ValidPassword 를 걸지 않는다. 형식 규칙이 나중에 바뀌면
+	 * 예전 규칙으로 가입한 회원이 탈퇴하지 못하게 된다.
+	 */
+	@Schema(name = "MemberWithdrawRequest", description = "회원 탈퇴 요청")
+	public record Withdraw(
+
+		@NotBlank(message = "비밀번호를 입력해 주세요.")
+		@Schema(description = "본인 확인용 현재 비밀번호", example = "Password1!")
+		String password
+	) {
+	}
 }

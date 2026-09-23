@@ -5,15 +5,18 @@ import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.domain.member.service.MemberService;
 import com.team007.room_escape.global.response.ApiResponse;
 import com.team007.room_escape.global.security.CustomUserDetails;
+import com.team007.room_escape.global.util.CookieUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
 	private final MemberService memberService;
+	/** 탈퇴 시 리프레시 쿠키를 지워야 해서 필요하다. */
+	private final CookieUtil cookieUtil;
 
 	@Operation(
 		summary = "마이페이지 조회",
@@ -106,5 +111,29 @@ public class MemberController {
 		memberService.changePassword(principal.getId(), request);
 
 		return ResponseEntity.ok(ApiResponse.noContentSuccess("비밀번호가 변경되었습니다. 다시 로그인해 주세요."));
+	}
+
+	@Operation(
+		summary = "[ME] 회원 탈퇴",
+		description = """
+			본인 계정을 탈퇴한다. 행을 지우지 않고 탈퇴 시각만 남긴다.
+			본인 확인을 위해 현재 비밀번호를 함께 보낸다(불일치 시 401, MEMBER008).
+			관리자 계정은 탈퇴할 수 없다(403, MEMBER009).
+			작성한 후기·댓글·문의는 남으며 작성자만 '탈퇴한 사용자'로 보인다.
+			탈퇴하면 Refresh Token이 삭제되고 쿠키도 지워진다.
+			"""
+	)
+	@DeleteMapping("/me")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ApiResponse<Void>> withdraw(
+		@AuthenticationPrincipal CustomUserDetails principal,
+		@Valid @RequestBody MemberRequest.Withdraw request,
+		HttpServletResponse response
+	) {
+		memberService.withdraw(principal.getId(), request);
+		// 서버에서 토큰을 지워도 브라우저에 쿠키가 남으면 매 요청에 실패한 재발급이 붙는다.
+		cookieUtil.clearRefreshCookie(response);
+
+		return ResponseEntity.ok(ApiResponse.noContentSuccess("탈퇴가 완료되었습니다."));
 	}
 }

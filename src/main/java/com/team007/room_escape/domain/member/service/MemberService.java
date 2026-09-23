@@ -139,6 +139,39 @@ public class MemberService {
 		refreshTokenService.deleteByMemberId(memberId);
 	}
 
+	/**
+	 * 회원 탈퇴. 행을 지우지 않고 탈퇴 시각만 남긴다.
+	 *
+	 * 작성한 후기·댓글·문의는 그대로 둔다. 회원 행을 지우면 그것들이 참조를 잃고,
+	 * 남이 쓴 글의 흐름까지 끊긴다. 화면에서는 "탈퇴한 사용자"로 보여준다.
+	 *
+	 * 이메일 유니크 인덱스(uk_member_email)가 WHERE deleted_at IS NULL 로 걸려 있어
+	 * 탈퇴 후 같은 이메일로 다시 가입할 수 있다.
+	 *
+	 * TODO 개인정보 보관 기간이 정해지면 일정 기간 뒤 이메일·전화번호를 파기할 것.
+	 *      지금은 탈퇴해도 회원 행에 그대로 남아 있다.
+	 */
+	@Transactional
+	public void withdraw(UUID memberId, MemberRequest.Withdraw request) {
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		// 관리자가 스스로 나가면 그 계정으로 하던 운영 업무를 이어받을 수 없다.
+		if (member.getRole().isAdmin()) {
+			throw new BusinessException(MemberExceptionCode.MEMBER_ADMIN_WITHDRAW_DENIED);
+		}
+
+		// 로그인 상태만으로는 부족하다. 자리를 비운 사이 남이 눌러도 탈퇴가 되면 안 된다.
+		if (!passwordEncoder.matches(request.password(), member.getPassword())) {
+			throw new BusinessException(MemberExceptionCode.MEMBER_PASSWORD_MISMATCH);
+		}
+
+		member.delete();
+
+		// 탈퇴했는데 리프레시 토큰이 남아 있으면 그 쿠키로 계속 재발급이 된다.
+		refreshTokenService.deleteByMemberId(memberId);
+	}
+
 	/** 지금 쓰던 닉네임 그대로면 중복 검사를 건너뛴다. 본인 닉네임에 걸리면 안 되기 때문이다. */
 	private void validateNickname(Member member, String nickname) {
 		if (nickname == null || nickname.equals(member.getNickname())) {

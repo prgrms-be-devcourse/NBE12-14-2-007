@@ -2955,6 +2955,21 @@ button.post-thumbnail {
   color: #626a59;
   margin-top: 5px;
 }
+/* 탈퇴처럼 되돌릴 수 없는 영역. 제목만 붉게 해서 눈에 띄되 과하지 않게. */
+.account-security.danger h3 {
+  color: #a3372b;
+}
+/* 탈퇴 전 안내. 무엇이 사라지고 무엇이 남는지 먼저 읽게 한다. */
+.withdraw-notice {
+  margin: 0 0 20px;
+  padding: 15px 18px 15px 32px;
+  border: 1px solid #f0d9d4;
+  border-radius: 9px;
+  background: #fdf6f4;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #6b4a44;
+}
 .joined-date {
   font-size: 12px;
   color: #63695b;
@@ -3172,6 +3187,84 @@ button.post-thumbnail {
 .auth-panel > form > .btn {
   width: 100%;
   margin-top: 7px;
+}
+/* 가입 시 법적 고지·동의 영역. */
+.consent-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 4px;
+  background: #fbfcf8;
+}
+.consent-all {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 13px;
+  margin-bottom: 11px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  cursor: pointer;
+}
+.consent-all span {
+  font-size: 12px;
+  color: #6f7a67;
+}
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 5px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.consent-row b {
+  color: #a94d18;
+  font-weight: 600;
+}
+.consent-row b.optional {
+  color: #6f7a67;
+}
+.consent-box input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #7a8a5f;
+  cursor: pointer;
+}
+/* 수집 항목·목적·보유기간. 고지 의무가 있는 내용이라 접지 않고 펼쳐 둔다. */
+.consent-detail {
+  margin: 11px 0 9px;
+  padding: 13px 15px;
+  border-radius: 8px;
+  background: #f2f5ec;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.consent-detail > div {
+  display: flex;
+  gap: 10px;
+}
+.consent-detail > div + div {
+  margin-top: 6px;
+}
+.consent-detail dt {
+  flex-shrink: 0;
+  width: 62px;
+  font-weight: 600;
+  color: #4f5c46;
+}
+.consent-detail dd {
+  margin: 0;
+  color: #5c6653;
+}
+.consent-note {
+  font-size: 11px;
+  color: #6f7a67;
+  margin: 0 0 9px;
+  line-height: 1.7;
 }
 .auth-switch {
   font-size: 12px;

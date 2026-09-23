@@ -279,15 +279,56 @@ export interface AdminFestivalDetail {
   status: "OPEN" | "CLOSED";
 }
 /**
+ * 관리자 행사 목록의 한 줄. 서버 AdminFestivalResponse.ListItem과 같은 모양.
+ * 공개 목록과 달리 deletedAt이 있어 삭제된 행사를 구분할 수 있다.
+ */
+export interface AdminFestivalListItem {
+  festivalId: number;
+  providerType: "PUBLIC" | "MEMBER";
+  title: string;
+  category: string;
+  instNm: string | null;
+  imgUrl: string | null;
+  beginDe: string;
+  endDe: string;
+  region: string;
+  status: "OPEN" | "CLOSED";
+  /** 삭제 시각. 삭제되지 않았으면 null */
+  deletedAt: string | null;
+}
+/**
+ * 관리자 행사 수정 요청. 보낸 값으로 전부 덮어쓴다.
+ * 상세를 먼저 불러와 채운 뒤 통째로 보낸다.
+ * 출처(providerType)와 진행 상태(status)는 서버가 정하므로 보내지 않는다.
+ */
+export interface AdminFestivalInput {
+  instNm: string | null;
+  title: string;
+  category: string;
+  festivalContent: string | null;
+  referenceUrl: string | null;
+  region: string;
+  regionDetail: string | null;
+  imgUrl: string | null;
+  /** "2026-10-01T10:00:00" 형태 */
+  beginDe: string;
+  endDe: string;
+  eventTmInfo: string | null;
+  partcptExpnInfo: string | null;
+  telnoInfo: string | null;
+  hostInstNm: string | null;
+}
+/**
  * 관리자 행사 검색 조건. 비운 항목은 조건을 걸지 않는다.
  * 공개 화면과 같은 GET /festivals 를 쓰지만 페이지 크기가 달라 따로 둔다.
  */
 export interface AdminFestivalQuery {
   keyword?: string;
   providerType?: "PUBLIC" | "MEMBER";
-  category?: string;
   /** true면 종료된 행사를 제외한다 */
   excludeClosed?: boolean;
+  /** true면 삭제된 행사도 함께 조회한다. 복구 대상을 찾으려면 필요하다 */
+  includeDeleted?: boolean;
   page?: number;
   size?: number;
   sort?: string;

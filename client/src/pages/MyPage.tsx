@@ -137,6 +137,7 @@ function Profile() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
   const restricted = member?.role === "ROLE_WARNING";
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -237,11 +238,101 @@ function Profile() {
           <ArrowRight size={15} />
         </button>
       </div>
+      {/* 관리자 계정은 서버가 탈퇴를 막으므로 버튼을 아예 보여주지 않는다. */}
+      {member!.role !== "ROLE_ADMIN" && (
+        <div className="account-security danger">
+          <div>
+            <h3>회원 탈퇴</h3>
+            <p>
+              탈퇴하면 로그인할 수 없어요. 작성한 후기와 댓글은 남고, 작성자만
+              &apos;탈퇴한 사용자&apos;로 보여요.
+            </p>
+          </div>
+          <button
+            className="btn secondary small"
+            onClick={() => setWithdrawOpen(true)}
+          >
+            탈퇴하기
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      )}
       <div className="joined-date">
         함께한 날 · {dateText(member!.createdAt)}
       </div>
       {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
+      {withdrawOpen && <WithdrawModal onClose={() => setWithdrawOpen(false)} />}
     </>
+  );
+}
+/**
+ * 회원 탈퇴 확인 모달.
+ *
+ * 되돌릴 수 없는 작업이라 두 가지를 요구한다.
+ * 비밀번호(서버도 검증한다)와 "탈퇴" 입력이다.
+ * 비밀번호만 받으면 브라우저 자동완성으로 한 번에 눌러버릴 수 있다.
+ */
+function WithdrawModal({ onClose }: { onClose: () => void }) {
+  const { api, setMember, toast } = useApp();
+  const navigate = useNavigate();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const ready = !!password && confirm.trim() === "탈퇴";
+  return (
+    <Modal title="정말 탈퇴하시겠어요?" onClose={onClose}>
+      <form
+        onSubmit={async (e: FormEvent) => {
+          e.preventDefault();
+          setBusy(true);
+          setError("");
+          try {
+            await api.withdraw(password);
+            // 서버가 세션을 끊었으니 화면 상태도 바로 로그아웃으로 맞춘다.
+            setMember(null);
+            toast("탈퇴가 완료되었어요. 그동안 이용해 주셔서 감사합니다.");
+            navigate("/");
+          } catch (withdrawError) {
+            // 실패하면 닫지 않는다. 비밀번호를 다시 칠 수 있어야 한다.
+            setError(errorText(withdrawError));
+            setBusy(false);
+          }
+        }}
+      >
+        <ul className="withdraw-notice">
+          <li>다시 로그인할 수 없어요.</li>
+          <li>작성한 후기·댓글·문의는 삭제되지 않고 그대로 남아요.</li>
+          <li>같은 이메일로 다시 가입할 수 있어요.</li>
+        </ul>
+        <Field label="현재 비밀번호" required>
+          <input
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+        <Field label="확인" hint="계속하려면 '탈퇴'를 입력해 주세요." required>
+          <input
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="탈퇴"
+          />
+        </Field>
+        <FormError message={error} />
+        <div className="form-actions">
+          <button type="button" className="btn secondary" onClick={onClose}>
+            취소
+          </button>
+          <button className="btn danger" disabled={!ready || busy}>
+            {busy ? "처리 중…" : "탈퇴하기"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 function PasswordModal({ onClose }: { onClose: () => void }) {

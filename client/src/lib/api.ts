@@ -22,6 +22,8 @@ import type {
   AdminMemberQuery,
   AdminFestivalQuery,
   AdminFestivalDetail,
+  AdminFestivalInput,
+  AdminFestivalListItem,
   AdminStats,
   SyncResult,
   Role,
@@ -326,6 +328,14 @@ export function createApi(mode: Mode) {
     },
     async changePassword(newPassword: string) {
       await transport("/members/me/password", "PATCH", { newPassword });
+      clearSession();
+    },
+    /**
+     * 회원 탈퇴. 본인 확인을 위해 현재 비밀번호를 함께 보낸다.
+     * 서버가 리프레시 토큰과 쿠키를 지우므로 여기서도 메모리 세션을 비운다.
+     */
+    async withdraw(password: string) {
+      await transport("/members/me", "DELETE", { password });
       clearSession();
     },
     async submissions(): Promise<SubmissionSummary[]> {
@@ -689,9 +699,10 @@ export function createApi(mode: Mode) {
     async adminFestivals(query: AdminFestivalQuery = {}) {
       const {
         page = 0,
-        size = 50,
+        size = 20,
         sort = "beginDe,desc",
         excludeClosed,
+        includeDeleted,
         ...filters
       } = query;
       const params = new URLSearchParams({
@@ -706,7 +717,26 @@ export function createApi(mode: Mode) {
       }
       // false는 보내지 않는다. 서버 기본값이 false다.
       if (excludeClosed) params.set("excludeClosed", "true");
-      return transport<Page<FestivalSearchItem>>(`/festivals?${params}`);
+      if (includeDeleted) params.set("includeDeleted", "true");
+      // 공개 검색(GET /festivals)이 아니라 어드민 전용이다.
+      // 삭제된 행사를 봐야 복구할 수 있는데 공개 API는 그걸 내려주면 안 된다.
+      return transport<Page<AdminFestivalListItem>>(
+        `/admin/festivals?${params}`,
+      );
+    },
+    /** [ADMIN] 행사 삭제. 행을 지우지 않고 삭제 시각만 남긴다. */
+    async deleteFestival(festivalId: string | number) {
+      return transport<void>(
+        `/admin/festivals/${encodeURIComponent(String(festivalId))}`,
+        "DELETE",
+      );
+    },
+    /** [ADMIN] 삭제된 행사 복구. 회원 제보는 서버가 403으로 거부한다. */
+    async restoreFestival(festivalId: string | number) {
+      return transport<void>(
+        `/admin/festivals/${encodeURIComponent(String(festivalId))}/restore`,
+        "PATCH",
+      );
     },
     /**
      * [ADMIN] 운영 대시보드 집계.
@@ -758,6 +788,20 @@ export function createApi(mode: Mode) {
     async adminFestival(festivalId: string | number) {
       return transport<AdminFestivalDetail>(
         `/festivals/${encodeURIComponent(String(festivalId))}`,
+      );
+    },
+    /**
+     * [ADMIN] 행사 수정. 보낸 값으로 전부 덮어쓴다.
+     * 공공 API 데이터의 오기(장소·날짜 등)를 바로잡는 용도다.
+     */
+    async updateFestival(
+      festivalId: string | number,
+      input: AdminFestivalInput,
+    ) {
+      return transport<AdminFestivalDetail>(
+        `/admin/festivals/${encodeURIComponent(String(festivalId))}`,
+        "PATCH",
+        input,
       );
     },
     /** [ADMIN] 회원 목록. 닉네임·이메일 부분 일치 검색. */

@@ -90,6 +90,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 			FestivalRegion region,
 			String url
 	);
+
 	/** 행사 수정일 경우, 본인 행사 제외하고 중복 확인 */
 	boolean existsByIdNotAndBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
 			Long festivalId,
@@ -97,5 +98,42 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 			LocalDateTime endDe,
 			FestivalRegion region,
 			String url
+	);
+
+	/**
+	 * 관리자용 행사 검색. includeDeleted 가 true면 삭제된 행사까지 함께 조회한다.
+	 * 공개 검색(searchFestivals)과 달리 삭제된 행사를 볼 수 있어야 복구가 가능하다.
+	 *
+	 * keyword 는 null 대신 빈 문자열을 받는다. null을 LIKE 에 넘기면 Postgres 가
+	 * 파라미터 타입을 추론하지 못해 'operator does not exist: text ~~ bytea' 로 실패한다.
+	 * 빈 문자열이면 LIKE '%%' 가 되어 조건을 걸지 않은 것과 같다.
+	 * enum 인 providerType 은 IS NULL 비교가 정상 동작하므로 플래그가 필요 없다.
+	 */
+	@Query(value = """
+		SELECT f
+		FROM Festival f
+		WHERE (:includeDeleted = true OR f.deletedAt IS NULL)
+		  AND (LOWER(COALESCE(f.title, '')) LIKE CONCAT('%', :keyword, '%')
+		       OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
+		       OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
+		  AND (:providerType IS NULL OR f.providerType = :providerType)
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		""",
+		countQuery = """
+		SELECT COUNT(f)
+		FROM Festival f
+		WHERE (:includeDeleted = true OR f.deletedAt IS NULL)
+		  AND (LOWER(COALESCE(f.title, '')) LIKE CONCAT('%', :keyword, '%')
+		       OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
+		       OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
+		  AND (:providerType IS NULL OR f.providerType = :providerType)
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		""")
+	Page<Festival> searchForAdmin(
+		@Param("keyword") String keyword,
+		@Param("providerType") ProviderType providerType,
+		@Param("includeDeleted") boolean includeDeleted,
+		@Param("excludeClosed") boolean excludeClosed,
+		Pageable pageable
 	);
 }
