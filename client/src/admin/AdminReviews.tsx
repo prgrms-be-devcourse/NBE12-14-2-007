@@ -17,11 +17,6 @@ import { dateTimeText } from "../lib/format";
 
 export function AdminReviews() {
   const { member, authLoading } = useApp();
-  const [params] = useSearchParams();
-  const localDev =
-    import.meta.env.DEV &&
-    ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
-  const testMode = localDev && params.get("test") === "1";
   return (
     <div className="admin-review-page">
       <PageTitle
@@ -29,16 +24,7 @@ export function AdminReviews() {
         title="후기 관리"
         description="함께 나눈 이야기를 살펴보세요. 삭제된 후기도 여기에서 확인할 수 있어요."
       />
-      {testMode && (
-        <p className="adm-dialog-note" role="status">
-          로그인 없는 로컬 검색 테스트입니다. 실제 DB에서 후기를 조회하며, 상세
-          조회와 관리 작업은 로그인 후 사용할 수 있습니다.{" "}
-          <Link to="/admin/reviews">테스트 종료</Link>
-        </p>
-      )}
-      {testMode ? (
-        <AdminReviewList testMode />
-      ) : authLoading ? (
+      {authLoading ? (
         <Loading />
       ) : !member ? (
         <LoginRequired />
@@ -50,18 +36,11 @@ export function AdminReviews() {
       ) : (
         <AdminReviewList />
       )}
-      {localDev && !testMode && member?.role !== "ROLE_ADMIN" && (
-        <p className="adm-footnote">
-          <Link className="btn secondary" to="/admin/reviews?test=1">
-            로그인 없이 검색 테스트
-          </Link>
-        </p>
-      )}
     </div>
   );
 }
 
-function AdminReviewList({ testMode = false }: { testMode?: boolean }) {
+function AdminReviewList() {
   const { api } = useApp();
   const { page, sort, type, keyword, update } = useReviewQuery();
   const [params, setParams] = useSearchParams();
@@ -131,7 +110,7 @@ function AdminReviewList({ testMode = false }: { testMode?: boolean }) {
                   post={post}
                   management={{
                     deletedAt: post.deletedAt,
-                    onOpen: testMode ? undefined : () => select(post.id),
+                    onOpen: () => select(post.id),
                   }}
                 />
               ))}
@@ -159,7 +138,7 @@ function AdminReviewList({ testMode = false }: { testMode?: boolean }) {
           />
         )}
       </section>
-      {selectedId && !testMode && (
+      {selectedId && (
         <AdminReviewDetail
           key={selectedId}
           id={selectedId}

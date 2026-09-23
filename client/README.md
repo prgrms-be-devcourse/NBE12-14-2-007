@@ -64,10 +64,6 @@ pnpm test
 
 구현은 `src/admin/Admin.tsx`, `src/admin/AdminReviews.tsx`, `src/admin/store.tsx`, `src/admin/admin.css`에 있습니다.
 
-로컬에서 로그인 없이 실제 DB의 관리자 후기 검색을 테스트하려면 백엔드를 `local-review-search-test` 프로필로 실행하고, `pnpm dev`의 `/admin/reviews?test=1`에 접속합니다. 로그인 안내 아래의 **로그인 없이 검색 테스트** 버튼으로도 들어갈 수 있습니다. 이 프로필은 서버를 `127.0.0.1`에 바인딩하고 공공행사 자동 동기화를 끕니다. 기본 Vite proxy도 `127.0.0.1:8080`을 사용하며, 별도 `API_PROXY_TARGET`을 지정했다면 같은 주소로 맞춥니다.
-
-테스트 모드에서는 loopback에서 오는 `GET /api/v1/admin/posts`만 인증 없이 허용합니다. 화면에서 상세 조회 버튼은 표시하지 않으며, 다른 관리자 API와 쓰기 요청은 계속 인증이 필요합니다. 일반 프로필과 production 프론트에서는 기존 관리자 로그인이 필요합니다. 백엔드 실행 예: `.\gradlew.bat bootRun --args='--spring.profiles.active=local-review-search-test'`.
-
 ### 일반 서비스 설정
 
 `.env.example`을 `.env.local`로 복사해 필요할 때만 변경합니다. 루트의 백엔드 `.env`는 읽거나 복사하지 않습니다.
@@ -86,8 +82,6 @@ API 요청이 실패해도 예시 데이터로 대체하지 않습니다. access
 ## 확인된 연동 범위
 
 후기 다건조회는 `type=TITLE|MEMBER_NICKNAME|FESTIVAL_TITLE`, `keyword`, `page`, `size`, `sort=createdAt,desc|createdAt,asc`를 사용합니다. 사용자·관리자 화면은 모두 6개 단위로 요청하고 서버의 `totalElements`·`totalPages`를 표시합니다. 검색·정렬 변경 시 첫 페이지로 이동하며 URL로 조건을 복원합니다. 검색어가 비어 있으면 `type`·`keyword`를 모두 생략합니다. 목록의 `date`는 작성일이 아니라 `updatedAt`입니다.
-
-로컬 soft 삭제 확인용 데이터는 루트의 `scripts/local-review-soft-delete.sql`로 추가합니다. 기존 후기를 변경하지 않고 고정 ID의 삭제된 후기 한 건을 추가하며 재실행해도 중복 생성하지 않습니다. 제목 `soft 삭제 확인용 후기`로 검색하면 관리자 목록에는 나타나고 사용자 전체·행사별 목록에는 나타나지 않아야 합니다. 이 SQL은 공용 Flyway migration에 포함하지 않습니다.
 
 이번 연결은 현재 Controller·Service·Repository·SecurityConfig를 기준으로 확인했습니다. `tests/review-lists.spec.ts`는 실제 DTO 형식의 응답을 mock하여 사용자·관리자 목록, 권한 제한, 검색·정렬·pagination, 오류 처리, Preview 회귀, 모바일·접근성을 검증합니다. 실제 DB/로그인 계정을 사용한 통합 검증과는 구분합니다. 다른 checkout의 개발 서버를 재사용하지 않으려면 `$env:PLAYWRIGHT_PORT='3107'; corepack pnpm exec playwright test tests/review-lists.spec.ts`로 실행합니다.
 

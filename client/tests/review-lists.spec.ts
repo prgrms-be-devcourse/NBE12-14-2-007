@@ -170,16 +170,21 @@ for (const role of ["", "ROLE_NORMAL"]) {
     page,
   }) => {
     const requests = await setup(page, { role });
-    await page.goto("/admin/reviews");
-    await expect(
-      page.getByRole("heading", {
-        name: role ? "관리자 권한이 필요합니다" : "로그인하고 함께해요",
-      }),
-    ).toBeVisible();
-    expect(
-      requests.filter(({ url }) => url.pathname.startsWith("/api/v1/admin/")),
-    ).toEqual([]);
-    await expect(page.locator(".post-list")).toHaveCount(0);
+    for (const path of ["/admin/reviews", "/admin/reviews?test=1"]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", {
+          name: role ? "관리자 권한이 필요합니다" : "로그인하고 함께해요",
+        }),
+      ).toBeVisible();
+      expect(
+        requests.filter(({ url }) => url.pathname.startsWith("/api/v1/admin/")),
+      ).toEqual([]);
+      await expect(page.locator(".post-list")).toHaveCount(0);
+      await expect(page.getByRole("search", { name: "후기 검색" })).toHaveCount(
+        0,
+      );
+    }
   });
 }
 
@@ -295,47 +300,6 @@ test("preview searches before pagination and preserves likes sorting", async ({
   await page.getByRole("button", { name: "검색", exact: true }).click();
   await expect(page.locator(".post-row")).toHaveCount(1);
   await expect(page.locator(".post-row")).toContainText("수원화성");
-});
-
-test("local search test opens without login and only calls the review list", async ({
-  page,
-}) => {
-  const requests = await setup(page);
-  const queries: URLSearchParams[] = [];
-  await page.route("**/api/v1/admin/posts?*", (route) => {
-    expect(route.request().method()).toBe("GET");
-    expect(route.request().headers().authorization).toBeUndefined();
-    const query = new URL(route.request().url()).searchParams;
-    queries.push(query);
-    return respond(
-      route,
-      postPage(query.get("keyword") === "없음" ? [] : [adminPost]),
-    );
-  });
-  await page.goto("/admin/reviews");
-  await page.getByRole("link", { name: "로그인 없이 검색 테스트" }).click();
-  await expect(page).toHaveURL(/test=1/);
-  await expect(page.locator(".post-list")).toContainText(post.title);
-  await expect(
-    page.getByText("로그인 없는 로컬 검색 테스트입니다.", { exact: false }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /상세 보기/ })).toHaveCount(0);
-  await page.getByLabel("후기 검색 기준").selectOption("MEMBER_NICKNAME");
-  await page.getByLabel("후기 검색어").fill("주말");
-  await page.getByRole("button", { name: "검색", exact: true }).click();
-  await expect.poll(() => queries.at(-1)?.get("type")).toBe("MEMBER_NICKNAME");
-  await page.reload();
-  await expect(page.locator(".post-list")).toContainText(post.title);
-  await page.getByLabel("후기 검색어").fill("없음");
-  await page.getByRole("button", { name: "검색", exact: true }).click();
-  await expect(page.getByText("조건에 맞는 후기가 없습니다")).toBeVisible();
-  expect(
-    requests.filter(({ url }) => url.pathname.startsWith("/api/v1/admin/")),
-  ).toEqual([]);
-  await page.getByRole("link", { name: "테스트 종료" }).click();
-  await expect(
-    page.getByRole("heading", { name: "로그인하고 함께해요" }),
-  ).toBeVisible();
 });
 
 test("review lists stay accessible and fit mobile and desktop widths", async ({
