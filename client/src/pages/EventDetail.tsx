@@ -26,7 +26,7 @@ import {
   regions,
   safeUrl,
 } from "../lib/format";
-import type { EventView } from "../lib/types";
+import type { EventView, FestivalAccuracyVote } from "../lib/types";
 import {
   Badge,
   Empty,
@@ -55,7 +55,14 @@ export function EventDetailPage() {
     );
   return (
     <div className="container page-space">
-      <EventLoader key={eventId} id={Number(eventId)} />
+      {authLoading ? (
+        <Loading />
+      ) : (
+        <EventLoader
+          key={`${eventId}-${member?.id ?? "guest"}`}
+          id={Number(eventId)}
+        />
+      )}
     </div>
   );
 }
@@ -337,8 +344,11 @@ function EventDetail({ event }: { event: EventView }) {
                           : "공공데이터를 통해 제공된 행사 정보입니다. 방문 전 행사 안내 페이지에서 최신 정보를 확인해 주세요."}
                   </p>
                 </div>
-                {event.source === "MEMBER" && (
-                  <AccuracyVotePanel festivalId={event.festivalId} />
+                {event.source === "MEMBER" && !event.submissionId && (
+                  <AccuracyVotePanel
+                    festivalId={event.festivalId}
+                    initialVote={event.accuracyVote}
+                  />
                 )}
               </>
             ) : (
@@ -404,11 +414,20 @@ function EventDetail({ event }: { event: EventView }) {
   );
 }
 
-function AccuracyVotePanel({ festivalId }: { festivalId: number }) {
+function AccuracyVotePanel({
+  festivalId,
+  initialVote,
+}: {
+  festivalId: number;
+  initialVote?: FestivalAccuracyVote;
+}) {
   const { api, member, authLoading, toast } = useApp();
-  const { data, loading, error: loadError, setData } = useLoad(
-    () => api.accuracyVotes(festivalId),
-    [api, festivalId, member?.id],
+  const [data, setData] = useState<FestivalAccuracyVote>(
+    initialVote ?? {
+      accurateCount: 0,
+      inaccurateCount: 0,
+      myVote: null,
+    },
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -445,7 +464,7 @@ function AccuracyVotePanel({ festivalId }: { festivalId: number }) {
           type="button"
           className={data?.myVote === "ACCURATE" ? "selected accurate" : ""}
           aria-pressed={data?.myVote === "ACCURATE"}
-          disabled={loading || busy || authLoading}
+          disabled={busy || authLoading}
           onClick={() => select("ACCURATE")}
         >
           <CheckCircle2 size={19} />
@@ -456,7 +475,7 @@ function AccuracyVotePanel({ festivalId }: { festivalId: number }) {
           type="button"
           className={data?.myVote === "INACCURATE" ? "selected inaccurate" : ""}
           aria-pressed={data?.myVote === "INACCURATE"}
-          disabled={loading || busy || authLoading}
+          disabled={busy || authLoading}
           onClick={() => select("INACCURATE")}
         >
           <AlertTriangle size={19} />
@@ -467,7 +486,7 @@ function AccuracyVotePanel({ festivalId }: { festivalId: number }) {
       {!member && !authLoading && (
         <p className="accuracy-vote-login">로그인하면 평가할 수 있어요.</p>
       )}
-      <FormError message={loadError || error} />
+      <FormError message={error} />
     </section>
   );
 }

@@ -37,6 +37,9 @@ export interface Festival {
 }
 export interface EventView extends Festival {
   source: "PUBLIC" | "MEMBER";
+  accuracyVote?: FestivalAccuracyVote;
+  likeCount?: number;
+  likedByMe?: boolean;
   submitter?: { id: string; nickname: string };
   preview?: boolean;
   submissionId?: string;
@@ -69,18 +72,26 @@ export interface FestivalDetailItem {
   providerType: "PUBLIC" | "MEMBER";
   title: string;
   category: string;
+  festivalContent: string | null;
   instNm: string | null;
   hostInstNm: string | null;
   imgUrl: string | null;
   url: string | null;
   hmpgUrl: string | null;
+  referenceUrl: string | null;
   beginDe: string;
   endDe: string;
   eventTmInfo: string | null;
   partcptExpnInfo: string | null;
   telnoInfo: string | null;
   region: string;
+  regionDetail: string | null;
   status: "OPEN" | "CLOSED";
+  accurateCount: number;
+  inaccurateCount: number;
+  myVote: "ACCURATE" | "INACCURATE" | null;
+  likeCount: number;
+  likedByMe: boolean;
 }
 export interface FestivalAccuracyVote {
   accurateCount: number;

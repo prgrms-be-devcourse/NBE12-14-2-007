@@ -7,6 +7,7 @@ import com.team007.room_escape.domain.festival.service.FestivalSyncExecutor;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.ApiResponse;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
+import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,9 +55,13 @@ public class FestivalController {
 	@Operation(summary = "행사 상세 조회", description = "공공행사 또는 회원 제보 행사 1건의 상세 정보를 조회합니다.")
 	@GetMapping("/{festivalId}")
 	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> getFestival(
+			@AuthenticationPrincipal CustomUserDetails principal,
 			@PathVariable Long festivalId
 	) {
-		FestivalResponse.DetailResponse response = festivalService.getFestival(festivalId);
+		FestivalResponse.DetailResponse response = festivalService.getFestival(
+				festivalId,
+				principal == null ? null : principal.getId()
+		);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}

@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
@@ -122,10 +123,36 @@ public class FestivalResponse {
             String regionDetail,
 
             @Schema(description = "행사 상태", example = "OPEN")
-            FestivalStatus status
+            FestivalStatus status,
+
+            @Schema(description = "정확해요 개수", example = "18")
+            long accurateCount,
+
+            @Schema(description = "부정확해요 개수", example = "2")
+            long inaccurateCount,
+
+            @Schema(description = "현재 사용자의 평가, 평가하지 않았다면 null", example = "ACCURATE", nullable = true)
+            FestivalAccuracyVoteType myVote,
+
+            @Schema(description = "좋아요 개수", example = "7")
+            long likeCount,
+
+            @Schema(description = "현재 사용자의 좋아요 여부", example = "true")
+            boolean likedByMe
     ) {
 
         public static DetailResponse from(Festival festival) {
+            return from(festival, 0, 0, null, 0, false);
+        }
+
+        public static DetailResponse from(
+                Festival festival,
+                long accurateCount,
+                long inaccurateCount,
+                FestivalAccuracyVoteType myVote,
+                long likeCount,
+                boolean likedByMe
+        ) {
             return DetailResponse.builder()
                     .festivalId(festival.getId())
                     .providerType(festival.getProviderType())
@@ -148,6 +175,11 @@ public class FestivalResponse {
                     .region(festival.getRegion())
                     .regionDetail(festival.getRegionDetail())
                     .status(FestivalStatus.from(festival.getEndDe()))
+                    .accurateCount(accurateCount)
+                    .inaccurateCount(inaccurateCount)
+                    .myVote(myVote)
+                    .likeCount(likeCount)
+                    .likedByMe(likedByMe)
                     .build();
         }
     }

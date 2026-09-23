@@ -27,22 +27,6 @@ public class FestivalAccuracyVoteService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public AccuracyVoteResponse getVotes(UUID memberId, Long festivalId) {
-        Festival festival = findUserSubmittedFestival(festivalId);
-        FestivalAccuracyVoteType myVote = null;
-
-        if (memberId != null) {
-            Member member = findActiveMember(memberId);
-            myVote = accuracyVoteRepository
-                    .findByFestivalAndMember(festival, member)
-                    .map(FestivalAccuracyVote::getVoteType)
-                    .orElse(null);
-        }
-
-        return buildResponse(festival, myVote);
-    }
-
-    @Transactional
     public AccuracyVoteResponse vote(
             UUID memberId,
             Long festivalId,

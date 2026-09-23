@@ -81,3 +81,7 @@ public-api:
     url: https://openapi.gg.go.kr/GGCULTUREVENTSTUS #API 서버 주소
     service-key: ${PUBLIC_FESTIVAL_SERVICE_KEY}
     sync-cron: "0 0 6,14,22 * * *"  #배치 실행 주기 6/14/22시 (임의..)
+
+weather:
+  url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
+  service-key: ${KMA_WEATHER_SERVICE_KEY}
