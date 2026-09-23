@@ -165,8 +165,10 @@ export function EventCard({
       </div>
       <div className="event-copy">
         <div className="card-eyebrow">
-          <span>
-            {event.source === "PUBLIC" ? "지역 문화행사" : "회원 제보"}
+          <span
+            className={`source-badge ${event.source === "PUBLIC" ? "public" : "member"}`}
+          >
+            {event.source === "PUBLIC" ? "공공데이터" : "회원 제보"}
           </span>
           {event.status === "CLOSED" && <Badge tone="gray">종료</Badge>}
           {event.preview && <span className="example-label">예시</span>}

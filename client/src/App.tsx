@@ -9,6 +9,7 @@ import { Reviews, ReviewDetailPage, ReviewFormPage } from "./pages/Reviews";
 import { MyPage } from "./pages/MyPage";
 import { AuthPage } from "./pages/Auth";
 import { AppProvider } from "./lib/context";
+import { AdminReviews } from "./admin/AdminReviews";
 import {
   AdminLayout,
   AdminDashboard,
@@ -28,10 +29,7 @@ export function App() {
           path="events"
           element={<AdminContent kind="events" key="events" />}
         />
-        <Route
-          path="reviews"
-          element={<AdminContent kind="reviews" key="reviews" />}
-        />
+        <Route path="reviews" element={<AdminReviews />} />
         <Route path="inquiries" element={<AdminTickets />} />
         <Route path="activity" element={<AdminActivity />} />
       </Route>

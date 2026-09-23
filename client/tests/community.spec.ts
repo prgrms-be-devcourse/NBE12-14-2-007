@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("API mode shows pending views without calling unavailable or private browse APIs", async ({
+test("API mode retrieves the public review feed without private browse APIs", async ({
   page,
 }) => {
   const urls: URL[] = [];
@@ -20,6 +20,16 @@ test("API mode shows pending views without calling unavailable or private browse
         role: "ROLE_NORMAL",
         email: "me@example.com",
       };
+    else if (path === "/api/v1/posts")
+      data = {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        number: 0,
+        size: 6,
+        first: true,
+        last: true,
+      };
     else
       return route.fulfill({
         status: 404,
@@ -34,19 +44,20 @@ test("API mode shows pending views without calling unavailable or private browse
       body: JSON.stringify({ success: true, data }),
     });
   });
-  for (const [path, heading] of [
-    ["/reviews", "전체 후기 조회를 준비하고 있어요"],
-    ["/events/72", "행사 상세 조회를 준비하고 있어요"],
-  ]) {
-    await page.goto(path);
-    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(page.locator(".post-row, .event-card")).toHaveCount(0);
-  }
-  expect(urls.length).toBeGreaterThan(0);
+  await page.goto("/reviews");
+  await expect(
+    page.getByRole("heading", { name: "첫 번째 이야기를 기다려요" }),
+  ).toBeVisible();
+  await expect(page.locator(".post-row")).toHaveCount(0);
+  expect(urls.some((url) => url.pathname === "/api/v1/posts")).toBe(true);
   expect(
     urls.filter(
       (url) =>
-        !["/api/v1/auth/refresh", "/api/v1/members/me"].includes(url.pathname),
+        ![
+          "/api/v1/auth/refresh",
+          "/api/v1/members/me",
+          "/api/v1/posts",
+        ].includes(url.pathname),
     ),
   ).toEqual([]);
 });

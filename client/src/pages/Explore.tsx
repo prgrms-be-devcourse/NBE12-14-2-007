@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useApp, useLoad } from "../lib/context";
 import { categories } from "../lib/format";
+import { selectedRegion } from "../lib/regions";
 import { RegionSelects } from "../components/RegionSelects";
 import {
   Empty,
@@ -32,7 +33,7 @@ export function Explore() {
   const query = params.get("q") || "";
   const sort = params.get("sort") || "soon";
   const providerType = params.get("providerType") || "";
-  const excludeClosed = params.get("excludeClosed") === "true";
+  const excludeClosed = params.get("excludeClosed") !== "false";
   const page = Math.max(0, Number(params.get("page")) || 0);
   const [text, setText] = useState(query);
 
@@ -46,8 +47,7 @@ export function Explore() {
     setParams(next);
   }
 
-  const apiRegion =
-    mode === "api" && region.includes(":") ? region.split(":")[0] : region;
+  const apiRegion = selectedRegion(region).province?.value || region;
   const { data, loading, error, reload } = useLoad(
     () =>
       api.festivals({
@@ -115,7 +115,6 @@ export function Explore() {
         <RegionSelects
           value={apiRegion}
           onChange={(value) => setFilter("region", value)}
-          supportedOnly={mode === "api"}
         />
         <label className="filter-select">
           <CalendarDays size={17} />
@@ -124,6 +123,7 @@ export function Explore() {
             aria-label="날짜 필터"
             value={date}
             onChange={(event) => setFilter("date", event.target.value)}
+            onClick={(event) => event.currentTarget.showPicker?.()}
           />
         </label>
         <button className="btn primary">
@@ -177,7 +177,10 @@ export function Explore() {
               type="checkbox"
               checked={excludeClosed}
               onChange={(event) =>
-                setFilter("excludeClosed", event.target.checked ? "true" : "")
+                setFilter(
+                  "excludeClosed",
+                  event.target.checked ? "true" : "false",
+                )
               }
             />
           </label>

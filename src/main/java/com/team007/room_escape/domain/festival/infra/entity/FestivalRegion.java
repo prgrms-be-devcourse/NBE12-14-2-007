@@ -28,6 +28,7 @@ public enum FestivalRegion {
     // 경기도 전체
     GYEONGGI("경기도"),
 
+    // TODO: 사용자 제보 데이터가 충분히 쌓이면 시·군·구를 별도 필드로 분리하고 검색 필터 도입 검토
     // 경기도 31개 시·군
     GYEONGGI_SUWON("경기도 수원시"),
     GYEONGGI_GOYANG("경기도 고양시"),

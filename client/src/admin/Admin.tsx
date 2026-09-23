@@ -131,8 +131,8 @@ function AdminShell() {
         <div className="adm-sidebar-bottom">
           <div className="adm-demo-note">
             <span className="adm-live-dot" />
-            <strong>Mock 워크스페이스</strong>
-            <p>실제 회원과 서비스에 영향을 주지 않는 관리자 미리보기입니다.</p>
+            <strong>관리자 워크스페이스</strong>
+            <p>회원·행사·후기·문의는 실제 서비스 데이터입니다.</p>
           </div>
           <Link to="/">
             <ArrowDownLeft size={17} />
@@ -156,12 +156,12 @@ function AdminShell() {
         <div className="adm-preview-strip">
           <span>
             <ShieldCheck size={15} />
-            <strong>관리자 미리보기</strong>
-            <span>모든 데이터와 처리 결과는 Mock입니다.</span>
+            <strong>서비스 관리</strong>
+            <span>목록 조회와 회원·문의 처리는 실제 서비스에 연결됩니다.</span>
           </span>
           <button onClick={() => setResetOpen(true)}>
             <RotateCcw size={14} />
-            예시 초기화
+            로컬 기록 초기화
           </button>
         </div>
         <main id="admin-main" className="adm-main">
@@ -169,17 +169,17 @@ function AdminShell() {
         </main>
         <footer className="adm-footer">
           <Link to="/">방구석탈출 · 서비스로 돌아가기</Link>
-          <span>변경 내용은 현재 탭에만 저장됩니다.</span>
+          <span>운영 기록은 현재 탭에만 저장됩니다.</span>
         </footer>
       </div>
       {resetOpen && (
         <Modal
-          title="예시 데이터를 초기화할까요?"
+          title="로컬 기록을 초기화할까요?"
           onClose={() => setResetOpen(false)}
         >
           <p className="adm-dialog-copy">
-            이 탭에서 변경한 관리자 Mock 데이터와 운영 기록을 처음 상태로
-            되돌립니다.
+            현재 탭의 예시 데이터와 운영 기록을 초기화합니다. 서버에 저장된
+            회원·행사·후기·문의는 변경되지 않습니다.
           </p>
           <div className="adm-dialog-actions">
             <button
@@ -473,7 +473,7 @@ export function AdminDashboard() {
       value: stats?.postTotal,
       unit: "건",
       // 후기에는 아직 노출 상태가 없어 공개/숨김을 나눌 수 없다.
-      detail: "전체 등록 후기",
+      detail: "삭제된 후기 포함",
       icon: MessageSquare,
       to: "/admin/reviews",
       color: "blue",

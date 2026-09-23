@@ -63,9 +63,10 @@ export interface FestivalSearchItem {
   region: string;
   status: "OPEN" | "CLOSED";
 }
-// GET /api/v1/festivals/{festivalId} 응답 그대로의 모양 (공공 행사 상세 조회 전용, 항상 PUBLIC)
+// GET /api/v1/festivals/{festivalId} 응답 그대로의 모양
 export interface FestivalDetailItem {
   festivalId: number;
+  providerType: "PUBLIC" | "MEMBER";
   title: string;
   category: string;
   instNm: string | null;
@@ -80,6 +81,11 @@ export interface FestivalDetailItem {
   telnoInfo: string | null;
   region: string;
   status: "OPEN" | "CLOSED";
+}
+export interface FestivalAccuracyVote {
+  accurateCount: number;
+  inaccurateCount: number;
+  myVote: "ACCURATE" | "INACCURATE" | null;
 }
 export interface SubmissionInput {
   title: string;
@@ -121,6 +127,16 @@ export interface PostInput {
   content: string;
   thumbnail?: string;
 }
+export type PostSearchType = "TITLE" | "MEMBER_NICKNAME" | "FESTIVAL_TITLE";
+export interface PostSearch {
+  type?: PostSearchType;
+  keyword?: string;
+}
+export interface AdminPostQuery extends PostSearch {
+  page?: number;
+  size?: number;
+  sort?: "createdAt,desc" | "createdAt,asc";
+}
 export interface PostSummary {
   id: string;
   member: { id: string; nickname: string; profileImg: string | null };
@@ -134,6 +150,9 @@ export interface PostSummary {
 }
 export interface PostDetail extends PostSummary {
   content: string;
+}
+export interface AdminPostSummary extends PostSummary {
+  deletedAt: string | null;
 }
 export interface Page<T> {
   content: T[];

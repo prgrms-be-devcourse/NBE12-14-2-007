@@ -24,11 +24,11 @@ pnpm test
 
 ## 이름을 정한 근거
 
-| 화면 이름     | 백엔드의 실제 의미                             | 구현                                                                                  |
-| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 지역 문화행사 | 공공데이터와 회원 제보 행사의 통합 검색        | 검색어·지역·날짜·출처·종류·종료 행사 제외 필터와 9개 단위 페이징                      |
-| 행사 제보     | `ProviderType.MEMBER`: 회원이 알려온 행사 정보 | 전체 회원 제보 목록·검색·상태 필터·공개 행사 상세는 Mock, 등록 API 연결               |
-| 행사 후기     | 행사에 연결된 후기                             | 전체 후기 feed·행사 상세 이동은 Mock, 행사별 후기·작성·수정·삭제·댓글·좋아요 API 연결 |
+| 화면 이름     | 백엔드의 실제 의미                             | 구현                                                                                       |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 지역 문화행사 | 공공데이터와 회원 제보 행사의 통합 검색        | 검색어·지역·날짜·출처·종류·종료 행사 제외 필터와 9개 단위 페이징                           |
+| 행사 제보     | `ProviderType.MEMBER`: 회원이 알려온 행사 정보 | 전체 회원 제보 목록·검색·상태 필터·공개 행사 상세는 Mock, 등록 API 연결                    |
+| 행사 후기     | 행사에 연결된 후기                             | 전체·행사별 후기 조회, 작성·수정·삭제·댓글·좋아요 API 연결. Preview에서는 예시 데이터 사용 |
 
 `PUBLIC/MEMBER`는 주최자의 공공/민간 구분이 아니라 **데이터의 유입 경로**입니다. 미리보기의 행사 제보 탭에서는 다른 회원의 제보를 포함한 행사 정보를 둘러봅니다. 개인 제보 내용 및 수정·삭제는 **마이페이지 → 내 행사 제보**에서 관리하며, 행사 탐색 화면에는 개인 제보 내용과 회원 이메일·연락처를 표시하지 않습니다.
 
@@ -47,21 +47,22 @@ pnpm test
 
 ## 모드와 설정
 
-### 시스템 관리자 Mock 화면
+### 시스템 관리자 화면
 
-`http://localhost:3001/admin` 또는 서비스 하단의 **시스템 관리자 미리보기**에서 확인합니다. 행사 주최자가 아닌 서비스 전체 운영자를 위한 화면입니다.
+`http://localhost:3001/admin` 또는 서비스 하단의 **시스템 관리자**에서 확인합니다. 행사 주최자가 아닌 서비스 전체 운영자를 위한 화면입니다.
 
 - 운영 대시보드: 회원·행사·후기 수, 미처리 문의·신고, 콘텐츠 검토 현황, 최근 운영 기록.
 - 회원 관리: 닉네임·이메일·ID 검색, 등급 필터, 사유를 남기는 신뢰 등급 변경. 관리자 계정의 권한 변경은 제외합니다.
-- 행사·후기 관리: 검색과 상태 필터, 상세 검토, 공개·숨김 처리. 행사는 유입 경로 필터와 검토 대기 상태도 제공합니다.
+- 행사 관리: 서버 검색·진행 상태·유입 경로 필터와 상세 조회.
+- 후기 관리: 일반 사용자 후기와 같은 검색·목록 UI로 전체 목록·제목/작성자 닉네임/행사명 검색·작성일 정렬·6개 단위 pagination·상세 조회를 제공합니다. 삭제된 후기도 포함하며 ‘삭제됨’ 표시와 삭제 시각을 보여줍니다.
 - 문의·신고: 유형·상태 필터, 접수 내용 확인, 신고 대상 콘텐츠로 이동, 운영팀 답변 등록 및 완료 상태 확인.
 - 운영 기록: 등급·노출 상태·답변 변경 기록을 검색하고 영역별로 확인합니다.
 
-관리자 화면은 항상 Mock으로 동작하며, 공개 서비스의 API 모드와 별도 React provider 및 `eventus.admin.mock.v1` sessionStorage를 사용합니다. 관리자 진입 시 실제 인증·관리 API를 호출하지 않으며 일반 서비스의 예시 데이터도 변경하지 않습니다. 현재 탭에서 새로고침해도 변경 사항은 유지되고, 상단 **예시 초기화**로 복구할 수 있습니다.
+관리자 목록은 공개 서비스의 Preview/API 모드와 관계없이 실제 API를 사용합니다. 후기 관리 화면은 인증 복구 후 `ROLE_ADMIN`일 때만 목록과 상세를 요청합니다. 운영 기록은 현재 탭의 로컬 저장소에 남으며 **로컬 기록 초기화**는 서버 데이터를 변경하지 않습니다.
 
-`ROLE_*`, `QUESTION/REPORT`, `PENDING/ANSWERED` 명칭은 기존 백엔드 모델을 따릅니다. 콘텐츠의 공개·검토 대기·숨김은 **관리자 UI용 예시 상태**이며, 백엔드의 행사 진행 상태 `OPEN/CLOSED`와 다릅니다. 관리자 권한 검증과 실제 관리 API 연동은 구현하지 않았습니다. Mock 페이지이므로 로그인 없이 접근할 수 있습니다.
+`ROLE_*`, `QUESTION/REPORT`, `PENDING/ANSWERED` 명칭은 기존 백엔드 모델을 따릅니다. 관리자 후기 목록은 전용 `AdminListResponse`의 `deletedAt`으로 게시 중·삭제됨을 구분합니다. 일반 사용자 DTO는 변경하지 않았습니다. 삭제된 후기는 상세 조회 버튼을 표시하지 않으며 숨김·복구 기능은 제공하지 않습니다.
 
-구현은 `src/admin/Admin.tsx`, `src/admin/store.tsx`, `src/admin/admin.css`에 있습니다.
+구현은 `src/admin/Admin.tsx`, `src/admin/AdminReviews.tsx`, `src/admin/store.tsx`, `src/admin/admin.css`에 있습니다.
 
 ### 일반 서비스 설정
 
@@ -74,27 +75,32 @@ pnpm test
 
 실제 API를 사용하는 범위는 인증(`/auth/*`), 마이페이지(`/members/me/*`), 내 행사 제보(`/festivals/submissions`, `/members/me/submissions/*`), 문의·신고(`/inquiries/*`), 이미지 업로드(`/images`)입니다. 화면 모드 전환 버튼은 없앴고 이 요청들은 항상 서버로 전송됩니다.
 
-백엔드에 조회 API가 없는 지역 문화행사 목록·행사 상세·전체 후기 목록과, 후기·댓글·좋아요 동작은 `eventus.preview.v1` sessionStorage의 예시 데이터로 동작합니다. 예시 행사명·일정·후기는 실제 서비스 데이터가 아니며, 이 데이터에 대한 등록·수정·삭제는 서버로 전송되지 않습니다. 예시 후기·댓글의 작성자는 현재 로그인한 회원으로 표시합니다.
+공개 화면은 `VITE_CONTENT_MODE=api` 또는 `eventus.mode=api`일 때 실제 콘텐츠 API를 사용하며, 기본 Preview 모드에서는 `eventus.preview.v1`의 예시 데이터를 사용합니다. 예시 행사명·일정·후기는 실제 서비스 데이터가 아니며, 예시 후기의 등록·수정·삭제는 서버로 전송되지 않습니다. 관리자 후기 조회는 이 설정과 관계없이 실제 API를 사용합니다.
 
 API 요청이 실패해도 예시 데이터로 대체하지 않습니다. access token은 메모리에만 보관하고, refresh token은 백엔드의 HttpOnly cookie를 사용합니다. 로그인 상태는 새로고침 때마다 `/auth/refresh` → `/members/me`로 복원합니다.
 
 ## 확인된 연동 범위
 
+후기 다건조회는 `type=TITLE|MEMBER_NICKNAME|FESTIVAL_TITLE`, `keyword`, `page`, `size`, `sort=createdAt,desc|createdAt,asc`를 사용합니다. 사용자·관리자 화면은 모두 6개 단위로 요청하고 서버의 `totalElements`·`totalPages`를 표시합니다. 검색·정렬 변경 시 첫 페이지로 이동하며 URL로 조건을 복원합니다. 검색어가 비어 있으면 `type`·`keyword`를 모두 생략합니다. 목록의 `date`는 작성일이 아니라 `updatedAt`입니다.
+
+이번 연결은 현재 Controller·Service·Repository·SecurityConfig를 기준으로 확인했습니다. `tests/review-lists.spec.ts`는 실제 DTO 형식의 응답을 mock하여 사용자·관리자 목록, 권한 제한, 검색·정렬·pagination, 오류 처리, Preview 회귀, 모바일·접근성을 검증합니다. 실제 DB/로그인 계정을 사용한 통합 검증과는 구분합니다. 다른 checkout의 개발 서버를 재사용하지 않으려면 `$env:PLAYWRIGHT_PORT='3107'; corepack pnpm exec playwright test tests/review-lists.spec.ts`로 실행합니다.
+
 아래 연결 범위는 2026-09-21 최초 프론트엔드 구현 때 소스와 `localhost:8080/v3/api-docs`를 함께 확인한 내용입니다. 이후 `origin/dev` 병합으로 추가된 API의 연결 상태는 표 아래에 따로 기록했습니다.
 
-| 기능                        | 연결한 API (`/api/v1` 기준)                                                            | 비고                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 로그인·가입·재발급·로그아웃 | `POST /auth/login`, `/signup`, `/refresh`, `/logout`                                   | 응답 `data.accessToken`, Authorization Bearer, cookie 포함                |
-| 내 정보                     | `GET/PATCH /members/me`                                                                | `id,email,nickname,profileImg,phone,role,createdAt,updatedAt`             |
-| 비밀번호 변경               | `POST /members/me/password/verification-code`, `/verify`, `PATCH /members/me/password` | 자동 발송하지 않으며 사용자가 버튼을 눌러 진행                            |
-| 행사 제보                   | `POST /festivals/submissions`                                                          | 행사 정보 등록 기능. 참가 신청 아님                                       |
-| 내 제보                     | `GET /members/me/submissions`, `GET/PATCH/DELETE /members/me/submissions/{id}`         | 상세 응답은 `data.submission.festival`                                    |
-| 후기                        | `GET/POST /festivals/{id}/posts`, `GET/PATCH/DELETE /posts/{id}`                       | 목록은 Spring Page, 제목 2~30자, 별점 필드 없음                           |
-| 댓글                        | `GET/POST /posts/{id}/comments`, `PATCH/DELETE /comments/{id}`                         | 목록은 배열, 페이지 크기 20, 내용 최대 500자                              |
-| 좋아요                      | `GET /posts/{id}/likes`, `POST/DELETE /posts/{id}/likes/me`                            | 개수는 Long, 등록/취소는 `{likeCount}`. 내 상태 조회 API 없음             |
-| 문의·신고                   | `GET /inquiries/me`, `POST /inquiries`, `GET/PATCH/DELETE /inquiries/{id}`             | `QUESTION/REPORT`, `PENDING/ANSWERED`, 답변 후 수정 제한                  |
-| 이미지                      | `POST /images`                                                                         | multipart `file`, `type=POST/PROFILE/INQUIRY/FESTIVAL`, 5MB, JPG/PNG/WEBP |
-| 행사 통합 검색              | `GET /festivals`                                                                       | 검색어·지역·출처·카테고리·날짜·종료 제외, Spring Page                     |
+| 기능                        | 연결한 API (`/api/v1` 기준)                                                            | 비고                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 로그인·가입·재발급·로그아웃 | `POST /auth/login`, `/signup`, `/refresh`, `/logout`                                   | 응답 `data.accessToken`, Authorization Bearer, cookie 포함                  |
+| 내 정보                     | `GET/PATCH /members/me`                                                                | `id,email,nickname,profileImg,phone,role,createdAt,updatedAt`               |
+| 비밀번호 변경               | `POST /members/me/password/verification-code`, `/verify`, `PATCH /members/me/password` | 자동 발송하지 않으며 사용자가 버튼을 눌러 진행                              |
+| 행사 제보                   | `POST /festivals/submissions`                                                          | 행사 정보 등록 기능. 참가 신청 아님                                         |
+| 내 제보                     | `GET /members/me/submissions`, `GET/PATCH/DELETE /members/me/submissions/{id}`         | 상세 응답은 `data.submission.festival`                                      |
+| 후기                        | `GET /posts`, `GET/POST /festivals/{id}/posts`, `GET/PATCH/DELETE /posts/{id}`         | 목록은 Spring Page, 전체 목록은 비로그인 조회 가능. 상세·쓰기에는 인증 필요 |
+| 관리자 후기                 | `GET /admin/posts`                                                                     | ROLE_ADMIN, 삭제된 후기 포함, Spring Page                                   |
+| 댓글                        | `GET/POST /posts/{id}/comments`, `PATCH/DELETE /comments/{id}`                         | 목록은 배열, 페이지 크기 20, 내용 최대 500자                                |
+| 좋아요                      | `GET /posts/{id}/likes`, `POST/DELETE /posts/{id}/likes/me`                            | 개수는 Long, 등록/취소는 `{likeCount}`. 내 상태 조회 API 없음               |
+| 문의·신고                   | `GET /inquiries/me`, `POST /inquiries`, `GET/PATCH/DELETE /inquiries/{id}`             | `QUESTION/REPORT`, `PENDING/ANSWERED`, 답변 후 수정 제한                    |
+| 이미지                      | `POST /images`                                                                         | multipart `file`, `type=POST/PROFILE/INQUIRY/FESTIVAL`, 5MB, JPG/PNG/WEBP   |
+| 행사 통합 검색              | `GET /festivals`                                                                       | 검색어·지역·출처·카테고리·날짜·종료 제외, Spring Page                       |
 
 이미지는 **프로필·문의에 `key`**, 행사·후기에 해당 DTO가 요구하는 **`url`**을 전달합니다. 백엔드의 image API 설명은 key 저장을 권장하지만, 현재 Festival/Post Service는 URL 문자열을 그대로 저장하고 응답하므로 해당 DTO/Service에 맞췄습니다.
 

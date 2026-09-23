@@ -80,7 +80,7 @@ export function Layout() {
               <Link to="/submissions/new">행사 제보</Link>
               <Link to="/reviews">행사 후기</Link>
               <Link to="/mypage?tab=inquiries">문의하기</Link>
-              <Link to="/admin">시스템 관리자 미리보기</Link>
+              <Link to="/admin">시스템 관리자</Link>
             </div>
             <div className="footer-message">
               <Compass size={24} />

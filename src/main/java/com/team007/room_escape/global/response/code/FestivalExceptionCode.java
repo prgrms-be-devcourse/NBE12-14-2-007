@@ -25,8 +25,13 @@ public enum FestivalExceptionCode implements ExceptionCode {
 
     /** 이미 다른 동기화가 실행 중일 때 (버튼 연타 등) */
     SYNC_ALREADY_RUNNING("FESTIVAL005", HttpStatus.CONFLICT, "이미 공공 행사 동기화가 진행 중입니다."),
+
+    /** 동일한 일정·지역·링크의 행사가 존재할 때 */
+    DUPLICATE_FESTIVAL("FESTIVAL006", HttpStatus.CONFLICT, "이미 등록된 행사입니다."),
+
     /** 삭제되지 않은 행사에 복구를 요청한 경우 */
     FESTIVAL_NOT_DELETED("FESTIVAL007", HttpStatus.CONFLICT, "삭제되지 않은 행사입니다."),
+
     /** 회원이 직접 지운 제보를 관리자가 임의로 되살리지 않도록 막는다 */
     FESTIVAL_RESTORE_FORBIDDEN("FESTIVAL008", HttpStatus.FORBIDDEN,
         "회원이 제보한 행사는 복구할 수 없습니다.");

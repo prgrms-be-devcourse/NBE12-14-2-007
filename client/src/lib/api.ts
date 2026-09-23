@@ -8,6 +8,9 @@ import type {
   PostInput,
   PostDetail,
   PostSummary,
+  PostSearch,
+  AdminPostQuery,
+  AdminPostSummary,
   Page,
   Comment,
   Inquiry,
@@ -25,6 +28,7 @@ import type {
   SyncResult,
   Role,
   EventView,
+  FestivalAccuracyVote,
   FestivalDetailItem,
   FestivalSearchInput,
   FestivalSearchItem,
@@ -206,12 +210,10 @@ function toEventView(item: FestivalSearchItem): EventView {
   };
 }
 
-// GET /api/v1/festivals/{id} 상세 조회는 공공 행사 전용이라 source가 항상 PUBLIC이고,
-// providerType·referenceUrl·festivalContent 필드는 응답에 아예 없다 (url/hmpgUrl로 온다).
 function toDetailEvent(item: FestivalDetailItem): EventView {
   return {
     festivalId: item.festivalId,
-    source: "PUBLIC",
+    source: item.providerType,
     title: item.title,
     category: item.category,
     instNm: item.instNm,
@@ -234,6 +236,7 @@ function toDetailEvent(item: FestivalDetailItem): EventView {
 
 export function createApi(mode: Mode) {
   const demo = mode === "preview";
+  const demoAccuracyVotes = new Map<number, FestivalAccuracyVote>();
   return {
     async restore() {
       await refresh();
@@ -352,6 +355,64 @@ export function createApi(mode: Mode) {
       );
       return toDetailEvent(result);
     },
+    async accuracyVotes(festivalId: number): Promise<FestivalAccuracyVote> {
+      if (demo)
+        return (
+          demoAccuracyVotes.get(festivalId) ?? {
+            accurateCount: 0,
+            inaccurateCount: 0,
+            myVote: null,
+          }
+        );
+      return transport<FestivalAccuracyVote>(
+        `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes`,
+      );
+    },
+    async voteAccuracy(
+      festivalId: number,
+      voteType: "ACCURATE" | "INACCURATE",
+    ): Promise<FestivalAccuracyVote> {
+      if (!demo)
+        return transport<FestivalAccuracyVote>(
+          `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes/me`,
+          "PUT",
+          { voteType },
+        );
+      const current = await this.accuracyVotes(festivalId);
+      const next = {
+        accurateCount:
+          current.accurateCount +
+          (voteType === "ACCURATE" ? 1 : 0) -
+          (current.myVote === "ACCURATE" ? 1 : 0),
+        inaccurateCount:
+          current.inaccurateCount +
+          (voteType === "INACCURATE" ? 1 : 0) -
+          (current.myVote === "INACCURATE" ? 1 : 0),
+        myVote: voteType,
+      };
+      demoAccuracyVotes.set(festivalId, next);
+      return next;
+    },
+    async cancelAccuracyVote(
+      festivalId: number,
+    ): Promise<FestivalAccuracyVote> {
+      if (!demo)
+        return transport<FestivalAccuracyVote>(
+          `/festivals/${encodeURIComponent(String(festivalId))}/accuracy-votes/me`,
+          "DELETE",
+        );
+      const current = await this.accuracyVotes(festivalId);
+      const next = {
+        accurateCount:
+          current.accurateCount - (current.myVote === "ACCURATE" ? 1 : 0),
+        inaccurateCount:
+          current.inaccurateCount -
+          (current.myVote === "INACCURATE" ? 1 : 0),
+        myVote: null,
+      };
+      demoAccuracyVotes.set(festivalId, next);
+      return next;
+    },
     async submission(submissionId: string) {
       return transport<SubmissionDetail>(
         `/members/me/submissions/${encodeURIComponent(submissionId)}`,
@@ -381,17 +442,61 @@ export function createApi(mode: Mode) {
       festivalId?: number,
       page = 0,
       sort: ReviewSort = demo ? "likes,desc" : "createdAt,desc",
+      search: PostSearch = {},
     ): Promise<Page<PostSummary>> {
+      const keyword = search.keyword?.trim();
       if (!demo) {
-        if (festivalId === undefined)
-          throw new ApiError("전체 후기 조회 기능을 준비하고 있어요.");
         if (sort === "likes,desc")
           throw new ApiError("좋아요순 정렬을 준비하고 있어요.");
-        return transport(
-          `/festivals/${festivalId}/posts?page=${page}&size=6&sort=${encodeURIComponent(sort)}`,
-        );
+        const params = new URLSearchParams({
+          page: String(page),
+          size: "6",
+          sort,
+        });
+        if (festivalId === undefined && keyword) {
+          params.set("type", search.type ?? "TITLE");
+          params.set("keyword", keyword);
+        }
+        const path =
+          festivalId === undefined
+            ? "/posts"
+            : `/festivals/${festivalId}/posts`;
+        return transport(`${path}?${params}`);
       }
-      return pageOf(previewPosts(festivalId, sort), page, 6);
+      const posts = previewPosts(festivalId, sort).filter((post) => {
+        if (festivalId !== undefined || !keyword) return true;
+        const value =
+          search.type === "MEMBER_NICKNAME"
+            ? post.member.nickname
+            : search.type === "FESTIVAL_TITLE"
+              ? post.festivalTitle
+              : post.title;
+        return value.toLocaleLowerCase().includes(keyword.toLocaleLowerCase());
+      });
+      return pageOf(posts, page, 6);
+    },
+    // 관리자 목록은 삭제된 후기를 포함한다. preview 모드에서도 실제 API를 사용한다.
+    async adminPosts(query: AdminPostQuery = {}) {
+      const {
+        page = 0,
+        size = 20,
+        sort = "createdAt,desc",
+        type = "TITLE",
+        keyword,
+      } = query;
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sort,
+      });
+      if (keyword?.trim()) {
+        params.set("type", type);
+        params.set("keyword", keyword.trim());
+      }
+      return transport<Page<AdminPostSummary>>(`/admin/posts?${params}`);
+    },
+    async adminPost(postId: string) {
+      return transport<PostDetail>(`/posts/${encodeURIComponent(postId)}`);
     },
     async post(postId: string) {
       return demo
@@ -666,7 +771,7 @@ export function createApi(mode: Mode) {
         }).then(total),
         this.adminFestivals({ size: 1 }).then(total),
         this.adminFestivals({ size: 1, excludeClosed: true }).then(total),
-        transport<Page<unknown>>("/posts?page=0&size=1").then(total),
+        this.adminPosts({ size: 1 }).then(total),
       ]);
       return {
         memberTotal,
