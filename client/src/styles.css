@@ -602,7 +602,7 @@ select {
 .discovery-search {
   display: grid;
   grid-template-columns:
-    minmax(130px, 1fr) minmax(130px, 1fr) minmax(150px, 1fr) minmax(
+    minmax(150px, 1fr) minmax(150px, 1fr) minmax(
       170px,
       1.3fr
     )
@@ -1141,8 +1141,7 @@ select {
 .filter-panel {
   display: grid;
   grid-template-columns:
-    minmax(200px, 1.5fr) repeat(2, minmax(130px, 1fr))
-    minmax(155px, 1fr) auto;
+    minmax(200px, 1.5fr) minmax(150px, 1fr) minmax(155px, 1fr) auto;
   gap: 12px;
   padding: 23px;
   border: 1px solid var(--line);
@@ -1715,6 +1714,93 @@ select {
 .comment-row textarea:focus {
   border-color: #deb18d;
   box-shadow: 0 0 0 3px #fae6d740;
+}
+.festival-title-autocomplete {
+  position: relative;
+}
+.festival-title-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e0e5db;
+  border-radius: 9px;
+  box-shadow: 0 12px 30px rgb(57 67 50 / 12%);
+}
+.festival-title-suggestions > p {
+  margin: 0;
+  padding: 10px 13px;
+  color: #737b6b;
+  background: #fafbf7;
+  border-bottom: 1px solid #edf0e8;
+  font-size: 11px;
+}
+.festival-title-suggestions > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  color: #35452f;
+  border-bottom: 1px solid #f0f2ec;
+}
+.festival-title-suggestions > a:last-child {
+  border-bottom: 0;
+}
+.festival-title-suggestions > a:hover,
+.festival-title-suggestions > a:focus-visible {
+  background: #fff8f1;
+}
+.festival-title-suggestions > a > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.festival-title-suggestions strong {
+  overflow: hidden;
+  color: #263b31;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.festival-title-suggestions small {
+  overflow: hidden;
+  color: #747c6d;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.festival-title-suggestions > a > svg {
+  flex-shrink: 0;
+  color: #bd6a33;
+}
+.submission-region-selects {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.form-region-select > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.form-region-select span {
+  color: #697363;
+  font-size: 11px;
+}
+.form-region-select select:disabled {
+  background: #f7f8f4;
+  color: #8a9084;
+  cursor: not-allowed;
+}
+@media (max-width: 560px) {
+  .submission-region-selects {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .field small {
   font-size: 12px;

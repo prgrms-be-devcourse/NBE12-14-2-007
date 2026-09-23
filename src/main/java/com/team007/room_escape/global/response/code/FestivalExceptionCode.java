@@ -24,7 +24,10 @@ public enum FestivalExceptionCode implements ExceptionCode {
     FESTIVAL_SUBMISSION_NOT_FOUND("FESTIVAL004", HttpStatus.NOT_FOUND, "요청하신 행사 제보를 찾을 수 없습니다."),
 
     /** 이미 다른 동기화가 실행 중일 때 (버튼 연타 등) */
-    SYNC_ALREADY_RUNNING("FESTIVAL005", HttpStatus.CONFLICT, "이미 공공 행사 동기화가 진행 중입니다.");
+    SYNC_ALREADY_RUNNING("FESTIVAL005", HttpStatus.CONFLICT, "이미 공공 행사 동기화가 진행 중입니다."),
+
+    /** 동일한 일정·지역·링크의 행사가 존재할 때 */
+    DUPLICATE_FESTIVAL("FESTIVAL006", HttpStatus.CONFLICT, "이미 등록된 행사입니다.");
 
     private final String code;
     private final HttpStatus status;

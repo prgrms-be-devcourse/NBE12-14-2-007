@@ -82,4 +82,20 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	);
 
 	Optional<Festival> findByIdAndDeletedAtIsNull(Long festivalId);
+
+	/** 신규 등록용 중복 확인 */
+	boolean existsByBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
+			LocalDateTime beginDe,
+			LocalDateTime endDe,
+			FestivalRegion region,
+			String url
+	);
+	/** 행사 수정일 경우, 본인 행사 제외하고 중복 확인 */
+	boolean existsByIdNotAndBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
+			Long festivalId,
+			LocalDateTime beginDe,
+			LocalDateTime endDe,
+			FestivalRegion region,
+			String url
+	);
 }

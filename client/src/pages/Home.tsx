@@ -110,7 +110,6 @@ export function Home() {
                 value={region}
                 onChange={setRegion}
                 variant="discovery"
-                supportedOnly={mode === "api"}
             />
             <label>
               <CalendarDays size={20} />

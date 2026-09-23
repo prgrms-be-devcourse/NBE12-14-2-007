@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,7 +13,13 @@ import {
 } from "lucide-react";
 import { useApp, useLoad } from "../lib/context";
 import { dateText, errorText, period, regions } from "../lib/format";
-import type { SubmissionInput, SubmissionDetail } from "../lib/types";
+import { selectedRegion } from "../lib/regions";
+import { RegionSelects } from "../components/RegionSelects";
+import type {
+  EventView,
+  SubmissionInput,
+  SubmissionDetail,
+} from "../lib/types";
 import {
   Badge,
   Empty,
@@ -209,13 +215,65 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
           Object.entries(current.festival).map(([k, v]) => [k, v ?? ""]),
         )
       : {}),
-    ...(current ? { title: current.festival.title } : {}),
+    ...(current
+      ? {
+          title: current.festival.title,
+          region:
+            selectedRegion(current.festival.region).province?.value ||
+            current.festival.region,
+        }
+      : {}),
   }));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [titleFocused, setTitleFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState<EventView[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const editing = Boolean(current);
   const change = (name: keyof SubmissionInput, value: string) =>
     setForm((f) => ({ ...f, [name]: value }));
+
+  useEffect(() => {
+    const keyword = form.title.trim();
+
+    if (editing || keyword.length < 2) {
+      setSuggestions([]);
+      setSuggestionsLoading(false);
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setSuggestionsLoading(true);
+      api
+        .festivals({ keyword, page: 0 })
+        .then((page) => {
+          if (!active) return;
+
+          const normalizedKeyword = keyword.toLocaleLowerCase("ko-KR");
+          const titleMatches = page.content.filter((festival) =>
+            festival.title
+              .toLocaleLowerCase("ko-KR")
+              .includes(normalizedKeyword),
+          );
+
+          setSuggestions(titleMatches.slice(0, 5));
+        })
+        .catch(() => {
+          if (active) setSuggestions([]);
+        })
+        .finally(() => {
+          if (active) setSuggestionsLoading(false);
+        });
+    }, 400);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [api, editing, form.title]);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
@@ -283,12 +341,56 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
           </div>
           <div className="form-grid">
             <Field label="행사 이름" required wide>
-              <input
-                required
-                value={form.title}
-                onChange={(e) => change("title", e.target.value)}
-                placeholder="행사 이름을 알려주세요"
-              />
+              <div className="festival-title-autocomplete">
+                <input
+                  required
+                  value={form.title}
+                  onChange={(e) => change("title", e.target.value)}
+                  onFocus={() => setTitleFocused(true)}
+                  onBlur={() => setTitleFocused(false)}
+                  placeholder="행사 이름을 알려주세요"
+                  autoComplete="off"
+                  aria-autocomplete="list"
+                  aria-expanded={
+                    titleFocused &&
+                    !editing &&
+                    (suggestionsLoading || suggestions.length > 0)
+                  }
+                  aria-controls="festival-title-suggestions"
+                />
+                {titleFocused &&
+                  !editing &&
+                  form.title.trim().length >= 2 &&
+                  (suggestionsLoading || suggestions.length > 0) && (
+                    <div
+                      className="festival-title-suggestions"
+                      id="festival-title-suggestions"
+                    >
+                      <p>
+                        {suggestionsLoading
+                          ? "비슷한 행사를 찾고 있어요"
+                          : "비슷한 행사가 이미 있어요"}
+                      </p>
+                      {!suggestionsLoading &&
+                        suggestions.map((festival) => (
+                          <Link
+                            key={festival.festivalId}
+                            to={`/events/${festival.festivalId}`}
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            <span>
+                              <strong>{festival.title}</strong>
+                              <small>
+                                {period(festival.beginDe, festival.endDe)} ·{" "}
+                                {regions[festival.region] || festival.region}
+                              </small>
+                            </span>
+                            <ChevronRight size={16} aria-hidden="true" />
+                          </Link>
+                        ))}
+                    </div>
+                  )}
+              </div>
             </Field>
             <div className="field wide">
               <span>
@@ -384,22 +486,16 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 placeholder="예: 매일 10:00 ~ 18:00, 월요일 휴무"
               />
             </Field>
-            <Field label="지역" required>
-              <select
-                required
-                value={form.region}
-                onChange={(e) => change("region", e.target.value)}
-              >
-                <option value="" disabled>
-                  지역을 선택해 주세요
-                </option>
-                {Object.entries(regions).map(([key, name]) => (
-                  <option key={key} value={key}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="field wide">
+              <span>행사 지역</span>
+              <div className="submission-region-selects">
+                <RegionSelects
+                  value={form.region}
+                  onChange={(value) => change("region", value)}
+                  variant="form"
+                />
+              </div>
+            </div>
             <Field label="상세 주소">
               <input
                 maxLength={255}

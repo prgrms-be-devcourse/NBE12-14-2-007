@@ -3,7 +3,10 @@ package com.team007.room_escape.domain.festival.service;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateOrUpdateFestivalSubmissionRequest;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalSubmissionRepository;
@@ -13,18 +16,21 @@ import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class FestivalSubmissionService {
+
+    private static final String DUPLICATE_CONSTRAINT_NAME =
+            "uk_member_festival_schedule_region_url";
 
     private final FestivalRepository festivalRepository;
     private final FestivalSubmissionRepository festivalSubmissionRepository;
@@ -35,6 +41,16 @@ public class FestivalSubmissionService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
+        String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
+
+        validateNotDuplicate(
+                null,
+                request.beginDe(),
+                request.endDe(),
+                request.region(),
+                normalizedReferenceUrl
+        );
+
         Festival festival = Festival.builder()
                 .member(member)
                 .providerType(ProviderType.MEMBER)
@@ -42,7 +58,7 @@ public class FestivalSubmissionService {
                 .title(request.title())
                 .category(request.category())
                 .content(request.festivalContent())
-                .url(request.referenceUrl())
+                .url(normalizedReferenceUrl)
                 .region(request.region())
                 .regionDetail(request.regionDetail())
                 .imgUrl(request.imgUrl())
@@ -56,7 +72,7 @@ public class FestivalSubmissionService {
                 .status(FestivalStatus.from(request.endDe()))
                 .build();
 
-        Festival savedFestival = festivalRepository.save(festival);
+        Festival savedFestival = saveFestival(festival);
 
         FestivalSubmission festivalSubmission = FestivalSubmission.builder()
                 .festival(savedFestival)
@@ -105,12 +121,23 @@ public class FestivalSubmissionService {
                         FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
                 ));
 
-        submission.getFestival().updateDetails(
+        Festival festival = submission.getFestival();
+        String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
+
+        validateNotDuplicate(
+                festival.getId(),
+                request.beginDe(),
+                request.endDe(),
+                request.region(),
+                normalizedReferenceUrl
+        );
+
+        festival.updateDetails(
                 request.instNm(),
                 request.title(),
                 request.category(),
                 request.festivalContent(),
-                request.referenceUrl(),
+                normalizedReferenceUrl,
                 request.region(),
                 request.regionDetail(),
                 request.imgUrl(),
@@ -121,6 +148,8 @@ public class FestivalSubmissionService {
                 request.telnoInfo(),
                 request.hostInstNm()
         );
+        flushFestivalChanges();
+
         return FindFestivalSubmissionResponse.from(submission);
     }
 
@@ -133,5 +162,74 @@ public class FestivalSubmissionService {
                 ));
 
         submission.delete();
+    }
+
+    private void validateNotDuplicate(
+            Long currentFestivalId,
+            LocalDateTime beginDe,
+            LocalDateTime endDe,
+            FestivalRegion region,
+            String referenceUrl
+    ) {
+        boolean duplicated;
+
+        if (currentFestivalId == null) {
+            duplicated =
+                    festivalRepository.existsByBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
+                            beginDe,
+                            endDe,
+                            region,
+                            referenceUrl
+                    );
+        } else {
+            duplicated =
+                    festivalRepository.existsByIdNotAndBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
+                            currentFestivalId,
+                            beginDe,
+                            endDe,
+                            region,
+                            referenceUrl
+                    );
+        }
+
+        if (duplicated) {
+            throw new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
+        }
+    }
+
+    private String normalizeReferenceUrl(String referenceUrl) {
+        return referenceUrl
+                .trim()
+                .replaceFirst("/+$", "");
+    }
+
+    private Festival saveFestival(Festival festival) {
+        try {
+            return festivalRepository.saveAndFlush(festival);
+        } catch (DataIntegrityViolationException exception) {
+            throw translateDuplicateConstraint(exception);
+        }
+    }
+
+    private void flushFestivalChanges() {
+        try {
+            festivalRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            throw translateDuplicateConstraint(exception);
+        }
+    }
+
+    private RuntimeException translateDuplicateConstraint(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraintException
+                    && DUPLICATE_CONSTRAINT_NAME.equals(constraintException.getConstraintName())) {
+                return new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
+            }
+            cause = cause.getCause();
+        }
+
+        return exception;
     }
 }
