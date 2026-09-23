@@ -38,3 +38,6 @@ out/
 
 ### Env / secrets ###
 .env
+
+### client ###
+.vite/

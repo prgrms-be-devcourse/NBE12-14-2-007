@@ -7,6 +7,7 @@ import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.domain.post.infra.dto.PostRequest;
 import com.team007.room_escape.domain.post.infra.dto.PostResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
+import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -54,10 +55,32 @@ public class PostService {
 		return PostResponse.CreateResponse.from(post);
 	}
 
-	// TODO 추후에 N+1 문제 해결 할 것
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> getPosts(Pageable page) {
-		return postRepository.findAllOrderByLikeCount(page)
+	public Page<PostResponse.ListResponse> searchPosts(
+			PostSearchType type,
+			String keyword,
+			Pageable page
+	) {
+		if(type == null || keyword == null || keyword.isBlank()) {
+			return postRepository.findAllNotDeleted(page)
+					.map(PostResponse.ListResponse::from);
+		}
+		return postRepository.searchPosts(type, keyword, page)
+				.map(PostResponse.ListResponse::from);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<PostResponse.ListResponse> searchPostsForAdmin(
+			PostSearchType type,
+			String keyword,
+			Pageable page
+	) {
+		if(type == null || keyword == null || keyword.isBlank()) {
+			return postRepository.findAllIncludingDeleted(page)
+					.map(PostResponse.ListResponse::from);
+		}
+
+		return postRepository.searchPostsIncludingDeleted(type, keyword, page)
 				.map(PostResponse.ListResponse::from);
 	}
 
