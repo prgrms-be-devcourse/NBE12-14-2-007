@@ -602,10 +602,7 @@ select {
 .discovery-search {
   display: grid;
   grid-template-columns:
-    minmax(150px, 1fr) minmax(150px, 1fr) minmax(
-      170px,
-      1.3fr
-    )
+    minmax(150px, 1fr) minmax(150px, 1fr) minmax(170px, 1.3fr)
     auto;
   align-items: center;
   gap: 20px;
@@ -1141,13 +1138,44 @@ select {
 .filter-panel {
   display: grid;
   grid-template-columns:
-    minmax(200px, 1.5fr) minmax(150px, 1fr) minmax(155px, 1fr) auto;
+    minmax(200px, 1.5fr) minmax(150px, 1fr) minmax(155px, 1fr)
+    auto;
   gap: 12px;
   padding: 23px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #fff;
   box-shadow: var(--shadow);
+}
+.review-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.review-search select,
+.review-search input {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 11px 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+.review-search input {
+  flex: 1 1 220px;
+}
+@media (max-width: 540px) {
+  .review-search select,
+  .review-search input {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .review-search .btn {
+    flex: 1;
+  }
 }
 .filter-search,
 .filter-select {
@@ -2461,6 +2489,33 @@ select {
 }
 .post-row h3 a:hover {
   color: #8d5e38;
+}
+.post-title-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.post-title-button:hover {
+  color: #8d5e38;
+}
+button.post-detail-link,
+button.post-thumbnail {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.post-row-deleted {
+  background: #fffaf4;
+  padding-inline: 14px;
+}
+.post-deleted-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #835020;
 }
 .post-row-copy {
   flex: 1;

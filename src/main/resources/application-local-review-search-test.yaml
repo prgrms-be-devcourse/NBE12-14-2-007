@@ -1,0 +1,7 @@
+# 로그인 없이 실제 관리자 후기 검색을 확인하는 로컬 전용 프로필.
+server:
+  address: 127.0.0.1
+
+public-api:
+  festival:
+    sync-cron: "-"

@@ -15,10 +15,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { ApiError } from "../lib/api";
+import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
+import { ReviewRow } from "../components/ReviewRow";
 import { useApp, useLoad } from "../lib/context";
-import { readDemo, type ReviewSort } from "../lib/demo";
+import { readDemo } from "../lib/demo";
 import { dateText, dateTimeText, errorText } from "../lib/format";
-import type { Comment, PostDetail, PostSummary } from "../lib/types";
+import type { Comment, PostDetail } from "../lib/types";
 import {
   Badge,
   Empty,
@@ -36,7 +38,6 @@ import {
 } from "../components/ui";
 
 export function Reviews() {
-  const { member, authLoading, mode } = useApp();
   return (
     <div className="container page-space">
       <PageTitle
@@ -44,38 +45,38 @@ export function Reviews() {
         title="행사 후기"
         description="직접 경험한 즐거움을 나누고, 다음 나들이의 힌트를 발견해요."
       />
-      {authLoading ? (
-        <Loading />
-      ) : !member ? (
-        <LoginRequired />
-      ) : mode === "api" ? (
-        <Empty
-          title="전체 후기 조회를 준비하고 있어요"
-          description="디자인 미리보기에서 여러 행사의 후기를 둘러볼 수 있어요."
-        />
-      ) : (
-        <FestivalPosts />
-      )}
+      <FestivalPosts />
     </div>
   );
 }
 export function FestivalPosts({ festivalId }: { festivalId?: number }) {
-  const { api, member, mode } = useApp();
-  const [page, setPage] = useState(0);
-  const [sort, setSort] = useState<ReviewSort>("likes,desc");
-  const activeSort =
-    mode === "api" && sort === "likes,desc" ? "createdAt,desc" : sort;
+  const { api, mode } = useApp();
+  const {
+    page,
+    sort: activeSort,
+    type,
+    keyword,
+    update,
+  } = useReviewQuery(mode === "preview");
   const { data, loading, error, reload } = useLoad(
-    () => api.posts(festivalId, page, activeSort),
-    [api, festivalId, page, activeSort],
+    () => api.posts(festivalId, page, activeSort, { type, keyword }),
+    [api, festivalId, page, activeSort, type, keyword],
   );
-  if (!member) return <LoginRequired />;
   return (
     <div className="festival-posts">
+      {festivalId === undefined && (
+        <ReviewSearch
+          type={type}
+          keyword={keyword}
+          onSearch={(type, keyword) => update({ type, keyword })}
+        />
+      )}
       <div className="section-heading">
         <h2>
           함께 나눈 후기{" "}
-          <span className="count">{data?.totalElements ?? 0}</span>
+          <span className="count">
+            {loading || error ? "—" : (data?.totalElements ?? 0)}
+          </span>
         </h2>
         <div className="action-row">
           <select
@@ -83,8 +84,7 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
             className="plain-select"
             value={activeSort}
             onChange={(e) => {
-              setSort(e.target.value as ReviewSort);
-              setPage(0);
+              update({ sort: e.target.value });
             }}
           >
             <option value="likes,desc" disabled={mode === "api"}>
@@ -94,15 +94,11 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
             <option value="createdAt,asc">오래된순</option>
           </select>
           <Link
-            to={
-              festivalId
-                ? `/reviews/new?festival=${festivalId}`
-                : "/reviews/new"
-            }
+            to={festivalId ? `/reviews/new?festival=${festivalId}` : "/explore"}
             className="btn primary small"
           >
             <Pencil size={15} />
-            후기 쓰기
+            {festivalId ? "후기 쓰기" : "후기 쓸 행사 찾기"}
           </Link>
         </div>
       </div>
@@ -119,70 +115,44 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
         <>
           <div className="post-list">
             {data.content.map((post) => (
-              <PostRow post={post} key={post.id} />
+              <ReviewRow post={post} key={post.id} />
             ))}
           </div>
-          <Pagination page={page} total={data.totalPages} onChange={setPage} />
+          <Pagination
+            page={data.number}
+            total={data.totalPages}
+            onChange={(page) => update({ page })}
+          />
         </>
       ) : (
         <Empty
           title={
-            festivalId
-              ? "이 행사의 첫 이야기를 기다려요"
-              : "첫 번째 이야기를 기다려요"
+            keyword && festivalId === undefined
+              ? "검색 조건에 맞는 후기가 없어요"
+              : page > 0
+                ? "해당 페이지에 후기가 없어요"
+                : festivalId
+                  ? "이 행사의 첫 이야기를 기다려요"
+                  : "첫 번째 이야기를 기다려요"
           }
-          description="기억에 남은 순간을 후기로 나눠주세요."
+          description={
+            keyword
+              ? "다른 검색어로 다시 찾아보세요."
+              : "기억에 남은 순간을 후기로 나눠주세요."
+          }
+          action={
+            page > 0 ? (
+              <button
+                className="btn secondary"
+                onClick={() => update({ page: 0 })}
+              >
+                첫 페이지로
+              </button>
+            ) : undefined
+          }
         />
       )}
     </div>
-  );
-}
-function PostRow({ post }: { post: PostSummary }) {
-  return (
-    <article className="post-row">
-      <div className="post-row-copy">
-        <span className="review-byline">
-          <span className="avatar tiny">{post.member.nickname[0]}</span>
-          {post.member.nickname}
-          <time dateTime={post.date}>{dateText(post.date)}</time>
-          {post.likeCount !== undefined && (
-            <span
-              className="post-like-count"
-              aria-label={`좋아요 ${post.likeCount}개`}
-            >
-              <ThumbsUp size={13} />
-              {post.likeCount}
-            </span>
-          )}
-        </span>
-        <h3>
-          <Link to={`/reviews/${post.id}`}>{post.title}</Link>
-        </h3>
-        <Link
-          className="post-event-link small-text"
-          to={`/events/${post.festivalId}`}
-        >
-          {post.festivalTitle}
-          <ArrowRight size={13} />
-        </Link>
-      </div>
-      {post.thumbnail && (
-        <Link
-          className="post-thumbnail"
-          to={`/reviews/${post.id}`}
-          aria-label={`${post.title} 후기 보기`}
-        >
-          <Photo src={post.thumbnail} alt="" />
-        </Link>
-      )}
-      <Link
-        className="post-detail-link"
-        to={`/reviews/${post.id}`}
-        aria-label={`${post.title} 상세 보기`}
-      >
-        <ArrowRight size={18} />
-      </Link>
-    </article>
   );
 }
 export function ReviewDetailPage() {

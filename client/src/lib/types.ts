@@ -121,6 +121,16 @@ export interface PostInput {
   content: string;
   thumbnail?: string;
 }
+export type PostSearchType = "TITLE" | "MEMBER_NICKNAME" | "FESTIVAL_TITLE";
+export interface PostSearch {
+  type?: PostSearchType;
+  keyword?: string;
+}
+export interface AdminPostQuery extends PostSearch {
+  page?: number;
+  size?: number;
+  sort?: "createdAt,desc" | "createdAt,asc";
+}
 export interface PostSummary {
   id: string;
   member: { id: string; nickname: string; profileImg: string | null };
@@ -134,6 +144,9 @@ export interface PostSummary {
 }
 export interface PostDetail extends PostSummary {
   content: string;
+}
+export interface AdminPostSummary extends PostSummary {
+  deletedAt: string | null;
 }
 export interface Page<T> {
   content: T[];

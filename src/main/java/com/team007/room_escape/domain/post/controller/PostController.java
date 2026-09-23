@@ -56,13 +56,13 @@ public class PostController {
 
 	@Operation(summary = "관리자 후기 조회", description = "삭제된 후기를 포함하여 후기 목록을 조회하거나 검색합니다.")
 	@GetMapping("/admin/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPostsForAdmin(
+	public ResponseEntity<ApiResponse<Page<PostResponse.AdminListResponse>>> searchPostsForAdmin(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
 			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.ListResponse> posts = postService.searchPostsForAdmin(type, keyword, page);
+		Page<PostResponse.AdminListResponse> posts = postService.searchPostsForAdmin(type, keyword, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}

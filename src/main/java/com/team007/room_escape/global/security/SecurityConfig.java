@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
@@ -37,6 +38,7 @@ public class SecurityConfig {
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 	private final JwtAuthenticationEntryPoint authenticationEntryPoint;
 	private final JwtAccessDeniedHandler accessDeniedHandler;
+	private final Environment environment;
 
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -45,7 +47,19 @@ public class SecurityConfig {
 			.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 			.sessionManagement(session ->
 				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.authorizeHttpRequests(auth -> auth
+			.authorizeHttpRequests(auth -> {
+				// 명시적인 로컬 테스트 프로필에서 목록 검색 GET만 허용한다.
+				// 다른 관리자 API와 쓰기 요청은 기존 권한 규칙을 따른다.
+				if (environment.matchesProfiles("local-review-search-test")) {
+					auth.requestMatchers(request ->
+						"GET".equals(request.getMethod())
+							&& (request.getContextPath() + "/api/v1/admin/posts")
+								.equals(request.getRequestURI())
+							&& List.of("127.0.0.1", "::1", "0:0:0:0:0:0:0:1")
+								.contains(request.getRemoteAddr())
+					).permitAll();
+				}
+				auth
 				.requestMatchers("/api/v1/auth/**").permitAll()
 				// 회원가입 화면에서 프로필 이미지를 올리려면 토큰이 없는 상태로도 업로드가 돼야 한다.
 				// TODO 누구나 호출할 수 있어 R2 용량을 소진시키는 남용이 가능하다.
@@ -60,8 +74,8 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/swagger-ui.html"
 				).permitAll()
-				.anyRequest().authenticated()
-			)
+				.anyRequest().authenticated();
+			})
 			.exceptionHandling(ex -> ex
 				.authenticationEntryPoint(authenticationEntryPoint)
 				.accessDeniedHandler(accessDeniedHandler)
