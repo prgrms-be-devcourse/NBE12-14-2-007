@@ -17,6 +17,12 @@ public enum MemberExceptionCode implements ExceptionCode {
 	MEMBER_NOT_FOUND("MEMBER000", HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
 	/** 탈퇴하지 않은 계정이 같은 이메일을 이미 사용 중 */
 	EMAIL_DUPLICATED("MEMBER001", HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+	/**
+	 * 탈퇴한 계정이 아직 보관 기간 중이라 이메일 자리가 비어 있지 않은 경우.
+	 * 보관 기간이 지나 파기 배치가 돌면 같은 이메일로 다시 가입할 수 있다.
+	 */
+	EMAIL_WITHDRAWN("MEMBER010", HttpStatus.CONFLICT,
+		"탈퇴한 계정에서 사용 중인 이메일입니다. 개인정보 보관 기간이 지난 뒤에 다시 가입할 수 있습니다."),
 	/** 탈퇴하지 않은 계정이 같은 닉네임을 이미 사용 중 */
 	NICKNAME_DUPLICATED("MEMBER002", HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
 	/** ROLE_WARNING 등급이 정보 수정 등 제한된 기능을 시도한 경우 */
@@ -33,7 +39,13 @@ public enum MemberExceptionCode implements ExceptionCode {
 		"본인의 등급은 변경할 수 없습니다."),
 	/** 탈퇴한 회원은 등급을 바꿔도 의미가 없다 */
 	MEMBER_ALREADY_DELETED("MEMBER007", HttpStatus.CONFLICT,
-		"탈퇴한 회원의 등급은 변경할 수 없습니다.");
+		"탈퇴한 회원의 등급은 변경할 수 없습니다."),
+	/** 탈퇴 등 되돌리기 어려운 작업에서 본인 확인에 실패한 경우 */
+	MEMBER_PASSWORD_MISMATCH("MEMBER008", HttpStatus.UNAUTHORIZED,
+		"비밀번호가 일치하지 않습니다."),
+	/** 관리자가 탈퇴하면 그 계정으로 하던 운영 업무를 이어받을 수 없다 */
+	MEMBER_ADMIN_WITHDRAW_DENIED("MEMBER009", HttpStatus.FORBIDDEN,
+		"관리자 계정은 탈퇴할 수 없습니다. 다른 관리자에게 문의해 주세요.");
 
 	private final String code;
 	private final HttpStatus status;
