@@ -33,16 +33,85 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
             value = """
         SELECT p
         FROM Post p
-        LEFT JOIN Like l ON l.post = p
+        JOIN FETCH p.member m
+        JOIN FETCH p.festival f
         WHERE p.deletedAt IS NULL
-        GROUP BY p
-        ORDER BY COUNT(l.id) DESC, p.createdAt DESC
+          AND (
+               (:type = 'TITLE'
+                    AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'MEMBER_NICKNAME'
+                    AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'FESTIVAL_TITLE'
+                    AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          )
         """,
             countQuery = """
         SELECT COUNT(p)
         FROM Post p
+        JOIN p.member m
+        JOIN p.festival f
         WHERE p.deletedAt IS NULL
+          AND (
+               (:type = 'TITLE'
+                    AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'MEMBER_NICKNAME'
+                    AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'FESTIVAL_TITLE'
+                    AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          )
         """
     )
-    Page<Post> findAllOrderByLikeCount(Pageable page);
+    Page<Post> searchPosts(
+            String type,
+            String keyword,
+            Pageable pageable
+    );
+    @Query(
+            value = """
+        SELECT p
+        FROM Post p
+        JOIN FETCH p.member
+        JOIN FETCH p.festival
+        """,
+            countQuery = """
+        SELECT COUNT(p)
+        FROM Post p
+        """
+    )
+    Page<Post> findAllIncludingDeleted(Pageable page);
+    @Query(
+            value = """
+        SELECT p
+        FROM Post p
+        JOIN FETCH p.member m
+        JOIN FETCH p.festival f
+        WHERE (
+               (:type = 'TITLE'
+                    AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'MEMBER_NICKNAME'
+                    AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'FESTIVAL_TITLE'
+                    AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        )
+        """,
+            countQuery = """
+        SELECT COUNT(p)
+        FROM Post p
+        JOIN p.member m
+        JOIN p.festival f
+        WHERE (
+               (:type = 'TITLE'
+                    AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'MEMBER_NICKNAME'
+                    AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR (:type = 'FESTIVAL_TITLE'
+                    AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        )
+        """
+    )
+    Page<Post> searchPostsIncludingDeleted(
+            String type,
+            String keyword,
+            Pageable pageable
+    );
 }

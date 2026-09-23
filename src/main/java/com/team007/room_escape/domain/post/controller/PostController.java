@@ -2,6 +2,7 @@ package com.team007.room_escape.domain.post.controller;
 
 import com.team007.room_escape.domain.post.infra.dto.PostRequest;
 import com.team007.room_escape.domain.post.infra.dto.PostResponse;
+import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.domain.post.service.PostService;
 import com.team007.room_escape.global.response.ApiResponse;
 import com.team007.room_escape.global.security.CustomUserDetails;
@@ -40,23 +41,37 @@ public class PostController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "후기 다건 조회", description = "후기 목록을 조회합니다.")
+	@Operation(summary = "후기 검색", description = "후기를 검색합니다.")
 	@GetMapping("/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPosts(
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPosts(
+			@RequestParam(required = false) PostSearchType type,
+			@RequestParam(required = false) String keyword,
 			Pageable page
 	) {
-		Page<PostResponse.ListResponse> posts = postService.getPosts(page);
+		Page<PostResponse.ListResponse> posts = postService.searchPosts(type, keyword, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
 
-	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기 목록을 조회합니다.")
+	@Operation(summary = "관리자 후기 조회", description = "삭제된 후기를 포함하여 후기 목록을 조회하거나 검색합니다.")
+	@GetMapping("/admin/posts")
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPostsForAdmin(
+			@RequestParam(required = false) PostSearchType type,
+			@RequestParam(required = false) String keyword,
+			Pageable page
+	) {
+		Page<PostResponse.ListResponse> posts = postService.searchPostsForAdmin(type, keyword, page);
+
+		return ResponseEntity.ok(ApiResponse.success(posts));
+	}
+
+	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기를 검색합니다.")
 	@GetMapping("/festivals/{id}/posts")
 	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPostsByFestival(
 			@PathVariable Long id,
 			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
-			Pageable page) {
-
+			Pageable page
+	) {
 		Page<PostResponse.ListResponse> posts = postService.getPostsByFestival(id, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
