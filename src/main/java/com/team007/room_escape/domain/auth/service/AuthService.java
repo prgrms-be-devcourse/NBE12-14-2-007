@@ -37,9 +37,15 @@ public class AuthService {
 		log.info("[가입] 요청 email={} nickname={} phone={} profileImg={}",
 			request.email(), request.nickname(), request.phone(), request.profileImg());
 
-		if (memberRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
-			log.warn("[가입] 이메일 중복 email={}", request.email());
-			throw new BusinessException(MemberExceptionCode.EMAIL_DUPLICATED);
+		// 탈퇴 회원까지 본다. 탈퇴 직후 같은 이메일로 다시 가입하는 것을 막기 위함이다.
+		if (memberRepository.existsByEmail(request.email())) {
+			// 쓰는 중인지 탈퇴한 것인지 구분해서 알려준다. 둘 다 "이 이메일이 존재한다"는
+			// 사실은 같으므로 노출되는 정보의 양은 다르지 않고, 안내만 정확해진다.
+			boolean inUse = memberRepository.existsByEmailAndDeletedAtIsNull(request.email());
+			log.warn("[가입] 이메일 중복 email={} inUse={}", request.email(), inUse);
+			throw new BusinessException(inUse
+				? MemberExceptionCode.EMAIL_DUPLICATED
+				: MemberExceptionCode.EMAIL_WITHDRAWN);
 		}
 		if (memberRepository.existsByNicknameAndDeletedAtIsNull(request.nickname())) {
 			log.warn("[가입] 닉네임 중복 nickname={}", request.nickname());

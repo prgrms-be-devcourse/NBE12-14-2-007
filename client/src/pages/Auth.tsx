@@ -14,6 +14,12 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
   const [confirm, setConfirm] = useState("");
   const [nickname, setNickname] = useState("");
   const [phone, setPhone] = useState("");
+  const [consents, setConsents] = useState({
+    terms: false,
+    privacy: false,
+    age: false,
+    marketing: false,
+  });
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -161,10 +167,17 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
                   placeholder="01012345678"
                 />
               </Field>
+              <Consents value={consents} onChange={setConsents} />
             </>
           )}
           <FormError message={error} />
-          <SubmitButton busy={busy || authLoading}>
+          <SubmitButton
+            busy={busy || authLoading}
+            // 필수 동의를 받지 않으면 가입 자체를 막는다.
+            disabled={
+              signup && !(consents.terms && consents.privacy && consents.age)
+            }
+          >
             {signup ? "회원가입" : "로그인"}
             <ArrowRight size={17} />
           </SubmitButton>
@@ -182,6 +195,117 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           당신의 새로운 일상을 응원해요.
         </p>
       </div>
+    </div>
+  );
+}
+
+interface ConsentState {
+  terms: boolean;
+  privacy: boolean;
+  age: boolean;
+  marketing: boolean;
+}
+/**
+ * 가입 시 법적 고지·동의.
+ *
+ * 개인정보 수집 항목·목적·보유기간은 개인정보보호법이 고지를 요구하는 항목이라
+ * 링크 뒤에 숨기지 않고 화면에 바로 적는다.
+ *
+ * TODO 동의 시각과 약관 버전을 서버에 기록할 것.
+ *      동의를 받았다는 입증 책임은 서비스 쪽에 있는데 지금은 화면에서만 확인한다.
+ *      member_consent 테이블과 가입 API 파라미터가 필요하다.
+ */
+function Consents({
+  value,
+  onChange,
+}: {
+  value: ConsentState;
+  onChange: (next: ConsentState) => void;
+}) {
+  const set = (key: keyof ConsentState) => (checked: boolean) =>
+    onChange({ ...value, [key]: checked });
+  const allRequired = value.terms && value.privacy && value.age;
+  const all = allRequired && value.marketing;
+  return (
+    <div className="consent-box">
+      <label className="consent-all">
+        <input
+          type="checkbox"
+          checked={all}
+          onChange={(e) => {
+            const next = e.target.checked;
+            onChange({
+              terms: next,
+              privacy: next,
+              age: next,
+              marketing: next,
+            });
+          }}
+        />
+        <strong>전체 동의</strong>
+        <span>선택 항목을 포함합니다.</span>
+      </label>
+      <label className="consent-row">
+        <input
+          type="checkbox"
+          checked={value.age}
+          onChange={(e) => set("age")(e.target.checked)}
+        />
+        <span>
+          <b>[필수]</b> 만 14세 이상입니다.
+        </span>
+      </label>
+      <label className="consent-row">
+        <input
+          type="checkbox"
+          checked={value.terms}
+          onChange={(e) => set("terms")(e.target.checked)}
+        />
+        <span>
+          <b>[필수]</b> 이용약관에 동의합니다.
+        </span>
+      </label>
+      <label className="consent-row">
+        <input
+          type="checkbox"
+          checked={value.privacy}
+          onChange={(e) => set("privacy")(e.target.checked)}
+        />
+        <span>
+          <b>[필수]</b> 개인정보 수집·이용에 동의합니다.
+        </span>
+      </label>
+      <dl className="consent-detail">
+        <div>
+          <dt>수집 항목</dt>
+          <dd>이메일, 비밀번호, 닉네임 (선택: 휴대폰 번호, 프로필 사진)</dd>
+        </div>
+        <div>
+          <dt>이용 목적</dt>
+          <dd>회원 식별과 로그인, 행사 제보·후기 작성, 문의 응대</dd>
+        </div>
+        <div>
+          <dt>보유 기간</dt>
+          <dd>
+            탈퇴 후 6개월까지 보관한 뒤 파기합니다. 이 기간에는 같은 이메일로
+            다시 가입할 수 없습니다.
+          </dd>
+        </div>
+      </dl>
+      <p className="consent-note">
+        필수 항목에 동의하지 않으면 가입할 수 없지만, 동의를 거부할 권리가
+        있습니다.
+      </p>
+      <label className="consent-row">
+        <input
+          type="checkbox"
+          checked={value.marketing}
+          onChange={(e) => set("marketing")(e.target.checked)}
+        />
+        <span>
+          <b className="optional">[선택]</b> 새로운 행사 소식 메일을 받겠습니다.
+        </span>
+      </label>
     </div>
   );
 }
