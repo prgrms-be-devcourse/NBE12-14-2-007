@@ -844,6 +844,42 @@ img.adm-avatar {
 .adm-tabs button.active > span {
   background: #fff0df;
 }
+/* 서버 페이징 이동. 표 아래 가운데. */
+.adm-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 24px 22px;
+  border-top: 1px solid #eef1e8;
+}
+.adm-pagination button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid #dfe4d5;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+  color: #4a5c42;
+}
+.adm-pagination button:hover:not(:disabled):not(.active) {
+  border-color: #c76a2b;
+  color: #a94d18;
+}
+.adm-pagination button.active {
+  border-color: #c76a2b;
+  background: #fff0df;
+  color: #a94d18;
+  font-weight: 650;
+}
+.adm-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.adm-page-hint {
+  color: #7d8a76;
+}
 .adm-footnote {
   color: #5f7057;
   font-size: 11px;

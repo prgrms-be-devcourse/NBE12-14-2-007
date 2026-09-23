@@ -18,6 +18,8 @@ import type {
   AdminMemberInfo,
   AdminMemberQuery,
   AdminFestivalQuery,
+  AdminFestivalDetail,
+  AdminStats,
   SyncResult,
   Role,
   EventView,
@@ -600,6 +602,58 @@ export function createApi(mode: Mode) {
       // false는 보내지 않는다. 서버 기본값이 false다.
       if (excludeClosed) params.set("excludeClosed", "true");
       return transport<Page<FestivalSearchItem>>(`/festivals?${params}`);
+    },
+    /**
+     * [ADMIN] 운영 대시보드 집계.
+     *
+     * 전용 API가 없어 목록 API에 size=1을 던지고 totalElements만 쓴다.
+     * 본문은 1건만 오고 서버는 COUNT만 돌리므로 가볍다.
+     * 8번이 동시에 나가므로 체감은 한 번과 비슷하다.
+     *
+     * TODO 행사·후기에 노출 상태가 생기면 GET /admin/overview 하나로 합칠 것.
+     */
+    async adminStats(): Promise<AdminStats> {
+      const total = (page: Page<unknown>) => page.totalElements;
+      const [
+        memberTotal,
+        memberTrusted,
+        memberWarning,
+        inquiryPending,
+        inquiryReport,
+        festivalTotal,
+        festivalOpen,
+        postTotal,
+      ] = await Promise.all([
+        // 탈퇴 회원은 빼고 센다. 대시보드의 "전체 회원"은 활동 가능한 회원이다.
+        this.adminMembers({ size: 1 }).then(total),
+        this.adminMembers({ size: 1, role: "ROLE_TRUSTED" }).then(total),
+        this.adminMembers({ size: 1, role: "ROLE_WARNING" }).then(total),
+        this.adminInquiries({ size: 1, status: "PENDING" }).then(total),
+        this.adminInquiries({
+          size: 1,
+          status: "PENDING",
+          category: "REPORT",
+        }).then(total),
+        this.adminFestivals({ size: 1 }).then(total),
+        this.adminFestivals({ size: 1, excludeClosed: true }).then(total),
+        transport<Page<unknown>>("/posts?page=0&size=1").then(total),
+      ]);
+      return {
+        memberTotal,
+        memberTrusted,
+        memberWarning,
+        inquiryPending,
+        inquiryReport,
+        festivalTotal,
+        festivalOpen,
+        postTotal,
+      };
+    },
+    /** [ADMIN] 행사 상세. 목록에 없는 소개 본문·연락처·참가비가 여기서 온다. */
+    async adminFestival(festivalId: string | number) {
+      return transport<AdminFestivalDetail>(
+        `/festivals/${encodeURIComponent(String(festivalId))}`,
+      );
     },
     /** [ADMIN] 회원 목록. 닉네임·이메일 부분 일치 검색. */
     async adminMembers(query: AdminMemberQuery = {}) {

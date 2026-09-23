@@ -27,14 +27,13 @@ import {
 } from "lucide-react";
 import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
 import { AppProvider, useApp, useLoad } from "../lib/context";
-import { errorText } from "../lib/format";
-import type { Role } from "../lib/types";
+import { errorText, period, safeUrl } from "../lib/format";
+import type { AdminFestivalDetail, Role } from "../lib/types";
 import {
   AdminProvider,
   roleNames,
   statusNames,
   useAdmin,
-  visibilityNames,
   type AdminMember,
   type ContentItem,
   type RunState,
@@ -80,12 +79,11 @@ export function AdminLayout() {
   );
 }
 function AdminShell() {
-  const { data, reset } = useAdmin();
+  const { reset, stats } = useAdmin();
   const [resetOpen, setResetOpen] = useState(false);
   const location = useLocation();
-  const pending = data.tickets.filter(
-    (item) => item.status === "PENDING",
-  ).length;
+  // 서버가 준 전체 미처리 건수. 받아온 목록에서 세면 현재 페이지만 세게 된다.
+  const pending = stats?.inquiryPending ?? 0;
   const title =
     navigation.find((item) => item.to === location.pathname)?.label ||
     "운영 대시보드";
@@ -254,6 +252,57 @@ function PanelTitle({
 function Status({ status }: { status: Visibility | RunState }) {
   return <Badge tone={tone(status)}>{statusNames[status]}</Badge>;
 }
+/**
+ * 서버 페이징 이동. 관리자는 "전체 몇 건 중 몇 페이지"를 알아야 해서
+ * 더보기 대신 페이지 번호로 둔다.
+ */
+function Pagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  /** 0부터 시작 */
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+  // 현재 페이지 주변 5개만 보여준다. 3000건이면 150페이지라 다 그릴 수 없다.
+  const start = Math.max(0, Math.min(page - 2, totalPages - 5));
+  const numbers = Array.from(
+    { length: Math.min(5, totalPages) },
+    (_, index) => start + index,
+  );
+  return (
+    <nav className="adm-pagination" aria-label="페이지 이동">
+      <button
+        type="button"
+        disabled={page === 0}
+        onClick={() => onChange(page - 1)}
+      >
+        이전
+      </button>
+      {numbers.map((value) => (
+        <button
+          key={value}
+          type="button"
+          className={value === page ? "active" : ""}
+          aria-current={value === page ? "page" : undefined}
+          onClick={() => onChange(value)}
+        >
+          {value + 1}
+        </button>
+      ))}
+      <button
+        type="button"
+        disabled={page >= totalPages - 1}
+        onClick={() => onChange(page + 1)}
+      >
+        다음
+      </button>
+    </nav>
+  );
+}
 function Table({
   label,
   headers,
@@ -327,7 +376,8 @@ function Tabs({
 }: {
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string; count: number }[];
+  /** count는 선택이다. 서버 페이징이면 현재 페이지만 세게 되어 틀린 숫자가 된다. */
+  options: { value: string; label: string; count?: number }[];
   /** 탭 줄 오른쪽 끝에 붙는 액션. 상태 필터가 아니므로 group 밖에 둔다. */
   action?: ReactNode;
 }) {
@@ -342,7 +392,7 @@ function Tabs({
             onClick={() => onChange(option.value)}
           >
             {option.label}
-            <span>{option.count}</span>
+            {option.count !== undefined && <span>{option.count}</span>}
           </button>
         ))}
       </div>
@@ -394,43 +444,45 @@ function Reason({
 }
 
 export function AdminDashboard() {
-  const { data } = useAdmin();
+  const { data, stats, statsLoading, statsError } = useAdmin();
   const pending = data.tickets.filter((t) => t.status === "PENDING");
-  const reports = pending.filter((t) => t.category === "REPORT");
-  const waiting = data.events.filter((e) => e.status === "PENDING").length;
-  const stats = [
+  // 카드 숫자는 서버가 준 전체 건수다. 목록은 한 페이지만 받아오므로 길이를 세면 안 된다.
+  const cards = [
     {
       label: "전체 회원",
-      value: data.members.length,
+      value: stats?.memberTotal,
       unit: "명",
-      detail: `신뢰 회원 ${data.members.filter((m) => m.role === "ROLE_TRUSTED").length}명`,
+      detail:
+        stats &&
+        `신뢰 ${stats.memberTrusted}명 · 주의 ${stats.memberWarning}명`,
       icon: UsersRound,
       to: "/admin/members",
       color: "sage",
     },
     {
       label: "등록된 행사",
-      value: data.events.length,
+      value: stats?.festivalTotal,
       unit: "건",
-      detail: `검토 대기 ${waiting}건`,
+      detail: stats && `진행중 ${stats.festivalOpen}건`,
       icon: CalendarDays,
       to: "/admin/events",
       color: "peach",
     },
     {
       label: "행사 후기",
-      value: data.reviews.length,
+      value: stats?.postTotal,
       unit: "건",
-      detail: `공개 후기 ${data.reviews.filter((p) => p.status === "PUBLISHED").length}건`,
+      // 후기에는 아직 노출 상태가 없어 공개/숨김을 나눌 수 없다.
+      detail: "전체 등록 후기",
       icon: MessageSquare,
       to: "/admin/reviews",
       color: "blue",
     },
     {
       label: "미처리 문의·신고",
-      value: pending.length,
+      value: stats?.inquiryPending,
       unit: "건",
-      detail: `신고 ${reports.length}건 우선 확인`,
+      detail: stats && `신고 ${stats.inquiryReport}건 우선 확인`,
       icon: Flag,
       to: "/admin/inquiries?status=PENDING",
       color: "orange",
@@ -445,7 +497,14 @@ export function AdminDashboard() {
       >
         <span className="adm-date">
           <CalendarDays size={15} />
-          2026. 09. 21 기준 예시
+          {/* 고정 문구였다. 실제로 언제 집계한 값인지 보여야 한다. */}
+          {new Intl.DateTimeFormat("ko-KR", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(new Date())}{" "}
+          기준
         </span>
       </Heading>
       <section className="adm-welcome">
@@ -453,8 +512,16 @@ export function AdminDashboard() {
           <span className="adm-eyebrow">BETTER EXPERIENCES, TOGETHER</span>
           <h2>좋은 경험이 이어지는 공간을 만듭니다.</h2>
           <p>
-            확인이 필요한 문의·신고 <strong>{pending.length}건</strong>과 행사
-            제보 <strong>{waiting}건</strong>이 있습니다.
+            {stats ? (
+              <>
+                확인이 필요한 문의·신고{" "}
+                <strong>{stats.inquiryPending}건</strong>이 있습니다.
+                {stats.inquiryReport > 0 &&
+                  ` 그중 신고가 ${stats.inquiryReport}건입니다.`}
+              </>
+            ) : (
+              "처리할 업무를 불러오는 중입니다."
+            )}
           </p>
           <Link to="/admin/inquiries?status=PENDING">
             처리할 업무 확인하기
@@ -469,8 +536,13 @@ export function AdminDashboard() {
           </span>
         </div>
       </section>
+      {statsError && (
+        <p className="adm-dialog-note" role="alert">
+          현황을 불러오지 못했습니다. {statsError}
+        </p>
+      )}
       <section className="adm-stats" aria-label="서비스 현황">
-        {stats.map(({ label, value, unit, detail, icon: Icon, to, color }) => (
+        {cards.map(({ label, value, unit, detail, icon: Icon, to, color }) => (
           <Link className="adm-stat" to={to} key={label}>
             <div>
               <span>{label}</span>
@@ -479,11 +551,12 @@ export function AdminDashboard() {
               </span>
             </div>
             <p>
-              <strong>{value}</strong>
+              {/* 아직 못 받았으면 0을 보여주면 안 된다. 0건으로 오해한다. */}
+              <strong>{value ?? (statsLoading ? "—" : "?")}</strong>
               <span>{unit}</span>
             </p>
             <div className="adm-stat-bottom">
-              <span>{detail}</span>
+              <span>{detail || ""}</span>
               <ArrowRight size={15} />
             </div>
           </Link>
@@ -529,29 +602,34 @@ export function AdminDashboard() {
         </section>
         <section className="adm-panel">
           <PanelTitle
-            title="콘텐츠 검토 현황"
-            description="목록의 현재 상태를 기준으로 집계합니다."
+            title="콘텐츠 현황"
+            description="서비스에 등록된 전체 건수입니다."
           />
           <div className="adm-content-summary">
+            {/*
+              원래 공개/검토 대기/숨김 비율을 보여주던 자리다.
+              행사·후기에 노출 상태 컬럼이 없어 그 숫자를 만들 수 없으므로
+              지금은 진행 상태와 전체 건수만 보여준다.
+              TODO visibility 컬럼이 생기면 공개·숨김 비율로 되돌릴 것.
+            */}
             {[
               {
-                name: "공개 중인 행사",
-                count: data.events.filter((e) => e.status === "PUBLISHED")
-                  .length,
-                max: data.events.length,
+                name: "진행중인 행사",
+                count: stats?.festivalOpen ?? 0,
+                max: stats?.festivalTotal ?? 0,
                 color: "green",
               },
               {
-                name: "검토 대기 제보",
-                count: waiting,
-                max: data.events.length,
-                color: "orange",
+                name: "신뢰 등급 회원",
+                count: stats?.memberTrusted ?? 0,
+                max: stats?.memberTotal ?? 0,
+                color: "green",
               },
               {
-                name: "숨김 처리된 후기",
-                count: data.reviews.filter((p) => p.status === "HIDDEN").length,
-                max: data.reviews.length,
-                color: "gray",
+                name: "주의 등급 회원",
+                count: stats?.memberWarning ?? 0,
+                max: stats?.memberTotal ?? 0,
+                color: "orange",
               },
             ].map((item) => (
               <div key={item.name}>
@@ -572,14 +650,12 @@ export function AdminDashboard() {
               </div>
             ))}
           </div>
-          <Link
-            className="adm-review-callout"
-            to="/admin/events?status=PENDING"
-          >
+          {/* 예전 링크(?status=PENDING)는 이제 없는 탭이라 전체 목록으로 보낸다. */}
+          <Link className="adm-review-callout" to="/admin/events">
             <ClipboardCheck size={23} />
             <span>
-              <strong>행사 제보 검토</strong>
-              <small>내용을 확인하고 공개 여부를 결정하세요.</small>
+              <strong>행사 목록 확인</strong>
+              <small>수집된 행사와 회원 제보를 검색해 보세요.</small>
             </span>
             <ArrowRight size={17} />
           </Link>
@@ -612,7 +688,8 @@ export function AdminDashboard() {
 }
 
 export function AdminMembers() {
-  const { data, membersLoading, membersError, reloadMembers } = useAdmin();
+  const { data, membersLoading, membersError, reloadMembers, stats } =
+    useAdmin();
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -629,16 +706,14 @@ export function AdminMembers() {
         title="회원 관리"
         description="전체 회원의 가입 정보와 신뢰 등급을 관리합니다."
       />
+      {/* 서버가 준 전체 건수. 목록은 한 페이지만 받아오므로 길이를 세면 안 된다. */}
       <div className="adm-summary-line">
         <span>
           <UsersRound size={18} />
-          전체 회원 <strong>{data.members.length}명</strong>
+          전체 회원 <strong>{stats ? `${stats.memberTotal}명` : "—"}</strong>
         </span>
         <span>
-          주의 등급{" "}
-          <strong>
-            {data.members.filter((m) => m.role === "ROLE_WARNING").length}명
-          </strong>
+          주의 등급 <strong>{stats ? `${stats.memberWarning}명` : "—"}</strong>
         </span>
       </div>
       <section className="adm-panel">
@@ -877,23 +952,54 @@ function SyncButton() {
   );
 }
 export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
-  const { data, eventsLoading, eventsError, reloadEvents } = useAdmin();
+  const {
+    data,
+    eventsLoading,
+    eventsError,
+    reloadEvents,
+    eventsPage,
+    eventQuery,
+    setEventQuery,
+  } = useAdmin();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("");
   const status = params.get("status") || "";
   const isEvent = kind === "events";
   const records = data[kind];
-  // 행사는 서버가 노출 상태를 갖고 있지 않아 진행 상태(OPEN/CLOSED)로 나눈다.
+  /*
+    행사는 서버가 진행 상태를 계산해서 내려준다.
+    검색 파라미터에는 excludeClosed(종료 제외)만 있고 "종료만 보기"가 없어서
+    탭도 [전체][진행중]까지만 둔다.
+    TODO 서버에 status 필터가 생기면 [종료] 탭을 되살릴 것.
+  */
   const statuses: (Visibility | RunState)[] = isEvent
-    ? ["OPEN", "CLOSED"]
+    ? ["OPEN"]
     : ["PUBLISHED", "HIDDEN"];
-  const items = records.filter(
-    (item) =>
-      includes(query, item.title, item.author, item.id) &&
-      (!status || item.status === status) &&
-      (!source || item.source === source),
-  );
+  /**
+   * 행사는 검색·필터를 서버가 한다. 타이핑할 때마다 요청이 나가지 않도록
+   * 잠깐 멈춘 뒤에 보낸다.
+   */
+  useEffect(() => {
+    if (!isEvent) return;
+    const timer = setTimeout(() => {
+      setEventQuery({
+        keyword: query.trim() || undefined,
+        providerType: (source as "PUBLIC" | "MEMBER") || undefined,
+        excludeClosed: status === "OPEN",
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isEvent, query, source, status, setEventQuery]);
+  // 행사는 서버가 이미 걸러서 보냈다. 후기는 아직 예시 데이터라 화면에서 거른다.
+  const items = isEvent
+    ? records
+    : records.filter(
+        (item) =>
+          includes(query, item.title, item.author, item.id) &&
+          (!status || item.status === status) &&
+          (!source || item.source === source),
+      );
   const selected = records.find((item) => item.id === params.get("item"));
   function setParam(key: string, value: string) {
     setParams((current) => {
@@ -918,11 +1024,20 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
           value={status}
           onChange={(v) => setParam("status", v)}
           options={[
-            { value: "", label: "전체", count: records.length },
+            // 행사는 서버 페이징이라 화면에 있는 건 현재 페이지뿐이다.
+            // 여기서 세면 "전체 20건"처럼 틀린 숫자가 나오므로 건수를 빼고,
+            // 총계는 아래 결과 줄에서 서버가 준 값으로 보여준다.
+            {
+              value: "",
+              label: "전체",
+              count: isEvent ? undefined : records.length,
+            },
             ...statuses.map((value) => ({
               value,
               label: statusNames[value],
-              count: records.filter((r) => r.status === value).length,
+              count: isEvent
+                ? undefined
+                : records.filter((r) => r.status === value).length,
             })),
           ]}
           // 후기 탭에는 동기화할 공공 데이터가 없다.
@@ -952,6 +1067,17 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
         <div className="adm-result-count">
           {isEvent && eventsLoading ? (
             "불러오는 중…"
+          ) : isEvent ? (
+            // 서버가 준 전체 건수. 화면에 보이는 20건이 아니다.
+            <>
+              검색 결과 <strong>{eventsPage.totalElements}</strong>건
+              {eventsPage.totalPages > 1 && (
+                <span className="adm-page-hint">
+                  {" "}
+                  · {eventsPage.number + 1} / {eventsPage.totalPages} 페이지
+                </span>
+              )}
+            </>
           ) : (
             <>
               검색 결과 <strong>{items.length}</strong>건
@@ -1028,10 +1154,18 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
             </tr>
           ))}
         </Table>
+        {isEvent && (
+          <Pagination
+            page={eventsPage.number}
+            totalPages={eventsPage.totalPages}
+            onChange={(next) => setEventQuery({ ...eventQuery, page: next })}
+          />
+        )}
       </section>
       <p className="adm-footnote">
-        공개·검토 대기·숨김은 관리자 화면의 예시 운영 상태입니다. 실제 서비스의
-        행사 진행 상태와 별개입니다.
+        {isEvent
+          ? "진행 상태는 행사 종료일로 계산된 값입니다. 노출 관리(숨김·복구) 기능은 준비 중입니다."
+          : "공개·숨김은 관리자 화면의 예시 운영 상태입니다."}
       </p>
       {selected && (
         <ContentDialog
@@ -1040,6 +1174,70 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
           kind={kind}
           onClose={() => setParam("item", "")}
         />
+      )}
+    </>
+  );
+}
+/**
+ * 행사 상세 본문. 목록에 없는 소개·기간·장소·연락처를 보여준다.
+ * 관리자가 이 행사를 조치할지 판단하려면 목록의 제목만으로는 부족하다.
+ */
+function EventDetailBody({
+  loading,
+  error,
+  detail,
+}: {
+  loading: boolean;
+  error: string;
+  detail: AdminFestivalDetail | null;
+}) {
+  if (loading) return <p className="adm-content-body">불러오는 중…</p>;
+  if (error)
+    return (
+      <p className="adm-content-body" role="alert">
+        {error}
+      </p>
+    );
+  if (!detail) return null;
+  const place = [detail.region, detail.regionDetail]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const rows = [
+    { label: "기간", value: period(detail.beginDe, detail.endDe) },
+    { label: "장소", value: place },
+    { label: "운영 시간", value: detail.eventTmInfo },
+    { label: "참가비", value: detail.partcptExpnInfo },
+    { label: "주최", value: detail.hostInstNm || detail.instNm },
+    { label: "문의", value: detail.telnoInfo },
+  ].filter((row) => row.value);
+  return (
+    <>
+      <p className="adm-content-body">
+        {detail.festivalContent?.trim() || "등록된 행사 소개가 없습니다."}
+      </p>
+      {rows.length > 0 && (
+        <dl className="adm-details">
+          {rows.map((row) => (
+            <DetailLine key={row.label} label={row.label}>
+              {row.value}
+            </DetailLine>
+          ))}
+        </dl>
+      )}
+      {detail.referenceUrl && (
+        <a
+          className="adm-target-link"
+          href={safeUrl(detail.referenceUrl)}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          <ExternalLink size={18} />
+          <span>
+            <small>원문 보기</small>
+            <strong>{detail.referenceUrl}</strong>
+          </span>
+        </a>
       )}
     </>
   );
@@ -1054,15 +1252,19 @@ function ContentDialog({
   onClose: () => void;
 }) {
   const { moderate } = useAdmin();
+  const { api } = useApp();
+  const isEvent = kind === "events";
+  // 목록 응답에는 본문이 없다. 행사는 상세를 따로 불러온다.
+  const detail = useLoad(
+    () => (isEvent ? api.adminFestival(item.id) : Promise.resolve(null)),
+    [isEvent, item.id],
+  );
   const [status, setStatus] = useState<Visibility>(
     item.status === "PUBLISHED" ? "HIDDEN" : "PUBLISHED",
   );
   const [reason, setReason] = useState("");
   return (
-    <Modal
-      title={kind === "events" ? "행사 검토" : "후기 검토"}
-      onClose={onClose}
-    >
+    <Modal title={isEvent ? "행사 검토" : "후기 검토"} onClose={onClose}>
       {item.image && (
         <img className="adm-dialog-image" src={item.image} alt={item.title} />
       )}
@@ -1073,11 +1275,19 @@ function ContentDialog({
           {item.author} · {item.date} · {item.id}
         </p>
       </div>
-      <p className="adm-content-body">{item.content}</p>
+      {isEvent ? (
+        <EventDetailBody
+          loading={detail.loading}
+          error={detail.error}
+          detail={detail.data}
+        />
+      ) : (
+        <p className="adm-content-body">{item.content}</p>
+      )}
       {item.reason && (
         <p className="adm-dialog-note">최근 처리 사유: {item.reason}</p>
       )}
-      {kind === "events" ? (
+      {isEvent ? (
         /*
           TODO 행사 노출 관리 붙이기.
                서버에 노출 상태 컬럼이 없어 숨김·복구를 저장할 방법이 없다.

@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -9,11 +10,16 @@ import {
 import { useApp } from "../lib/context";
 import { dateText, errorText } from "../lib/format";
 import type {
+  AdminFestivalQuery,
   AdminInquiryListItem,
   AdminMemberInfo,
+  AdminStats,
   FestivalSearchItem,
   Role,
 } from "../lib/types";
+
+/** 어드민 행사 목록 한 페이지 크기. */
+const EVENT_PAGE_SIZE = 20;
 
 export const roleNames: Record<Role, string> = {
   ROLE_UNVERIFIED: "미인증",
@@ -84,6 +90,25 @@ export interface Activity {
   action: string;
   target: string;
   reason: string;
+}
+/** 서버 페이징 정보. 목록 길이와 달리 전체 기준이다. */
+export interface PageMeta {
+  totalElements: number;
+  totalPages: number;
+  /** 0부터 시작하는 현재 페이지 */
+  number: number;
+}
+const emptyPage: PageMeta = { totalElements: 0, totalPages: 0, number: 0 };
+/** 검색 조건이 실제로 바뀌었는지. 값이 같으면 다시 불러올 이유가 없다. */
+function sameQuery(a: AdminFestivalQuery, b: AdminFestivalQuery) {
+  return (
+    a.keyword === b.keyword &&
+    a.providerType === b.providerType &&
+    a.category === b.category &&
+    a.excludeClosed === b.excludeClosed &&
+    a.page === b.page &&
+    a.size === b.size
+  );
 }
 /**
  * 아직 API가 없어 브라우저에만 두는 예시 데이터.
@@ -277,10 +302,24 @@ interface AdminContextValue {
   ) => void;
   /** 답변 등록. 서버에 저장하므로 실패할 수 있다. */
   answer: (id: string, answer: string) => Promise<void>;
+  /** 대시보드 집계. 아직 못 불러왔으면 null. */
+  stats: AdminStats | null;
+  statsLoading: boolean;
+  statsError: string;
   /** 행사 목록을 서버에서 다시 불러온다. */
   reloadEvents: () => void;
   eventsLoading: boolean;
   eventsError: string;
+  /** 현재 행사 검색 조건. 서버로 그대로 넘어간다. */
+  eventQuery: AdminFestivalQuery;
+  /**
+   * 행사 검색 조건을 바꾼다.
+   * page를 빼고 부르면 0으로 되돌린다. 3페이지에서 검색어를 바꿨는데
+   * 결과가 1페이지뿐이면 빈 화면이 나오기 때문이다.
+   */
+  setEventQuery: (next: AdminFestivalQuery) => void;
+  /** 서버가 알려준 전체 건수와 페이지 수. 받아온 목록 길이가 아니다. */
+  eventsPage: PageMeta;
   /** 회원 목록을 서버에서 다시 불러온다. */
   reloadMembers: () => void;
   membersLoading: boolean;
@@ -298,10 +337,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(read);
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState(false);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+  const [statsRevision, setStatsRevision] = useState(0);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState("");
   const [eventsRevision, setEventsRevision] = useState(0);
+  const [eventsPage, setEventsPage] = useState<PageMeta>(emptyPage);
+  // 화면이 처음 보내는 조건과 같은 값으로 시작한다. 다르면 마운트 직후 요청이 두 번 나간다.
+  const [eventQuery, setEventQueryState] = useState<AdminFestivalQuery>({
+    page: 0,
+    size: EVENT_PAGE_SIZE,
+    excludeClosed: false,
+  });
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [membersError, setMembersError] = useState("");
@@ -312,6 +362,43 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [ticketsRevision, setTicketsRevision] = useState(0);
   // 토큰 복구가 끝나기 전에 부르면 첫 요청이 401로 한 번 헛돈다.
   const ready = !authLoading && signedInAdmin?.role === "ROLE_ADMIN";
+  /**
+   * useCallback이 꼭 필요하다. 화면 쪽에서 이 함수를 useEffect 의존성에 넣는데,
+   * 매 렌더마다 새로 만들어지면 effect가 계속 돌아 무한 루프가 된다.
+   */
+  const setEventQuery = useCallback((next: AdminFestivalQuery) => {
+    setEventQueryState((current) => {
+      // page를 명시하지 않은 변경은 조건이 바뀐 것이므로 첫 페이지로 돌린다.
+      const merged = { page: 0, size: EVENT_PAGE_SIZE, ...next };
+      // 같은 조건이면 상태를 바꾸지 않는다. 안 그러면 effect가 다시 돌아 요청이 두 번 나간다.
+      return sameQuery(current, merged) ? current : merged;
+    });
+  }, []);
+  useEffect(() => {
+    if (!ready) {
+      setStats(null);
+      setStatsLoading(authLoading);
+      return;
+    }
+    let active = true;
+    setStatsLoading(true);
+    setStatsError("");
+    api
+      .adminStats()
+      .then((next) => {
+        if (active) setStats(next);
+      })
+      .catch((error) => {
+        if (active) setStatsError(errorText(error));
+      })
+      .finally(() => {
+        if (active) setStatsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+    // 답변·등급 변경 뒤에 statsRevision을 올려 숫자를 다시 맞춘다.
+  }, [api, ready, authLoading, statsRevision]);
   useEffect(() => {
     if (!ready) {
       setEvents([]);
@@ -322,15 +409,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setEventsLoading(true);
     setEventsError("");
     api
-      // 검색·필터를 화면에서 하고 있어서 한 번에 받아 두고 거른다.
-      // 행사는 수천 건이라 이 방식이 오래 못 간다.
-      // TODO 검색어·유입 경로를 서버 파라미터(keyword/providerType)로 넘길 것.
-      .adminFestivals({ size: 50 })
+      // 검색·필터는 서버가 한다. 행사가 수천 건이라 다 받아서 거를 수 없다.
+      .adminFestivals(eventQuery)
       .then((page) => {
-        if (active) setEvents(page.content.map(toEvent));
+        if (!active) return;
+        setEvents(page.content.map(toEvent));
+        setEventsPage({
+          totalElements: page.totalElements,
+          totalPages: page.totalPages,
+          number: page.number,
+        });
       })
       .catch((error) => {
-        if (active) setEventsError(errorText(error));
+        if (!active) return;
+        setEventsError(errorText(error));
+        setEventsPage(emptyPage);
       })
       .finally(() => {
         if (active) setEventsLoading(false);
@@ -338,7 +431,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [api, ready, authLoading, eventsRevision]);
+    // eventQuery는 객체라 매번 새로 만들어지면 안 된다. setEventQuery에서만 바꾼다.
+  }, [api, ready, authLoading, eventsRevision, eventQuery]);
   useEffect(() => {
     if (!ready) {
       setMembers([]);
@@ -435,8 +529,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     <Context.Provider
       value={{
         data: value,
+        stats,
+        statsLoading,
+        statsError,
         eventsLoading,
         eventsError,
+        eventsPage,
+        eventQuery,
+        setEventQuery,
         reloadEvents() {
           setEventsRevision((current) => current + 1);
         },
@@ -475,6 +575,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             //      지금은 입력칸을 잠가 둬서 reason이 항상 빈 문자열로 들어온다.
             reason: reason.trim() ? `${change} · ${reason.trim()}` : change,
           });
+          // 등급이 바뀌었으니 대시보드의 신뢰·주의 회원 수도 다시 센다.
+          setStatsRevision((current) => current + 1);
           setMessage("회원 등급을 변경했습니다.");
         },
         moderate(kind, id, status, reason) {
@@ -525,6 +627,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             target: ticket.id,
             reason: ticket.title,
           });
+          // 미처리 건수가 줄었으니 사이드바 뱃지와 대시보드를 다시 맞춘다.
+          setStatsRevision((current) => current + 1);
           setMessage("답변을 등록했습니다.");
         },
         reset() {
