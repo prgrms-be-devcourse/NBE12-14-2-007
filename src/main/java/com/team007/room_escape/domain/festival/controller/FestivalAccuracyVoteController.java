@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +25,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class FestivalAccuracyVoteController {
 
     private final FestivalAccuracyVoteService accuracyVoteService;
+
+    @GetMapping
+    @Operation(summary = "행사 정보 정확도 평가 조회",
+            description = "사용자 등록 행사의 평가 수와 현재 사용자의 평가를 조회합니다."
+    )
+    public ResponseEntity<ApiResponse<AccuracyVoteResponse>> getVotes(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable Long festivalId
+    ) {
+        AccuracyVoteResponse response = accuracyVoteService.getVotes(
+                principal == null ? null : principal.getId(),
+                festivalId
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
