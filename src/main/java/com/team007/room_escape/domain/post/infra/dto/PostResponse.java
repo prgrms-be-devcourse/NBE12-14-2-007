@@ -56,6 +56,30 @@ public class PostResponse {
         }
     }
 
+    public record AdminListResponse(
+            UUID id,
+            MemberInfo member,
+            Long festivalId,
+            String festivalTitle,
+            String title,
+            String thumbnail,
+            LocalDateTime date,
+            LocalDateTime deletedAt
+    ) {
+        public static AdminListResponse from(Post post) {
+            return new AdminListResponse(
+                    post.getId(),
+                    MemberInfo.from(post),
+                    post.getFestival().getId(),
+                    post.getFestival().getTitle(),
+                    post.getTitle(),
+                    post.getThumbnail(),
+                    post.getUpdatedAt(),
+                    post.getDeletedAt()
+            );
+        }
+    }
+
     public record ListResponse(
             UUID id,
             MemberInfo member,

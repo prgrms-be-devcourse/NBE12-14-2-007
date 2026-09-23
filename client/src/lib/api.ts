@@ -8,6 +8,9 @@ import type {
   PostInput,
   PostDetail,
   PostSummary,
+  PostSearch,
+  AdminPostQuery,
+  AdminPostSummary,
   Page,
   Comment,
   Inquiry,
@@ -429,17 +432,61 @@ export function createApi(mode: Mode) {
       festivalId?: number,
       page = 0,
       sort: ReviewSort = demo ? "likes,desc" : "createdAt,desc",
+      search: PostSearch = {},
     ): Promise<Page<PostSummary>> {
+      const keyword = search.keyword?.trim();
       if (!demo) {
-        if (festivalId === undefined)
-          throw new ApiError("전체 후기 조회 기능을 준비하고 있어요.");
         if (sort === "likes,desc")
           throw new ApiError("좋아요순 정렬을 준비하고 있어요.");
-        return transport(
-          `/festivals/${festivalId}/posts?page=${page}&size=6&sort=${encodeURIComponent(sort)}`,
-        );
+        const params = new URLSearchParams({
+          page: String(page),
+          size: "6",
+          sort,
+        });
+        if (festivalId === undefined && keyword) {
+          params.set("type", search.type ?? "TITLE");
+          params.set("keyword", keyword);
+        }
+        const path =
+          festivalId === undefined
+            ? "/posts"
+            : `/festivals/${festivalId}/posts`;
+        return transport(`${path}?${params}`);
       }
-      return pageOf(previewPosts(festivalId, sort), page, 6);
+      const posts = previewPosts(festivalId, sort).filter((post) => {
+        if (festivalId !== undefined || !keyword) return true;
+        const value =
+          search.type === "MEMBER_NICKNAME"
+            ? post.member.nickname
+            : search.type === "FESTIVAL_TITLE"
+              ? post.festivalTitle
+              : post.title;
+        return value.toLocaleLowerCase().includes(keyword.toLocaleLowerCase());
+      });
+      return pageOf(posts, page, 6);
+    },
+    // 관리자 목록은 삭제된 후기를 포함한다. preview 모드에서도 실제 API를 사용한다.
+    async adminPosts(query: AdminPostQuery = {}) {
+      const {
+        page = 0,
+        size = 20,
+        sort = "createdAt,desc",
+        type = "TITLE",
+        keyword,
+      } = query;
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sort,
+      });
+      if (keyword?.trim()) {
+        params.set("type", type);
+        params.set("keyword", keyword.trim());
+      }
+      return transport<Page<AdminPostSummary>>(`/admin/posts?${params}`);
+    },
+    async adminPost(postId: string) {
+      return transport<PostDetail>(`/posts/${encodeURIComponent(postId)}`);
     },
     async post(postId: string) {
       return demo
@@ -694,7 +741,7 @@ export function createApi(mode: Mode) {
         }).then(total),
         this.adminFestivals({ size: 1 }).then(total),
         this.adminFestivals({ size: 1, excludeClosed: true }).then(total),
-        transport<Page<unknown>>("/posts?page=0&size=1").then(total),
+        this.adminPosts({ size: 1 }).then(total),
       ]);
       return {
         memberTotal,

@@ -70,18 +70,18 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> searchPostsForAdmin(
+	public Page<PostResponse.AdminListResponse> searchPostsForAdmin(
 			PostSearchType type,
 			String keyword,
 			Pageable page
 	) {
 		if(type == null || keyword == null || keyword.isBlank()) {
 			return postRepository.findAllIncludingDeleted(page)
-					.map(PostResponse.ListResponse::from);
+					.map(PostResponse.AdminListResponse::from);
 		}
 
 		return postRepository.searchPostsIncludingDeleted(type, keyword, page)
-				.map(PostResponse.ListResponse::from);
+					.map(PostResponse.AdminListResponse::from);
 	}
 
 	@Transactional(readOnly = true)
