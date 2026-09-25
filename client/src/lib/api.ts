@@ -355,12 +355,37 @@ export function createApi(mode: Mode) {
           ...previewSubmittedEvents(),
         ].find((e) => e.festivalId === festivalId);
         if (!event) throw new ApiError("행사를 찾을 수 없어요.", 404);
-        return event;
+        const data = readDemo();
+        const likeKey = `festival:${festivalId}`;
+        return {
+          ...event,
+          likeCount: data.likes[likeKey] || 0,
+          likedByMe: data.liked.includes(likeKey),
+        };
       }
       const result = await transport<FestivalDetailItem>(
         `/festivals/${encodeURIComponent(String(festivalId))}`,
       );
       return toDetailEvent(result);
+    },
+    async likeFestival(festivalId: number, remove = false) {
+      if (!demo)
+        return transport<{ likeCount: number }>(
+          `/festivals/${encodeURIComponent(String(festivalId))}/likes/me`,
+          remove ? "DELETE" : "POST",
+        );
+      return updateDemo((data) => {
+        const key = `festival:${festivalId}`;
+        const liked = data.liked.includes(key);
+        if (!remove && !liked) {
+          data.liked.push(key);
+          data.likes[key] = (data.likes[key] || 0) + 1;
+        } else if (remove && liked) {
+          data.liked = data.liked.filter((value) => value !== key);
+          data.likes[key] = Math.max(0, (data.likes[key] || 0) - 1);
+        }
+        return { likeCount: data.likes[key] || 0 };
+      });
     },
     async voteAccuracy(
       festivalId: number,
@@ -408,8 +433,7 @@ export function createApi(mode: Mode) {
         accurateCount:
           current.accurateCount - (current.myVote === "ACCURATE" ? 1 : 0),
         inaccurateCount:
-          current.inaccurateCount -
-          (current.myVote === "INACCURATE" ? 1 : 0),
+          current.inaccurateCount - (current.myVote === "INACCURATE" ? 1 : 0),
         myVote: null,
       };
       demoAccuracyVotes.set(festivalId, next);
