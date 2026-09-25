@@ -41,7 +41,7 @@ import {
   updateDemo,
   type ReviewSort,
 } from "./demo";
-import { parseDateTime } from "./format";
+import { parseDateTime, safeUrl } from "./format";
 import { matchesRegion } from "./regions";
 
 // 선택 항목을 비운 등록·수정 요청은 DB에 빈 문자열 대신 null로 저장합니다.
@@ -360,7 +360,17 @@ export function createApi(mode: Mode) {
       const result = await transport<FestivalDetailItem>(
         `/festivals/${encodeURIComponent(String(festivalId))}`,
       );
-      return toDetailEvent(result);
+      const mapped = toDetailEvent(result);
+      // TODO 참고링크 누락 원인 확인용. 끝나면 지울 것.
+      console.log(`[행사 ${festivalId}] 서버 응답`, result);
+      console.log(`[행사 ${festivalId}] 링크 관련`, {
+        url: result.url,
+        hmpgUrl: result.hmpgUrl,
+        referenceUrl: result.referenceUrl,
+        "화면에 쓰는 값": mapped.referenceUrl,
+        "safeUrl 통과": safeUrl(mapped.referenceUrl),
+      });
+      return mapped;
     },
     async voteAccuracy(
       festivalId: number,

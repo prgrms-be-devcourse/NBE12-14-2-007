@@ -1,5 +1,6 @@
 package com.team007.room_escape.domain.post.infra.dto;
 
+import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 
 import java.time.LocalDateTime;
@@ -23,11 +24,25 @@ public class PostResponse {
             String nickname,
             String profileImg
     ) {
+        /**
+         * 탈퇴한 회원은 닉네임과 프로필을 가린다.
+         *
+         * Member 에는 @SQLRestriction 을 걸 수 없어서(글·댓글 연관관계가 깨진다)
+         * 탈퇴 회원도 그대로 로딩된다. 그래서 응답을 만드는 이 자리에서 가려야 한다.
+         *
+         * id 도 null 로 준다. 값을 남기면 화면이 없는 프로필로 링크를 걸게 된다.
+         */
         public static MemberInfo from(Post post) {
+            Member member = post.getMember();
+
+            if (member == null || member.isDeleted()) {
+                return new MemberInfo(null, Member.WITHDRAWN_NICKNAME, null);
+            }
+
             return new MemberInfo(
-                    post.getMember().getId(),
-                    post.getMember().getNickname(),
-                    post.getMember().getProfileImg()
+                    member.getId(),
+                    member.getNickname(),
+                    member.getProfileImg()
             );
         }
     }

@@ -20,7 +20,8 @@ import org.hibernate.annotations.UuidGenerator;
 // Post, Comment, Like 가 이 엔티티를 @ManyToOne 으로 참조한다.
 // @SQLRestriction 을 걸면 탈퇴한 회원이 쓴 글·댓글을 조회할 때 예외가 나므로 걸지 않는다.
 // 로그인/가입 경로는 MemberRepository 의 deletedAtIsNull 메서드로 거른다.
-//TODO : 탈퇴시 "탈퇴한 사용자입니다" 로 응답에 표시하기
+// 탈퇴 회원을 "탈퇴한 사용자"로 가리는 일은 응답 DTO에서 한다.
+// PostResponse.MemberInfo.from(), CommentResponse.CommentInfo.from() 참고.
 @Entity
 @Table(name = "member")
 @Getter
@@ -97,6 +98,15 @@ public class Member extends SoftDeletableEntity {
 	}
 
 	/** 관리자가 직접 권한을 바꿀 때만 사용한다. */
+	/**
+	 * 탈퇴한 회원이 쓴 글·댓글에 작성자 대신 보여줄 이름.
+	 *
+	 * 개인정보 파기 배치(MemberPurgeScheduler)가 보관 기간이 지난 회원의
+	 * 닉네임을 이 값으로 바꾼다. 그 전까지는 응답 DTO에서 이 값으로 가린다.
+	 * 두 곳이 같은 문자열을 써야 해서 여기에 모아 둔다.
+	 */
+	public static final String WITHDRAWN_NICKNAME = "탈퇴한 사용자";
+
 	// TODO role 변경 사유 추가 필요 (테이블 나눠야 할 듯)
 	//      어드민 화면은 이미 사유를 필수로 받고 있는데 저장할 곳이 없어 버려지고 있다.
 	//      누가·언제·누구를·왜 바꿨는지가 남아야 하므로 member 컬럼이 아니라
