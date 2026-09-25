@@ -113,8 +113,11 @@ function EventDetail({ event }: { event: EventView }) {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
-  const heroUrl = imageUrl(event.imgUrl);
+  const heroUrl = imageUrl(event.imgUrl, 1200);
   const [heroVisible, setHeroVisible] = useState(Boolean(heroUrl));
+  // 리사이즈 프록시가 원본을 처음 받아 축소하는 동안(캐시 없을 때) 몇 초 걸릴 수 있어서,
+  // 그 사이 빈 화면 대신 스켈레톤을 보여준다.
+  const [heroLoaded, setHeroLoaded] = useState(false);
   const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
   async function share() {
     try {
@@ -149,10 +152,14 @@ function EventDetail({ event }: { event: EventView }) {
         </div>
       </div>
       {heroUrl && heroVisible && (
-        <div className="detail-hero">
+        <div className={`detail-hero ${heroLoaded ? "" : "loading"}`}>
+          {!heroLoaded && (
+            <div className="detail-hero-skeleton" aria-hidden="true" />
+          )}
           <img
             src={heroUrl}
             alt={event.title}
+            onLoad={() => setHeroLoaded(true)}
             onError={() => setHeroVisible(false)}
           />
           {event.preview && (

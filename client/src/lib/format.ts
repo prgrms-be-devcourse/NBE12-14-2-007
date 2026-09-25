@@ -115,17 +115,27 @@ export function safeUrl(value?: string | null): string | undefined {
     return undefined;
   }
 }
-export function imageUrl(value?: string | null) {
+// 공공 API가 주는 이미지는 원본(수 MB짜리 포스터)이라, 카드 썸네일 하나 보여주자고
+// 그 용량을 그대로 다운로드하면 느려진다. 무료 공개 리사이징 프록시(weserv.nl)를 거쳐
+// 화면에 필요한 폭으로 줄인 버전을 받는다. 로컬 정적 이미지(/images/...)는 이미 우리가
+// 크기를 관리하니 그대로 둔다.
+function resized(url: string, width: number) {
+  // url은 이미 URL.href를 거쳐 한글/공백이 퍼센트인코딩된 상태라, 여기서 또
+  // encodeURIComponent를 씌우면 %가 %25로 이중 인코딩된다. 그대로 붙인다.
+  const bare = url.replace(/^https?:\/\//, "");
+  return `https://images.weserv.nl/?url=${bare}&w=${width}&q=80`;
+}
+export function imageUrl(value?: string | null, width = 480) {
   if (!value) return undefined;
   if (value.startsWith("/images/") || value.startsWith("blob:")) return value;
-  return (
+  const resolved =
     safeUrl(value) ||
     (import.meta.env.VITE_IMAGE_BASE_URL
       ? safeUrl(
           `${import.meta.env.VITE_IMAGE_BASE_URL.replace(/\/$/, "")}/${value}`,
         )
-      : undefined)
-  );
+      : undefined);
+  return resolved ? resized(resolved, width) : undefined;
 }
 export function errorText(error: unknown) {
   return error instanceof Error
