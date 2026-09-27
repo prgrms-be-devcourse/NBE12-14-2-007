@@ -54,6 +54,7 @@ public class SecurityConfig {
 				// TODO url 한꺼번에 정리하기 (지금은 공개 API가 늘어날 때마다 규칙을 한 줄씩 추가하고 있음)
 				.requestMatchers(HttpMethod.GET, "/api/v1/festivals/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/posts").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/weather").permitAll()
 				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 				.requestMatchers(
 					"/v3/api-docs/**",
