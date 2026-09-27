@@ -98,6 +98,18 @@ export interface FestivalAccuracyVote {
   inaccurateCount: number;
   myVote: "ACCURATE" | "INACCURATE" | null;
 }
+export type WeatherCondition =
+  | "SUNNY"
+  | "CLOUDY"
+  | "RAIN"
+  | "RAIN_SNOW"
+  | "SNOW"
+  | "UNKNOWN";
+export interface WeatherView {
+  condition: WeatherCondition;
+  precipitationProbability: number | null;
+  date: string;
+}
 export interface SubmissionInput {
   title: string;
   category: string;

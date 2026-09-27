@@ -20,6 +20,7 @@ import {
   Loading,
   PageTitle,
   Pagination,
+  WeatherBadge,
 } from "../components/ui";
 
 export function Explore() {
@@ -48,6 +49,11 @@ export function Explore() {
   }
 
   const apiRegion = selectedRegion(region).province?.value || region;
+  const weather = useLoad(
+    () =>
+      apiRegion && date ? api.weather(apiRegion, date) : Promise.resolve(null),
+    [api, apiRegion, date],
+  );
   const { data, loading, error, reload } = useLoad(
     () =>
       api.festivals({
@@ -103,6 +109,33 @@ export function Explore() {
           setFilter("q", text.trim());
         }}
       >
+        <div className="filter-chips">
+          <RegionSelects
+            value={apiRegion}
+            onChange={(value) => setFilter("region", value)}
+          />
+          <label className="filter-select">
+            <CalendarDays size={17} />
+            <input
+              type="date"
+              aria-label="날짜 필터"
+              value={date}
+              onChange={(event) => setFilter("date", event.target.value)}
+              onClick={(event) => event.currentTarget.showPicker?.()}
+            />
+          </label>
+          {weather.data && weather.data.condition !== "UNKNOWN" && (
+            <WeatherBadge
+              condition={weather.data.condition}
+              precipitationProbability={weather.data.precipitationProbability}
+            />
+          )}
+          {weather.data && weather.data.condition === "UNKNOWN" && (
+            <span className="weather-hint">
+              오늘 기준 +2일만 날씨 제공이 가능합니다
+            </span>
+          )}
+        </div>
         <div className="filter-search">
           <Search size={19} />
           <input
@@ -111,25 +144,11 @@ export function Explore() {
             value={text}
             onChange={(event) => setText(event.target.value)}
           />
+          <button className="btn primary">
+            <Search size={17} />
+            검색
+          </button>
         </div>
-        <RegionSelects
-          value={apiRegion}
-          onChange={(value) => setFilter("region", value)}
-        />
-        <label className="filter-select">
-          <CalendarDays size={17} />
-          <input
-            type="date"
-            aria-label="날짜 필터"
-            value={date}
-            onChange={(event) => setFilter("date", event.target.value)}
-            onClick={(event) => event.currentTarget.showPicker?.()}
-          />
-        </label>
-        <button className="btn primary">
-          <Search size={17} />
-          검색
-        </button>
       </form>
 
       <div className="filter-bottom">

@@ -6,16 +6,20 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  Cloud,
+  CloudRain,
+  CloudSnow,
   ImagePlus,
   LoaderCircle,
   MapPin,
   Search,
   Sprout,
+  Sun,
   X,
 } from "lucide-react";
 import { useApp } from "../lib/context";
 import { errorText, imageUrl, period, regions } from "../lib/format";
-import type { EventView } from "../lib/types";
+import type { EventView, WeatherCondition } from "../lib/types";
 
 export function Logo() {
   return (
@@ -64,6 +68,55 @@ export function Logo() {
         </svg>
       </span>
       <span>방구석탈출</span>
+    </span>
+  );
+}
+const WEATHER_ICONS: Record<WeatherCondition, typeof Sun> = {
+  SUNNY: Sun,
+  CLOUDY: Cloud,
+  RAIN: CloudRain,
+  RAIN_SNOW: CloudSnow,
+  SNOW: CloudSnow,
+  UNKNOWN: Cloud,
+};
+export function WeatherIcon({
+  condition,
+  size = 18,
+}: {
+  condition: WeatherCondition;
+  size?: number;
+}) {
+  const Icon = WEATHER_ICONS[condition];
+  return <Icon size={size} aria-hidden="true" />;
+}
+const WEATHER_LABELS: Record<WeatherCondition, string> = {
+  SUNNY: "맑음",
+  CLOUDY: "흐림",
+  RAIN: "비",
+  RAIN_SNOW: "비/눈",
+  SNOW: "눈",
+  UNKNOWN: "",
+};
+/** UNKNOWN(예보 범위 밖·조회 실패)이면 아무것도 안 그린다. */
+export function WeatherBadge({
+  condition,
+  precipitationProbability,
+}: {
+  condition: WeatherCondition;
+  precipitationProbability?: number | null;
+}) {
+  if (condition === "UNKNOWN") return null;
+  return (
+    <span
+      className={`weather-badge weather-${condition.toLowerCase()}`}
+      title={
+        precipitationProbability != null
+          ? `강수확률 ${precipitationProbability}%`
+          : undefined
+      }
+    >
+      <WeatherIcon condition={condition} size={20} />
+      {WEATHER_LABELS[condition]}
     </span>
   );
 }
