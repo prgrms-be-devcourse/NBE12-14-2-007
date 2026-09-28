@@ -334,6 +334,16 @@ r2StorageService.delete(oldKey);   // 삭제 실패는 로그만 남고 흐름�
 
 
 
+## 부하 테스트
+
+Railway 무료 플랜과 같은 자원 한도(1 vCPU / 512MB)로 로컬에서 부하 테스트를 합니다.
+실행 방법과 결과 보는 법은 [loadtest/README.md](loadtest/README.md)를 보세요.
+
+```bash
+docker compose -f docker-compose.loadtest.yml up -d --build
+docker compose -f docker-compose.loadtest.yml run --rm k6
+```
+
 ## 자주 막히는 것
 
 
