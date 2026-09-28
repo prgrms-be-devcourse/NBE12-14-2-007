@@ -58,7 +58,7 @@ export interface FestivalSearchInput {
   date?: string;
   excludeClosed?: boolean;
   page?: number;
-  sort?: "soon" | "name";
+  sort?: "soon" | "name" | "likes";
 }
 export interface FestivalSearchItem {
   festivalId: number;
@@ -71,6 +71,7 @@ export interface FestivalSearchItem {
   endDe: string;
   region: string;
   status: "OPEN" | "CLOSED";
+  likeCount: number;
 }
 // GET /api/v1/festivals/{festivalId} 응답 그대로의 모양
 export interface FestivalDetailItem {
@@ -175,7 +176,7 @@ export interface PostSummary {
   title: string;
   thumbnail: string | null;
   date: string;
-  // Preview enrichment; the current backend list DTO does not include this.
+  // 목록 응답에만 있다. 상세·관리자 목록 응답에는 없다.
   likeCount?: number;
 }
 export interface PostDetail extends PostSummary {

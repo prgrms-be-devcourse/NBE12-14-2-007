@@ -67,7 +67,7 @@ export function Explore() {
         date: date || undefined,
         excludeClosed,
         page,
-        sort: sort === "name" ? "name" : "soon",
+        sort: sort === "name" || sort === "likes" ? sort : "soon",
       }),
     [
       api,
@@ -211,6 +211,7 @@ export function Explore() {
             onChange={(event) => setFilter("sort", event.target.value)}
           >
             <option value="soon">시작일순</option>
+            <option value="likes">좋아요순</option>
             <option value="name">이름순</option>
           </select>
           <div className="layout-toggle">

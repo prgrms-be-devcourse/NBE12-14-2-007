@@ -413,7 +413,7 @@ test("live festival search displays nine events per page", async ({ page }) => {
   await expect(page.locator(".event-card")).toHaveCount(1);
 });
 
-test("live festival reviews only send supported date sort fields", async ({
+test("live festival reviews send the selected sort to the server", async ({
   page,
 }) => {
   const sorts: string[] = [];
@@ -426,17 +426,61 @@ test("live festival reviews only send supported date sort fields", async ({
   await page.getByRole("tab", { name: "행사 후기", exact: true }).click();
   await expect(page.getByLabel("후기 정렬")).toHaveValue("createdAt,desc");
   await expect(
-    page.getByLabel("후기 정렬").locator('option[value="likes,desc"]'),
-  ).toBeDisabled();
-  await expect(
-    page.getByText("좋아요순 정렬은 준비 중이에요.", { exact: false }),
-  ).toBeVisible();
+    page.getByLabel("후기 정렬").locator('option[value="likeCount,desc"]'),
+  ).toBeEnabled();
   await expect(page.getByText("이 행사의 첫 이야기를 기다려요")).toBeVisible();
   await page.getByLabel("후기 정렬").selectOption("createdAt,asc");
   await expect.poll(() => sorts.includes("createdAt,asc")).toBe(true);
+  await page.getByLabel("후기 정렬").selectOption("likeCount,desc");
+  await expect.poll(() => sorts.includes("likeCount,desc")).toBe(true);
   expect(
-    sorts.every((sort) => ["createdAt,desc", "createdAt,asc"].includes(sort)),
+    sorts.every((sort) =>
+      ["createdAt,desc", "createdAt,asc", "likeCount,desc"].includes(sort),
+    ),
   ).toBe(true);
+});
+
+test("live festival search sorts by likes and shows like counts", async ({
+  page,
+}) => {
+  const sorts: (string | null)[] = [];
+  await apiMode(page, async (route, path) => {
+    if (path !== "/festivals") return false;
+    sorts.push(new URL(route.request().url()).searchParams.get("sort"));
+    await json(
+      route,
+      ok({
+        content: [
+          {
+            festivalId: 7,
+            providerType: "PUBLIC",
+            title: "인기 행사",
+            category: "축제",
+            instNm: "문화재단",
+            imgUrl: null,
+            beginDe: "2026-10-01T10:00:00",
+            endDe: "2026-10-01T18:00:00",
+            region: "GYEONGGI_SUWON",
+            status: "OPEN",
+            likeCount: 12,
+          },
+        ],
+        totalElements: 1,
+        totalPages: 1,
+        number: 0,
+        size: 9,
+        first: true,
+        last: true,
+      }),
+    );
+    return true;
+  });
+
+  await page.goto("/explore");
+  await page.getByLabel("행사 정렬").selectOption("likes");
+  await expect(page).toHaveURL(/sort=likes/);
+  await expect.poll(() => sorts.at(-1)).toBe("likeCount,desc");
+  await expect(page.getByLabel("좋아요 12개")).toBeVisible();
 });
 
 test("live form sends actual DTO names and ISO local datetimes", async ({
