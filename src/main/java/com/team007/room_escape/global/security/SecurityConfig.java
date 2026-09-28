@@ -61,6 +61,9 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/swagger-ui.html"
 				).permitAll()
+				// Prometheus가 토큰 없이 긁어갈 수 있어야 한다.
+				// TODO 운영 배포 시에는 관리 포트 분리나 IP 제한으로 외부 노출을 막을 것.
+				.requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
 				.anyRequest().authenticated()
 			)
 			.exceptionHandling(ex -> ex
