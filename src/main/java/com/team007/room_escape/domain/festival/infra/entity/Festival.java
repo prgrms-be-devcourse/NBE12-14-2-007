@@ -120,4 +120,9 @@ public class Festival extends SoftDeletableEntity {
 		this.telnoInfo = telnoInfo;
 		this.hostInstNm = hostInstNm;
 	}
+
+	/** 이관 배치에서 원본 URL을 R2 URL로 교체할 때 쓴다. 다른 필드는 건드리지 않는다. */
+	public void updateImgUrl(String imgUrl) {
+		this.imgUrl = imgUrl;
+	}
 }

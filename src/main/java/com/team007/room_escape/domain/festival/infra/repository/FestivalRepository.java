@@ -67,6 +67,13 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	/** 종료일이 지났는데 아직 OPEN인 행사 조회 (CLOSED로 갱신하기 전에, 어떤 행사가 바뀌는지 응답에 담으려고) */
 	List<Festival> findByStatusAndEndDeBefore(FestivalStatus status, LocalDateTime now);
 
+	/**
+	 * imgUrl이 아직 R2 공개 URL로 시작하지 않는(=외부 원본 URL을 그대로 쓰는) 행사를 조회한다.
+	 * 동기화 배치가 돌 때마다 이 중 일부를 R2로 이관한다.
+	 */
+	@Query("SELECT f FROM Festival f WHERE f.imgUrl IS NOT NULL AND f.imgUrl NOT LIKE CONCAT(:r2PublicUrl, '%')")
+	Page<Festival> findLegacyImages(@Param("r2PublicUrl") String r2PublicUrl, Pageable pageable);
+
 	/** endDe가 지난 OPEN 행사를 CLOSED로 일괄 갱신 (반환값: 갱신된 건수)
 	 *  clearAutomatically=true: 벌크 UPDATE는 영속성 컨텍스트를 거치지 않아서,
 	 *  같은 트랜잭션에서 이후에 Festival을 다시 조회하면 캐시된 옛날 status를 볼 수 있음 -> 캐시 비우기 */
