@@ -5,8 +5,8 @@
 WITH seed_member (id, email, role, nickname) AS (
     VALUES
         ('00000000-0000-7000-8100-000000000001'::UUID, 'seed-rookie@example.com', 'ROLE_UNVERIFIED', '주말 탈출 꿈나무'),
-        ('00000000-0000-7000-8100-000000000002'::UUID, 'seed-maker@example.com', 'ROLE_RECOGNIZED', '동네 탈출 메이커'),
-        ('00000000-0000-7000-8100-000000000003'::UUID, 'seed-master@example.com', 'ROLE_TRUSTED', '팔도 탈출 마스터'),
+        ('00000000-0000-7000-8100-000000000002'::UUID, 'seed-maker@example.com', 'ROLE_RECOGNIZED', '동네 참새'),
+        ('00000000-0000-7000-8100-000000000003'::UUID, 'seed-master@example.com', 'ROLE_TRUSTED', '팔도 철새'),
         ('00000000-0000-7000-8100-000000000004'::UUID, 'seed-voter@example.com', 'ROLE_UNVERIFIED', '행사 탐험가')
 )
 INSERT INTO member (

@@ -451,12 +451,49 @@ function SubmitterProfile({ member }: { member: FestivalMember }) {
         <small>이 행사를 알려준 이웃</small>
         <div>
           <strong>{member.nickname}</strong>
-          <Badge tone={member.role === "ROLE_TRUSTED" ? "orange" : "green"}>
-            {roleNames[member.role]}
-          </Badge>
+          <TrustGradeBadge member={member} />
         </div>
       </div>
     </section>
+  );
+}
+
+function TrustGradeBadge({ member }: { member: FestivalMember }) {
+  const grade =
+    member.role === "ROLE_RECOGNIZED"
+      ? "maker"
+      : member.role === "ROLE_TRUSTED"
+        ? "master"
+        : "basic";
+  const symbol = grade === "maker" ? "m" : grade === "master" ? "M" : null;
+  const description =
+    member.role === "ROLE_RECOGNIZED"
+      ? "좋아요 또는 정확해요를 10개 이상 받은 제보자예요."
+      : member.role === "ROLE_TRUSTED"
+        ? "좋아요와 정확해요를 모두 10개 이상 받은 제보자예요."
+        : member.role === "ROLE_ADMIN"
+          ? "방구석탈출 운영·관리 계정이에요."
+          : "이제 막 탈출 정보를 나누기 시작한 제보자예요.";
+  const tooltipId = `trust-grade-${member.id}`;
+
+  return (
+    <span
+      className="trust-grade-wrap"
+      tabIndex={0}
+      aria-describedby={tooltipId}
+    >
+      <Badge tone={`trust-grade-badge ${grade}`}>
+        {symbol && (
+          <span className="trust-grade-symbol" aria-hidden="true">
+            {symbol}
+          </span>
+        )}
+        <span>{roleNames[member.role]}</span>
+      </Badge>
+      <span className="trust-grade-tooltip" id={tooltipId} role="tooltip">
+        {description}
+      </span>
+    </span>
   );
 }
 
