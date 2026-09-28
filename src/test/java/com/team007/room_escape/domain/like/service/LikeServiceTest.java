@@ -48,7 +48,7 @@ class LikeServiceTest {
 			.build();
 
 		when(festivalRepository.findById(1L)).thenReturn(Optional.of(festival));
-		when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+		when(memberRepository.findByIdAndDeletedAtIsNull(memberId)).thenReturn(Optional.of(member));
 
 		assertThatThrownBy(() -> likeService.createFestivalLike(1L, memberId))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
