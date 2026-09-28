@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class PostController {
 
 	@Operation(summary = "후기 작성", description = "특정 행사에 후기를 작성합니다.")
 	@PostMapping("/festivals/{id}/posts")
+	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<PostResponse.CreateResponse>> createPost(
 			@PathVariable Long id,
 			@Valid @RequestBody PostRequest request,
@@ -56,6 +58,7 @@ public class PostController {
 
 	@Operation(summary = "관리자 후기 조회", description = "삭제된 후기를 포함하여 후기 목록을 조회하거나 검색합니다.")
 	@GetMapping("/admin/posts")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<Page<PostResponse.AdminListResponse>>> searchPostsForAdmin(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
@@ -90,6 +93,7 @@ public class PostController {
 
 	@Operation(summary = "후기 수정", description = "본인이 작성한 후기를 수정합니다.")
 	@PatchMapping("/posts/{id}")
+	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> updatePost(
 			@PathVariable UUID id,
 			@Valid @RequestBody PostRequest request,
