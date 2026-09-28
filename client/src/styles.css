@@ -2150,7 +2150,75 @@ select {
   gap: 8px;
 }
 .festival-like {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
   margin-top: 18px;
+  padding: 20px;
+  border: 1px solid #eadfd5;
+  border-radius: 10px;
+  background: #fffcf8;
+  text-align: center;
+}
+.festival-like h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.festival-like p {
+  color: #73695f;
+  font-size: 13px;
+}
+.festival-like .btn {
+  min-width: 170px;
+  justify-content: center;
+}
+.submitter-profile {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 20px 22px;
+  border: 1px solid #e1e7d8;
+  border-radius: 14px;
+  background: #fafbf7;
+  box-sizing: border-box;
+}
+.submitter-avatar {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  flex: 0 0 68px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.submitter-avatar.fallback {
+  color: #667257;
+  background: #e8eedf;
+}
+.submitter-profile-copy {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+}
+.submitter-profile-copy small {
+  color: #737b69;
+  font-size: 13px;
+}
+.submitter-profile-copy > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.submitter-profile-copy strong {
+  color: #243a32;
+  font-size: 18px;
+}
+.submitter-profile-copy .badge {
+  font-size: 11px;
+  padding: 5px 10px;
 }
 .festival-like strong {
   font-variant-numeric: tabular-nums;
@@ -2402,6 +2470,7 @@ select {
   border: 1px solid #dfe6d8;
   border-radius: 10px;
   background: #fff;
+  text-align: center;
 }
 .accuracy-vote h2 {
   margin: 0 0 6px;
@@ -2414,6 +2483,8 @@ select {
 }
 .accuracy-vote-actions {
   display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 16px;
 }
@@ -2423,6 +2494,8 @@ select {
   justify-content: center;
   gap: 7px;
   min-width: 150px;
+  flex: 1 1 150px;
+  max-width: 220px;
   padding: 11px 16px;
   border: 1px solid #d9dfd4;
   border-radius: 8px;
@@ -2437,6 +2510,16 @@ select {
 .accuracy-vote-actions button:hover:not(:disabled) {
   border-color: #aebca7;
   background: #f1f6ee;
+}
+.accuracy-vote-actions button.accurate {
+  border-color: #bdd2c0;
+  background: #f3f8f3;
+  color: #476751;
+}
+.accuracy-vote-actions button.inaccurate {
+  border-color: #e5c5b8;
+  background: #fff7f3;
+  color: #8a5a49;
 }
 .accuracy-vote-actions button.selected.accurate {
   border-color: #83a98b;
@@ -2457,6 +2540,11 @@ select {
 }
 .accuracy-vote-login {
   margin-top: 10px;
+}
+.accuracy-vote > .form-error {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 .detail-aside {
   align-self: start;

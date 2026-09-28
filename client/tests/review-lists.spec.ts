@@ -165,7 +165,7 @@ test("list failures clear prior data, retry the API and show an empty search wit
   await expect(page.locator(".count")).toHaveText("0");
 });
 
-for (const role of ["", "ROLE_NORMAL"]) {
+for (const role of ["", "ROLE_UNVERIFIED"]) {
   test(`admin reviews do not request protected lists for ${role || "anonymous"} users`, async ({
     page,
   }) => {
@@ -288,7 +288,7 @@ test("admin list reports forbidden and deleted-detail errors without inventing v
 test("preview searches before pagination and preserves likes sorting", async ({
   page,
 }) => {
-  await setup(page, { role: "ROLE_NORMAL", preview: true });
+  await setup(page, { role: "ROLE_UNVERIFIED", preview: true });
   await page.goto("/reviews");
   await expect(page.locator(".post-row")).toHaveCount(3);
   await expect(page.getByLabel("후기 정렬")).toHaveValue("likes,desc");

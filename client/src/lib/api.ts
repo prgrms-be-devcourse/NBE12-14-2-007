@@ -238,6 +238,7 @@ function toDetailEvent(item: FestivalDetailItem): EventView {
     },
     likeCount: item.likeCount,
     likedByMe: item.likedByMe,
+    submitter: item.member,
   };
 }
 

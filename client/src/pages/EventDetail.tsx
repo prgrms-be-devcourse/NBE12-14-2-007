@@ -16,6 +16,7 @@ import {
   Share2,
   Ticket,
   Trash2,
+  UserRound,
   UsersRound,
 } from "lucide-react";
 import { ApiError } from "../lib/api";
@@ -26,9 +27,14 @@ import {
   imageUrl,
   period,
   regions,
+  roleNames,
   safeUrl,
 } from "../lib/format";
-import type { EventView, FestivalAccuracyVote } from "../lib/types";
+import type {
+  EventView,
+  FestivalAccuracyVote,
+  FestivalMember,
+} from "../lib/types";
 import {
   Badge,
   Empty,
@@ -188,12 +194,6 @@ function EventDetail({ event }: { event: EventView }) {
               <MapPin size={17} />
               {regions[event.region] || ""} {event.regionDetail}
             </p>
-            {event.submitter && (
-              <p className="muted small-text">
-                제보자 · {event.submitter.nickname}
-              </p>
-            )}
-            {!event.submissionId && <FestivalLikeButton event={event} />}
           </div>
           <div
             className="detail-tabs"
@@ -354,6 +354,10 @@ function EventDetail({ event }: { event: EventView }) {
                           : "공공데이터를 통해 제공된 행사 정보입니다. 방문 전 행사 안내 페이지에서 최신 정보를 확인해 주세요."}
                   </p>
                 </div>
+                {event.source === "MEMBER" && event.submitter && (
+                  <SubmitterProfile member={event.submitter} />
+                )}
+                {!event.submissionId && <FestivalLikeButton event={event} />}
                 {event.source === "MEMBER" && !event.submissionId && (
                   <AccuracyVotePanel
                     festivalId={event.festivalId}
@@ -424,6 +428,38 @@ function EventDetail({ event }: { event: EventView }) {
   );
 }
 
+function SubmitterProfile({ member }: { member: FestivalMember }) {
+  const avatarUrl = imageUrl(member.profileImg, 120);
+  const [avatarVisible, setAvatarVisible] = useState(Boolean(avatarUrl));
+
+  return (
+    <section className="submitter-profile" aria-label="행사 제보자 정보">
+      {avatarUrl && avatarVisible ? (
+        <img
+          className="submitter-avatar"
+          src={avatarUrl}
+          alt={`${member.nickname} 프로필`}
+          loading="lazy"
+          onError={() => setAvatarVisible(false)}
+        />
+      ) : (
+        <span className="submitter-avatar fallback" aria-hidden="true">
+          <UserRound size={30} />
+        </span>
+      )}
+      <div className="submitter-profile-copy">
+        <small>이 행사를 알려준 이웃</small>
+        <div>
+          <strong>{member.nickname}</strong>
+          <Badge tone={member.role === "ROLE_TRUSTED" ? "orange" : "green"}>
+            {roleNames[member.role]}
+          </Badge>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FestivalLikeButton({ event }: { event: EventView }) {
   const { api, member, authLoading, toast } = useApp();
   const pending = useRef(false);
@@ -465,7 +501,11 @@ function FestivalLikeButton({ event }: { event: EventView }) {
   }
 
   return (
-    <div className="festival-like">
+    <section className="festival-like" aria-labelledby="festival-like-title">
+      <div>
+        <h2 id="festival-like-title">마음에 드는 행사인가요?</h2>
+        <p>좋아요로 관심 있는 행사를 표현해 주세요.</p>
+      </div>
       <button
         type="button"
         className={`btn ${liked ? "liked" : "secondary"}`}
@@ -484,7 +524,7 @@ function FestivalLikeButton({ event }: { event: EventView }) {
         <strong>{likeCount}</strong>
       </button>
       <FormError message={error} />
-    </div>
+    </section>
   );
 }
 
@@ -536,7 +576,7 @@ function AccuracyVotePanel({
       <div className="accuracy-vote-actions">
         <button
           type="button"
-          className={data?.myVote === "ACCURATE" ? "selected accurate" : ""}
+          className={`accurate ${data?.myVote === "ACCURATE" ? "selected" : ""}`}
           aria-pressed={data?.myVote === "ACCURATE"}
           disabled={busy || authLoading}
           onClick={() => select("ACCURATE")}
@@ -547,7 +587,7 @@ function AccuracyVotePanel({
         </button>
         <button
           type="button"
-          className={data?.myVote === "INACCURATE" ? "selected inaccurate" : ""}
+          className={`inaccurate ${data?.myVote === "INACCURATE" ? "selected" : ""}`}
           aria-pressed={data?.myVote === "INACCURATE"}
           disabled={busy || authLoading}
           onClick={() => select("INACCURATE")}
