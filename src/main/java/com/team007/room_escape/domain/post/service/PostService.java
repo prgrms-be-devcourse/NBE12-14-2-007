@@ -10,9 +10,11 @@ import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
+import com.team007.room_escape.global.util.RichTextSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +30,7 @@ public class PostService {
 	private final PostRepository postRepository;
 	private final FestivalRepository festivalRepository;
 	private final MemberRepository memberRepository;
+	private final RichTextSanitizer richTextSanitizer;
 
 
 	@Transactional
@@ -45,12 +48,13 @@ public class PostService {
 
 		Festival festival = festivalRepository.findById(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
+		String sanitizedContent = sanitizeRequiredContent(request.content());
 
 		Post post = Post.builder()
 				.member(member)
 				.festival(festival)
 				.title(request.title())
-				.content(request.content())
+				.content(sanitizedContent)
 				.thumbnail(request.thumbnail())
 				.build();
 
@@ -123,7 +127,12 @@ public class PostService {
 			throw new BusinessException(PostExceptionCode.POST_FORBIDDEN);
 
 		}
-		post.update(request.title(), request.content(), request.thumbnail());
+		String sanitizedContent = sanitizeRequiredContent(request.content());
+		post.update(
+			request.title(),
+			sanitizedContent,
+			request.thumbnail()
+		);
 
 		return PostResponse.DetailResponse.from(post);
 	}
@@ -140,5 +149,13 @@ public class PostService {
 		}
 
 		post.delete();
+	}
+
+	private String sanitizeRequiredContent(String content) {
+		String sanitizedContent = richTextSanitizer.sanitize(content);
+		if (!richTextSanitizer.hasVisibleText(sanitizedContent)) {
+			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+		}
+		return sanitizedContent;
 	}
 }

@@ -15,6 +15,7 @@ import { useApp, useLoad } from "../lib/context";
 import { dateText, errorText, period, regions } from "../lib/format";
 import { selectedRegion } from "../lib/regions";
 import { RegionSelects } from "../components/RegionSelects";
+import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import type {
   EventView,
   SubmissionInput,
@@ -437,11 +438,11 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
               />
             </Field>
             <Field label="행사 소개" wide>
-              <textarea
-                rows={6}
+              <LazyRichTextEditor
                 value={form.festivalContent || ""}
-                onChange={(e) => change("festivalContent", e.target.value)}
+                onChange={(value) => change("festivalContent", value)}
                 placeholder="행사의 내용과 즐길 거리를 자세히 소개해 주세요."
+                ariaLabel="행사 소개"
               />
             </Field>
             <div className="wide">

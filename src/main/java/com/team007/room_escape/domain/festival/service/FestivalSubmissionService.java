@@ -16,6 +16,7 @@ import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
+import com.team007.room_escape.global.util.RichTextSanitizer;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +36,7 @@ public class FestivalSubmissionService {
     private final FestivalRepository festivalRepository;
     private final FestivalSubmissionRepository festivalSubmissionRepository;
     private final MemberRepository memberRepository;
+    private final RichTextSanitizer richTextSanitizer;
 
     @Transactional
     public CreateFestivalSubmissionResponse create(UUID memberId, CreateOrUpdateFestivalSubmissionRequest request) {
@@ -57,7 +59,7 @@ public class FestivalSubmissionService {
                 .instNm(request.instNm())
                 .title(request.title())
                 .category(request.category())
-                .content(request.festivalContent())
+                .content(richTextSanitizer.sanitize(request.festivalContent()))
                 .url(normalizedReferenceUrl)
                 .region(request.region())
                 .regionDetail(request.regionDetail())
@@ -136,7 +138,7 @@ public class FestivalSubmissionService {
                 request.instNm(),
                 request.title(),
                 request.category(),
-                request.festivalContent(),
+                richTextSanitizer.sanitize(request.festivalContent()),
                 normalizedReferenceUrl,
                 request.region(),
                 request.regionDetail(),

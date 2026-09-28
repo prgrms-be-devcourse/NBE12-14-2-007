@@ -17,6 +17,8 @@ import {
 import { ApiError } from "../lib/api";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
+import { isRichTextEmpty, RichTextContent } from "../components/RichText";
+import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { useApp, useLoad } from "../lib/context";
 import { readDemo } from "../lib/demo";
 import { dateText, dateTimeText, errorText } from "../lib/format";
@@ -255,7 +257,7 @@ function ReviewDetail({ id }: { id: string }) {
             alt={post.title}
           />
         )}
-        <div className="prose">{post.content}</div>
+        <RichTextContent content={post.content} />
         <div className="review-reactions">
           <button
             disabled={busy || likes.loading}
@@ -598,7 +600,7 @@ function ReviewForm({
   const [error, setError] = useState("");
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (title.trim().length < 2 || !content.trim()) {
+    if (title.trim().length < 2 || isRichTextEmpty(content)) {
       setError("제목은 2자 이상, 내용을 함께 입력해 주세요.");
       return;
     }
@@ -646,12 +648,11 @@ function ReviewForm({
           />
         </Field>
         <Field label="후기 내용" required>
-          <textarea
-            required
-            rows={10}
+          <LazyRichTextEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
             placeholder="어떤 점이 좋았나요? 다음에 방문할 이웃에게 전하고 싶은 팁도 좋아요."
+            ariaLabel="후기 내용"
           />
         </Field>
         <span className="upload-label">기억에 남은 사진</span>
