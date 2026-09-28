@@ -117,6 +117,9 @@ export function isTokenExpired(claims: AccessTokenClaims) {
 export function refreshAccessToken() {
   return refresh();
 }
+// TODO 어드민 화면 디버깅용. 원인 찾으면 지울 것.
+const isAdminPath = (path: string) =>
+  path.startsWith("/admin/") || path === "/festivals/sync";
 async function transport<T>(
   path: string,
   method = "GET",
@@ -127,6 +130,12 @@ async function transport<T>(
   const form = body instanceof FormData;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const logAdmin = isAdminPath(path);
+  if (logAdmin)
+    console.log(
+      `[admin] → ${method} ${path}${retry ? "" : " (재시도)"}`,
+      body ?? "",
+    );
   let response: Response;
   try {
     response = await fetch(`/api/v1${path}`, {
@@ -141,7 +150,8 @@ async function transport<T>(
       },
       body: body === undefined ? undefined : form ? body : JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (logAdmin) console.error(`[admin] ✕ ${method} ${path} 연결 실패`, error);
     throw new ApiError(
       "서버에 연결하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.",
     );
@@ -151,6 +161,8 @@ async function transport<T>(
   if (requestSession !== sessionVersion) {
     throw new ApiError("세션이 변경되어 이전 요청을 취소했어요.");
   }
+  if (logAdmin && (response.status === 401 || response.status === 204))
+    console.log(`[admin] ← ${response.status} ${method} ${path}`);
   if (response.status === 401 && retry && !path.startsWith("/auth/")) {
     try {
       await refresh();
@@ -169,6 +181,10 @@ async function transport<T>(
   }
   if (response.status === 204) return undefined as T;
   const result = await response.json().catch(() => null);
+  if (logAdmin) {
+    const log = response.ok && result?.success ? console.log : console.error;
+    log(`[admin] ← ${response.status} ${method} ${path}`, result);
+  }
   if (!response.ok || !result?.success) {
     throw new ApiError(
       result?.message ||
