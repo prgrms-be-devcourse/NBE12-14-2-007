@@ -1,0 +1,11 @@
+.git
+.gradle
+.idea
+.vscode
+build
+bin
+out
+client
+loadtest
+*.md
+.env

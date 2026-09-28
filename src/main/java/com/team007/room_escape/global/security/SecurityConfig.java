@@ -4,9 +4,14 @@ import com.team007.room_escape.global.jwt.JwtAuthenticationFilter;
 import com.team007.room_escape.global.jwt.JwtProperties;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -39,16 +44,28 @@ public class SecurityConfig {
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
 			.csrf(csrf -> csrf.disable())
-			.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+			.cors(Customizer.withDefaults())
 			.sessionManagement(session ->
 				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/api/v1/auth/**").permitAll()
+				// 회원가입 화면에서 프로필 이미지를 올리려면 토큰이 없는 상태로도 업로드가 돼야 한다.
+				// TODO 누구나 호출할 수 있어 R2 용량을 소진시키는 남용이 가능하다.
+				//      가입 화면 외의 용도가 늘어나기 전에 업로드 제한(IP별 횟수 등)을 붙일 것.
+				.requestMatchers(HttpMethod.POST, "/api/v1/images").permitAll()
+				// TODO url 한꺼번에 정리하기 (지금은 공개 API가 늘어날 때마다 규칙을 한 줄씩 추가하고 있음)
+				.requestMatchers(HttpMethod.GET, "/api/v1/festivals/**").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/posts").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/weather").permitAll()
+				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 				.requestMatchers(
 					"/v3/api-docs/**",
 					"/swagger-ui/**",
 					"/swagger-ui.html"
 				).permitAll()
+				// Prometheus가 토큰 없이 긁어갈 수 있어야 한다.
+				// TODO 운영 배포 시에는 관리 포트 분리나 IP 제한으로 외부 노출을 막을 것.
+				.requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
 				.anyRequest().authenticated()
 			)
 			.exceptionHandling(ex -> ex
@@ -60,18 +77,35 @@ public class SecurityConfig {
 		return http.build();
 	}
 
+	/**
+	 * 권한 계층. MemberRole enum의 선언 순서와 항상 동일하게 유지할 것.
+	 * 상위 등급은 하위 등급의 권한을 모두 포함한다.
+	 */
+	@Bean
+	static RoleHierarchy roleHierarchy() {
+		return RoleHierarchyImpl.withDefaultRolePrefix()
+				.role("ADMIN").implies("TRUSTED")
+				.role("TRUSTED").implies("RECOGNIZED")
+				.role("RECOGNIZED").implies("UNVERIFIED")
+				.role("UNVERIFIED").implies("WARNING")
+				.build();
+	}
+
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
+	/**
+	 * 허용 출처는 app.cors.allowed-origins 로 받는다. 값은 프로필 파일에 있다.
+	 * 로컬은 localhost 프론트, 운영은 CORS_ALLOWED_ORIGINS 환경 변수(쉼표 구분).
+	 */
 	@Bean
-	CorsConfigurationSource corsConfigurationSource() {
+	CorsConfigurationSource corsConfigurationSource(
+		@Value("${app.cors.allowed-origins}") List<String> allowedOrigins
+	) {
 		CorsConfiguration config = new CorsConfiguration();
-		config.setAllowedOrigins(List.of(
-			"http://localhost:3000",
-			"http://localhost:3001"
-		));
+		config.setAllowedOrigins(allowedOrigins);
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 		config.setAllowedHeaders(List.of("*"));
 		config.setExposedHeaders(List.of("Authorization"));

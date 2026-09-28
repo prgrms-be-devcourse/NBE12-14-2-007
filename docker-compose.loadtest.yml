@@ -1,0 +1,61 @@
+# Railway 무료 플랜과 같은 자원 한도로 앱 + DB를 띄워 부하 테스트한다.
+# 개발용 docker-compose.yml과 별개라 포트·데이터가 겹치지 않는다.
+#
+#   docker compose -f docker-compose.loadtest.yml up -d --build      # 앱 + DB 기동
+#   docker compose -f docker-compose.loadtest.yml run --rm k6          # 부하 테스트 실행
+#   docker compose -f docker-compose.loadtest.yml down                 # 정리 (볼륨 없음 → 데이터 삭제)
+#
+# 한도는 Railway 대시보드의 서비스 → Settings → Resource Limits 값에 맞춘다.
+# 기본값은 서비스당 1 vCPU / 512MB. 다르면 .env에 LOADTEST_CPUS, LOADTEST_MEMORY를 넣어 덮어쓴다.
+
+name: roomescape-loadtest
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Seoul
+    cpus: ${LOADTEST_CPUS:-1}
+    mem_limit: ${LOADTEST_MEMORY:-512m}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    # Dockerfile이 prod 프로필로 띄운다. 운영과 같은 설정에 DB 주소만 이 compose의 db로 바꾼다.
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      DATASOURCE_USERNAME: ${POSTGRES_USER}
+      DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # prod 프로필이라 시드가 안 들어가는데, 부하 시나리오는 시드 행사를 조회하므로 넣어 준다.
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
+      KMA_WEATHER_SERVICE_KEY: ${KMA_WEATHER_SERVICE_KEY:-loadtest-dummy}
+      TZ: Asia/Seoul
+    cpus: ${LOADTEST_CPUS:-1}
+    mem_limit: ${LOADTEST_MEMORY:-512m}
+    # 스왑으로 버티면 실제 Railway보다 좋게 나오므로 스왑을 막는다.
+    memswap_limit: ${LOADTEST_MEMORY:-512m}
+    ports:
+      - "18080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  k6:
+    image: grafana/k6:latest
+    profiles: ["k6"]
+    environment:
+      BASE_URL: http://app:8080
+    volumes:
+      - ./loadtest:/scripts
+    command: run /scripts/scenario.js
+    depends_on:
+      - app

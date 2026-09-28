@@ -22,3 +22,38 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  # 메트릭 수집. http://localhost:9090
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: roomescape-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      # 리눅스에서도 host.docker.internal 이 호스트를 가리키도록 한다.
+      - "host.docker.internal:host-gateway"
+
+  # 대시보드. http://localhost:3002 (admin / admin)
+  # 3000, 3001은 프론트가 쓰므로 3002로 연다.
+  grafana:
+    image: grafana/grafana:latest
+    container_name: roomescape-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # 알림 메시지 속 링크가 이 주소로 만들어진다. (없으면 컨테이너 내부 포트 3000으로 나감)
+      GF_SERVER_ROOT_URL: http://localhost:3002
+      # 디스코드 알림용. .env 에 넣어둔 값을 컨테이너로 넘긴다.
+      # 값이 없으면 Grafana가 뜨지 않으므로, 없을 땐 가짜 주소를 넣어 알림만 안 가게 한다.
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-http://localhost/discord-webhook-not-set}
+    volumes:
+      # 데이터소스·알림 설정을 파일로 관리한다. (monitoring/grafana/provisioning)
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3002:3000"
+    depends_on:
+      - prometheus

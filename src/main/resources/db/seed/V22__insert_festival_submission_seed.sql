@@ -1,0 +1,436 @@
+-- 행사 제보 초기 데이터입니다.
+-- 초기 행사 제보의 작성자를 구분하기 위한 일반 회원 계정을 사용합니다.
+
+INSERT INTO member (
+    id,
+    email,
+    password,
+    role,
+    nickname,
+    created_at,
+    updated_at,
+    deleted_at
+)
+VALUES (
+    '00000000-0000-7000-8000-000000000001',
+    'roomescape@example.com',
+    '$2a$10$3J0CLAJcpClv0aXxx62Ir.isAsHcL4iA8CG2ahEZz9vVp9tM4pWgu',
+    'ROLE_ADMIN',
+    '방구석탈출 운영팀',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    NULL
+);
+
+WITH seed (
+    inst_nm,
+    title,
+    category,
+    content,
+    url,
+    region,
+    region_detail,
+    begin_de,
+    end_de,
+    event_tm_info,
+    partcpt_expn_info,
+    telno_info,
+    host_inst_nm
+) AS (
+    VALUES
+        (
+            '하동북천코스모스메밀꽃영농조합법인',
+            '제20회 하동 북천 코스모스·메밀꽃 축제',
+            '축제',
+            '코스모스와 메밀꽃이 펼쳐진 꽃단지에서 가을 풍경과 체험 프로그램을 즐기는 축제입니다.',
+            'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?fstvlCntntsId=3d76c452-c3c6-4959-94e9-07200623c75d',
+            'GYEONGNAM',
+            '경상남도 하동군 북천면 직전·이명마을 꽃단지 일원',
+            '2026-09-22 00:00:00',
+            '2026-10-05 23:59:59',
+            NULL,
+            NULL,
+            NULL,
+            '북천면 꽃단지 행사추진위원회'
+        ),
+        (
+            '한국정신문화재단',
+            '2026 안동국제탈춤페스티벌',
+            '축제',
+            '국내외 탈춤 공연과 전시, 체험을 만날 수 있는 안동의 대표 문화축제입니다.',
+            'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?Flag=Y&cmsCntntsId=506670',
+            'GYEONGBUK',
+            '경상북도 안동시 (구)안동역사부지 및 탈춤공원 일원',
+            '2026-09-24 00:00:00',
+            '2026-10-04 23:59:59',
+            NULL,
+            NULL,
+            NULL,
+            '안동시'
+        ),
+        (
+            '예천문화관광재단',
+            '2026 예천 삼강나루 주막축제',
+            '축제',
+            '삼강나루의 역사와 주막 문화를 바탕으로 뱃사공·보부상 체험과 공연을 즐기는 축제입니다.',
+            'https://www.ycg.kr/open.content/samgang/notification/event/?i=185296',
+            'GYEONGBUK',
+            '경상북도 예천군 풍양면 삼강문화단지 일원',
+            '2026-09-25 11:00:00',
+            '2026-09-27 18:00:00',
+            '11:00~18:00',
+            NULL,
+            '054-650-6802',
+            '예천군'
+        ),
+        (
+            '부산관광공사',
+            '2026 별바다부산 나이트 마켓 - 골든 어텀 시즌',
+            '플리마켓',
+            '지역 먹거리와 전통주, 소상공인 마켓, 공연과 체험을 함께 즐기는 야간 행사입니다.',
+            'https://www.busan.go.kr/nbtnewsBU/1755302',
+            'BUSAN',
+            '부산광역시 북구 화명생태공원 연꽃단지 일원',
+            '2026-09-26 00:00:00',
+            '2026-10-18 23:59:59',
+            '매주 목·금·토·일요일(첫째 주는 토·일요일)',
+            NULL,
+            '051-888-5212',
+            '부산광역시'
+        ),
+        (
+            '영광불갑산상사화축제 추진위원회',
+            '제26회 영광불갑산상사화축제',
+            '축제',
+            '불갑산과 불갑사 관광지구의 상사화 군락을 중심으로 공연과 체험을 즐기는 가을 축제입니다.',
+            'https://www.mcst.go.kr/site/s_culture/festival/festivalView.jsp?pRo=9&pSeq=11596',
+            'JEONNAM',
+            '전라남도 영광군 불갑면 불갑사 관광지구 일원',
+            '2026-09-18 10:00:00',
+            '2026-09-27 21:00:00',
+            '10:00~21:00',
+            '무료',
+            '061-350-5269',
+            '영광군'
+        ),
+        (
+            '김제시지평선축제제전위원회',
+            '제28회 김제지평선축제',
+            '축제',
+            '김제의 농경문화를 공연과 전통 민속행사, 가족 체험으로 만나는 문화관광축제입니다.',
+            'https://festival.gimje.go.kr/content/content200.do',
+            'JEONBUK',
+            '전북특별자치도 김제시 일원(벽골제 중심)',
+            '2026-10-01 00:00:00',
+            '2026-10-05 23:59:59',
+            NULL,
+            NULL,
+            '063-540-3032',
+            '김제시지평선축제제전위원회'
+        ),
+        (
+            '광주동구문화관광재단',
+            '제23회 광주 추억의 충장축제',
+            '축제',
+            '추억을 주제로 세대가 함께 즐기는 공연과 거리 퍼레이드가 펼쳐지는 도심 축제입니다.',
+            'https://www.recollection.kr/',
+            'GWANGJU',
+            '광주광역시 동구 금남로·충장로·5·18민주광장 일원',
+            '2026-10-07 00:00:00',
+            '2026-10-11 23:59:59',
+            '프로그램별 상이',
+            '무료',
+            '062-608-4672',
+            '광주광역시 동구'
+        ),
+        (
+            '곡성군',
+            '제26회 곡성심청어린이대축제',
+            '축제',
+            '가을 장미가 피는 섬진강기차마을에서 어린이와 가족이 공연과 놀이를 즐기는 축제입니다.',
+            'https://www.gokseong.go.kr/tour/festivity/simcheong/',
+            'JEONNAM',
+            '전라남도 곡성군 오곡면 기차마을로 232 섬진강기차마을',
+            '2026-10-08 00:00:00',
+            '2026-10-11 23:59:59',
+            NULL,
+            NULL,
+            NULL,
+            '곡성군'
+        ),
+        (
+            '계룡시문화관광재단',
+            '2026 계룡軍문화축제',
+            '축제',
+            '군악·의장 공연과 퍼레이드, 군 장비와 병영 체험을 만나는 국방문화축제입니다.',
+            'https://www.mcst.go.kr/site/s_culture/festival/festivalView.jsp?pRo=79&pSeq=11693',
+            'CHUNGNAM',
+            '충청남도 계룡시 계룡대 활주로 일원',
+            '2026-10-01 09:00:00',
+            '2026-10-05 17:00:00',
+            '09:00~17:00(프로그램별 상이)',
+            '무료(일부 체험 유료)',
+            '042-840-2621~4',
+            '계룡시'
+        ),
+        (
+            '천안문화재단',
+            '천안흥타령춤축제 2026',
+            '축제',
+            '국내외 춤 경연과 거리 댄스 퍼레이드를 중심으로 열리는 도심형 춤 축제입니다.',
+            'https://www.mcst.go.kr/site/s_culture/festival/festivalView.jsp?pRo=4&pSeq=11672',
+            'CHUNGNAM',
+            '충청남도 천안시 천안종합운동장 및 천안삼거리공원',
+            '2026-10-01 10:00:00',
+            '2026-10-05 22:00:00',
+            '10:00~22:00',
+            '무료',
+            '041-900-7021',
+            '천안문화재단'
+        ),
+        (
+            '금산문화관광재단',
+            '제44회 금산세계인삼축제',
+            '축제',
+            '금산 인삼과 약초를 주제로 먹거리, 전시와 체험을 즐기는 지역 대표 축제입니다.',
+            'https://www.insamfestival.co.kr/',
+            'CHUNGNAM',
+            '충청남도 금산군 금산읍 인삼광장로 30 금산세계인삼엑스포광장 및 인삼약초거리',
+            '2026-10-02 00:00:00',
+            '2026-10-11 23:59:59',
+            NULL,
+            NULL,
+            '041-750-2319',
+            '금산군'
+        ),
+        (
+            '백제문화재단',
+            '제72회 백제문화제',
+            '축제',
+            '사비백제의 역사 공간에서 제례, 행렬, 공연, 전시와 야간경관을 체험하는 역사문화축제입니다.',
+            'https://www.baekjecf.or.kr/event/01.php',
+            'CHUNGNAM',
+            '충청남도 부여군 정림사지·석탑로·관북리유적 등 시가지 일원',
+            '2026-10-03 00:00:00',
+            '2026-10-11 23:59:59',
+            NULL,
+            NULL,
+            '041-835-2721',
+            '부여군'
+        ),
+        (
+            '인제군문화재단',
+            '2026 인제가을꽃축제',
+            '축제',
+            '인제 용대관광지에 조성된 가을꽃 정원과 다양한 체험을 즐기는 계절 축제입니다.',
+            'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?fstvlCntntsId=813eddb1-c961-4572-95b5-490dd8f54804',
+            'GANGWON',
+            '강원특별자치도 인제군 북면 용대리 용대관광지 일원',
+            '2026-09-24 00:00:00',
+            '2026-10-11 23:59:59',
+            NULL,
+            '무료(일부 프로그램 유료)',
+            '033-460-8900',
+            '인제군'
+        ),
+        (
+            '정선아리랑문화재단',
+            '제51회 정선아리랑제',
+            '축제',
+            '정선아리랑의 문화적 가치를 공연, 퍼레이드, 경연과 체험으로 이어가는 전통문화축제입니다.',
+            'https://jacf.or.kr/jacf/pageview.php?keyvalue=sub02&url=sub02a',
+            'GANGWON',
+            '강원특별자치도 정선군 정선공설운동장 및 정선아리랑시장 일원',
+            '2026-10-01 10:00:00',
+            '2026-10-04 21:00:00',
+            '10:00~21:00',
+            '무료',
+            '033-560-3013~5',
+            '정선군'
+        ),
+        (
+            '고성문화재단',
+            '제26회 고성명태축제',
+            '축제',
+            '고성 명태와 가을 바다를 주제로 먹거리, 체험과 공연을 즐기는 해변 축제입니다.',
+            'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?fstvlCntntsId=0d4b1a68-4a2b-4426-a18d-d697d3cdfcd4',
+            'GANGWON',
+            '강원특별자치도 고성군 거진읍 11리 해변 일원',
+            '2026-10-02 00:00:00',
+            '2026-10-05 23:59:59',
+            NULL,
+            '입장료 무료(일부 체험 및 판매 유료)',
+            '033-682-8008',
+            '고성명태축제위원회'
+        ),
+        (
+            '횡성문화관광재단',
+            '제22회 횡성한우축제',
+            '축제',
+            '횡성한우를 중심으로 먹거리와 문화예술, 체험을 함께 즐기는 체류형 관광축제입니다.',
+            'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?Flag=Y&cmsCntntsId=232325',
+            'GANGWON',
+            '강원특별자치도 횡성군 횡성읍 북천리 221 섬강둔치 일원',
+            '2026-10-07 10:00:00',
+            '2026-10-11 21:00:00',
+            '10:00~21:00(프로그램별 상이)',
+            '무료(먹거리 별도 유료)',
+            '033-808-8007, 033-808-8009',
+            '횡성문화관광재단'
+        ),
+        (
+            '서울특별시',
+            '2026 차없는 잠수교 뚜벅뚜벅 축제(하반기)',
+            '축제',
+            '일요일마다 잠수교를 보행 공간으로 열어 공연, 놀이터, 먹거리와 휴식을 즐기는 한강 축제입니다.',
+            'https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=403',
+            'SEOUL',
+            '서울특별시 잠수교 및 반포한강공원 일원',
+            '2026-09-06 14:00:00',
+            '2026-10-25 22:00:00',
+            '매주 일요일 14:00~22:00',
+            NULL,
+            '02-6401-9717',
+            '서울특별시'
+        ),
+        (
+            '서울문화재단',
+            '2026 서울어텀페스타',
+            '공연',
+            '서울 전역의 공연과 축제를 하나로 연결해 다양한 공연예술을 소개하는 가을 축제입니다.',
+            'https://news.seoul.go.kr/culture/archives/534503',
+            'SEOUL',
+            '서울 전역 공연장·한강공원·서울문화재단 대학로센터 등',
+            '2026-09-18 00:00:00',
+            '2026-11-29 23:59:59',
+            '행사별 상이',
+            '공연별 상이',
+            '02-2133-2555',
+            '서울특별시'
+        ),
+        (
+            '서울특별시',
+            '2026 광화문광장 빛모락 가을축제',
+            '축제',
+            '광화문광장에서 공연과 강연, 글쓰기와 전통놀이 체험을 즐기는 가을 문화행사입니다.',
+            'https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=367',
+            'SEOUL',
+            '서울특별시 종로구 광화문광장 놀이마당',
+            '2026-09-24 00:00:00',
+            '2026-09-27 23:59:59',
+            NULL,
+            NULL,
+            NULL,
+            '서울특별시'
+        ),
+        (
+            '남산골한옥마을',
+            '2026 남산골 추석축제 남산달빛마당',
+            '축제',
+            '남산골한옥마을에서 공연과 전통문화 체험을 즐기는 추석 행사입니다.',
+            'https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=852',
+            'SEOUL',
+            '서울특별시 중구 남산골한옥마을',
+            '2026-09-25 10:00:00',
+            '2026-09-27 20:00:00',
+            '10:00~20:00',
+            '무료(일부 체험 및 식음료 유료)',
+            '02-6358-5533',
+            '서울특별시'
+        )
+)
+INSERT INTO festival (
+    member_id,
+    provider_type,
+    inst_nm,
+    title,
+    category,
+    content,
+    url,
+    begin_de,
+    end_de,
+    event_tm_info,
+    partcpt_expn_info,
+    telno_info,
+    host_inst_nm,
+    writng_de,
+    status,
+    region,
+    region_detail,
+    created_at,
+    updated_at,
+    deleted_at
+)
+SELECT
+    '00000000-0000-7000-8000-000000000001'::UUID,
+    'MEMBER',
+    seed.inst_nm,
+    seed.title,
+    seed.category,
+    seed.content,
+    seed.url,
+    seed.begin_de::TIMESTAMP,
+    seed.end_de::TIMESTAMP,
+    seed.event_tm_info,
+    seed.partcpt_expn_info,
+    seed.telno_info,
+    seed.host_inst_nm,
+    CURRENT_TIMESTAMP,
+    CASE
+        WHEN seed.end_de::TIMESTAMP < CURRENT_TIMESTAMP THEN 'CLOSED'
+        ELSE 'OPEN'
+    END,
+    seed.region,
+    seed.region_detail,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    NULL
+FROM seed
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM festival existing
+    WHERE existing.url = seed.url
+      AND existing.deleted_at IS NULL
+);
+
+WITH seed_submission (submission_id, reference_url) AS (
+    VALUES
+        ('00000000-0000-7000-9000-000000000001'::UUID, 'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?fstvlCntntsId=3d76c452-c3c6-4959-94e9-07200623c75d'),
+        ('00000000-0000-7000-9000-000000000002'::UUID, 'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?Flag=Y&cmsCntntsId=506670'),
+        ('00000000-0000-7000-9000-000000000003'::UUID, 'https://www.ycg.kr/open.content/samgang/notification/event/?i=185296'),
+        ('00000000-0000-7000-9000-000000000004'::UUID, 'https://www.busan.go.kr/nbtnewsBU/1755302'),
+        ('00000000-0000-7000-9000-000000000005'::UUID, 'https://www.mcst.go.kr/site/s_culture/festival/festivalView.jsp?pRo=9&pSeq=11596'),
+        ('00000000-0000-7000-9000-000000000006'::UUID, 'https://festival.gimje.go.kr/content/content200.do'),
+        ('00000000-0000-7000-9000-000000000007'::UUID, 'https://www.recollection.kr/'),
+        ('00000000-0000-7000-9000-000000000008'::UUID, 'https://www.gokseong.go.kr/tour/festivity/simcheong/'),
+        ('00000000-0000-7000-9000-000000000009'::UUID, 'https://www.mcst.go.kr/site/s_culture/festival/festivalView.jsp?pRo=79&pSeq=11693'),
+        ('00000000-0000-7000-9000-000000000010'::UUID, 'https://www.mcst.go.kr/site/s_culture/festival/festivalView.jsp?pRo=4&pSeq=11672'),
+        ('00000000-0000-7000-9000-000000000011'::UUID, 'https://www.insamfestival.co.kr/'),
+        ('00000000-0000-7000-9000-000000000012'::UUID, 'https://www.baekjecf.or.kr/event/01.php'),
+        ('00000000-0000-7000-9000-000000000013'::UUID, 'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?fstvlCntntsId=813eddb1-c961-4572-95b5-490dd8f54804'),
+        ('00000000-0000-7000-9000-000000000014'::UUID, 'https://jacf.or.kr/jacf/pageview.php?keyvalue=sub02&url=sub02a'),
+        ('00000000-0000-7000-9000-000000000015'::UUID, 'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?fstvlCntntsId=0d4b1a68-4a2b-4426-a18d-d697d3cdfcd4'),
+        ('00000000-0000-7000-9000-000000000016'::UUID, 'https://korean.visitkorea.or.kr/kfes/detail/fstvlDetail.do?Flag=Y&cmsCntntsId=232325'),
+        ('00000000-0000-7000-9000-000000000017'::UUID, 'https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=403'),
+        ('00000000-0000-7000-9000-000000000018'::UUID, 'https://news.seoul.go.kr/culture/archives/534503'),
+        ('00000000-0000-7000-9000-000000000019'::UUID, 'https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=367'),
+        ('00000000-0000-7000-9000-000000000020'::UUID, 'https://festival.seoul.go.kr/festival/main/festivalView.do?festacode=852')
+)
+INSERT INTO festival_submission (
+    id,
+    festival_id,
+    created_at,
+    updated_at,
+    deleted_at
+)
+SELECT
+    seed_submission.submission_id,
+    festival.id,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    NULL
+FROM seed_submission
+JOIN festival
+  ON festival.url = seed_submission.reference_url
+ AND festival.member_id = '00000000-0000-7000-8000-000000000001'::UUID
+ AND festival.deleted_at IS NULL;
