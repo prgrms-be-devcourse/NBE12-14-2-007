@@ -34,8 +34,12 @@ public class CommentService {
 			CommentRequest request,
 			UUID memberId
 	) {
-		Member member = memberRepository.findById(memberId)
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
 				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		if(member.isRestricted()) {
+			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
+		}
 
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
@@ -65,6 +69,13 @@ public class CommentService {
 			CommentRequest request,
 			UUID memberId
 	) {
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		if(member.isRestricted()) {
+			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
+		}
+
 		Comment comment = commentRepository.findById(id)
 				.orElseThrow(() -> new BusinessException(CommentExceptionCode.COMMENT_NOT_FOUND));
 

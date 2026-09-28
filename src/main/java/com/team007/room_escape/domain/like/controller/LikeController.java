@@ -8,6 +8,7 @@ import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class LikeController {
 
 	@Operation(summary = "후기 좋아요 등록", description = "특정 후기에 좋아요를 등록합니다.")
 	@PostMapping("/posts/{id}/likes/me")
+	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<LikeResponse>> createPostLike(
 			@PathVariable UUID id,
 			@AuthenticationPrincipal CustomUserDetails user
@@ -57,6 +59,7 @@ public class LikeController {
 	/** 행사 */
 	@Operation(summary = "행사 좋아요 등록", description = "특정 행사에 좋아요를 등록합니다.")
 	@PostMapping("/festivals/{id}/likes/me")
+	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<LikeResponse>> createFestivalLike(
 			@PathVariable Long id,
 			@AuthenticationPrincipal CustomUserDetails user

@@ -33,11 +33,15 @@ public class LikeService {
 	@Transactional
 	public LikeResponse createPostLike(UUID postId, UUID memberId) {
 
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		if(member.isRestricted()) {
+			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
+		}
+
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
-
-		Member member = memberRepository.findById(memberId)
-				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
 		if(likeRepository.existsByPostIdAndMemberId(postId, memberId)) {
 			throw new BusinessException(LikeExceptionCode.LIKE_ALREADY_EXISTS);
@@ -87,11 +91,15 @@ public class LikeService {
 	@Transactional
 	public LikeResponse createFestivalLike(Long festivalId, UUID memberId) {
 
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		if(member.isRestricted()) {
+			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
+		}
+
 		Festival festival = festivalRepository.findById(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
-
-		Member member = memberRepository.findById(memberId)
-				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
 		if(likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId)) {
 			throw new BusinessException(LikeExceptionCode.LIKE_ALREADY_EXISTS);
