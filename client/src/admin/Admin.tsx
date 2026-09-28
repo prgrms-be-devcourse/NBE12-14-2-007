@@ -26,10 +26,12 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
+import { RichTextContent } from "../components/RichText";
+import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { useApp, useLoad } from "../lib/context";
-import { AdminGuard } from "./AdminAuth";
 import { errorText, period, regions, safeUrl } from "../lib/format";
 import type { AdminFestivalDetail, Role } from "../lib/types";
+import { AdminGuard } from "./AdminAuth";
 import {
   AdminProvider,
   roleNames,
@@ -1230,9 +1232,12 @@ function EventDetailBody({
   ].filter((row) => row.value);
   return (
     <>
-      <p className="adm-content-body">
-        {detail.festivalContent?.trim() || "등록된 행사 소개가 없습니다."}
-      </p>
+      <RichTextContent
+        content={
+          detail.festivalContent?.trim() || "등록된 행사 소개가 없습니다."
+        }
+        className="adm-content-body rich-text-content"
+      />
       {rows.length > 0 && (
         <dl className="adm-details">
           {rows.map((row) => (
@@ -1357,11 +1362,11 @@ function EventEditForm({
         />
       </Field>
       <Field label="행사 소개">
-        <textarea
-          rows={4}
+        <LazyRichTextEditor
           value={form.festivalContent}
-          onChange={(e) => set("festivalContent")(e.target.value)}
+          onChange={set("festivalContent")}
           placeholder="행사 상세 페이지에 노출되는 소개 글입니다."
+          ariaLabel="행사 소개"
         />
       </Field>
       <Field label="지역" required>

@@ -18,6 +18,7 @@ import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
+import com.team007.room_escape.global.util.RichTextSanitizer;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +36,7 @@ public class AdminFestivalService {
 
 	private final FestivalRepository festivalRepository;
 	private final MemberTrustGradeService memberTrustGradeService;
+	private final RichTextSanitizer richTextSanitizer;
 
 	/**
 	 * 관리자 행사 검색. 조건을 비우면 전체를 조회한다.
@@ -134,7 +136,7 @@ public class AdminFestivalService {
 			request.instNm(),
 			request.title(),
 			request.category(),
-			request.festivalContent(),
+			richTextSanitizer.sanitize(request.festivalContent()),
 			request.referenceUrl(),
 			request.region(),
 			request.regionDetail(),

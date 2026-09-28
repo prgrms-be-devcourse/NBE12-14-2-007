@@ -1848,6 +1848,118 @@ select {
   border-color: #deb18d;
   box-shadow: 0 0 0 3px #fae6d740;
 }
+.rich-text-editor {
+  overflow: hidden;
+  border: 1px solid #e0e5db;
+  border-radius: 8px;
+  background: #fff;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+.rich-text-editor-loading {
+  min-height: 190px;
+  padding: 16px;
+  border: 1px solid #e0e5db;
+  border-radius: 8px;
+  background: #f8faf6;
+  color: #6e786b;
+  font-size: 13px;
+}
+.rich-text-editor:focus-within {
+  border-color: #deb18d;
+  box-shadow: 0 0 0 3px #fae6d740;
+}
+.rich-text-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid #e7ebe2;
+  background: #f8faf6;
+}
+.rich-text-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #566250;
+}
+.rich-text-toolbar button:hover:not(:disabled) {
+  border-color: #d8dfd2;
+  background: #fff;
+  color: #293a2f;
+}
+.rich-text-toolbar button.active {
+  border-color: #e3ad7d;
+  background: #fff1e4;
+  color: #a84e13;
+}
+.rich-text-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.rich-text-toolbar-separator {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: #dfe4da;
+}
+.rich-text-editor-content {
+  min-height: 190px;
+  padding: 15px 16px;
+  color: #3f4e43;
+  font-size: 14px;
+  line-height: 1.8;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.rich-text-editor-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: #889186;
+  pointer-events: none;
+}
+.rich-text-editor-content > * + * {
+  margin-top: 10px;
+}
+.rich-text-editor-content h2,
+.rich-text-content h2 {
+  color: #21342a;
+  font-size: 22px;
+  line-height: 1.45;
+  font-weight: 750;
+}
+.rich-text-editor-content ul,
+.rich-text-editor-content ol,
+.rich-text-content ul,
+.rich-text-content ol {
+  padding-left: 24px;
+}
+.rich-text-editor-content blockquote,
+.rich-text-content blockquote {
+  padding: 4px 0 4px 14px;
+  border-left: 3px solid #d8a77f;
+  color: #586358;
+}
+.rich-text-editor-content a,
+.rich-text-content a {
+  color: #b45316;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rich-text-content {
+  white-space: normal;
+}
+.rich-text-content > * + * {
+  margin-top: 12px;
+}
 .festival-title-autocomplete {
   position: relative;
 }

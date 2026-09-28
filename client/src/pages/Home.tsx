@@ -18,6 +18,7 @@ import { useApp, useLoad } from "../lib/context";
 import { demoEvents, previewPosts } from "../lib/demo";
 import { categories, dateText } from "../lib/format";
 import { regionGroups } from "../lib/regions";
+import { richTextToPlainText } from "../components/RichText";
 import {
   Badge,
   Empty,
@@ -347,7 +348,7 @@ export function Home() {
                         <div>
                           <Badge tone="gray">{post.festivalTitle}</Badge>
                           <h3>{post.title}</h3>
-                          <p>{post.content.split("\n")[0]}</p>
+                          <p>{richTextToPlainText(post.content)}</p>
                           <div className="review-byline">
                         <span className="avatar tiny">
                           {post.member.nickname[0]}
