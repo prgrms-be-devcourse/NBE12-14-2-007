@@ -47,8 +47,11 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
       # 알림 메시지 속 링크가 이 주소로 만들어진다. (없으면 컨테이너 내부 포트 3000으로 나감)
       GF_SERVER_ROOT_URL: http://localhost:3002
+      # 디스코드 알림용. .env 에 넣어둔 값을 컨테이너로 넘긴다.
+      # 값이 없으면 Grafana가 뜨지 않으므로, 없을 땐 가짜 주소를 넣어 알림만 안 가게 한다.
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-http://localhost/discord-webhook-not-set}
     volumes:
-      # 데이터소스 설정을 파일로 관리한다. (monitoring/grafana/provisioning)
+      # 데이터소스·알림 설정을 파일로 관리한다. (monitoring/grafana/provisioning)
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
       - "3002:3000"
