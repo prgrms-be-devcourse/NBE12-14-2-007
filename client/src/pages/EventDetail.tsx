@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   Flag,
+  Heart,
   Landmark,
   MapPin,
   Pencil,
@@ -17,6 +18,7 @@ import {
   Trash2,
   UsersRound,
 } from "lucide-react";
+import { ApiError } from "../lib/api";
 import { useApp, useLoad } from "../lib/context";
 import {
   errorText,
@@ -191,6 +193,7 @@ function EventDetail({ event }: { event: EventView }) {
                 제보자 · {event.submitter.nickname}
               </p>
             )}
+            {!event.submissionId && <FestivalLikeButton event={event} />}
           </div>
           <div
             className="detail-tabs"
@@ -418,6 +421,70 @@ function EventDetail({ event }: { event: EventView }) {
         </Modal>
       )}
     </>
+  );
+}
+
+function FestivalLikeButton({ event }: { event: EventView }) {
+  const { api, member, authLoading, toast } = useApp();
+  const pending = useRef(false);
+  const [liked, setLiked] = useState(event.likedByMe ?? false);
+  const [likeCount, setLikeCount] = useState(event.likeCount ?? 0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function toggle() {
+    if (pending.current || authLoading) return;
+    if (!member) {
+      toast("로그인하면 행사에 좋아요를 남길 수 있어요.");
+      return;
+    }
+
+    pending.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api.likeFestival(event.festivalId, liked);
+      setLikeCount(result.likeCount);
+      setLiked(!liked);
+    } catch (e) {
+      if (e instanceof ApiError && ["LIKE000", "LIKE001"].includes(e.code)) {
+        try {
+          const current = await api.event(event.festivalId);
+          setLikeCount(current.likeCount ?? 0);
+          setLiked(current.likedByMe ?? false);
+        } catch (refreshError) {
+          setError(errorText(refreshError));
+        }
+      } else {
+        setError(errorText(e));
+      }
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="festival-like">
+      <button
+        type="button"
+        className={`btn ${liked ? "liked" : "secondary"}`}
+        aria-label={`행사 좋아요${liked ? " 취소" : ""} ${likeCount}개`}
+        aria-pressed={liked}
+        aria-busy={busy}
+        disabled={busy || authLoading}
+        onClick={toggle}
+      >
+        <Heart
+          size={18}
+          fill={liked ? "currentColor" : "none"}
+          aria-hidden="true"
+        />
+        좋아요
+        <strong>{likeCount}</strong>
+      </button>
+      <FormError message={error} />
+    </div>
   );
 }
 
