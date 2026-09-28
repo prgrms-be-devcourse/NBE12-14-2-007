@@ -25,6 +25,9 @@ dependencies {
 	// 이메일 인증 코드를 담아두는 로컬 캐시. expireAfterWrite로 만료를 알아서 처리한다.
 	implementation("com.github.ben-manes.caffeine:caffeine")
 
+	// 행사 이미지를 R2에 올리기 전 리사이즈하는 데 사용한다.
+	implementation("net.coobird:thumbnailator:0.4.20")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-mail")
