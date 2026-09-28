@@ -34,7 +34,11 @@ public enum FestivalExceptionCode implements ExceptionCode {
 
     /** 회원이 직접 지운 제보를 관리자가 임의로 되살리지 않도록 막는다 */
     FESTIVAL_RESTORE_FORBIDDEN("FESTIVAL008", HttpStatus.FORBIDDEN,
-        "회원이 제보한 행사는 복구할 수 없습니다.");
+        "회원이 제보한 행사는 복구할 수 없습니다."),
+
+    /** 본인이 제보한 행사를 직접 정확하다고 평가하는 경우 */
+    SELF_ACCURACY_VOTE_NOT_ALLOWED("FESTIVAL009", HttpStatus.FORBIDDEN,
+        "본인이 제보한 행사의 정확도는 평가할 수 없습니다.");
 
     private final String code;
     private final HttpStatus status;

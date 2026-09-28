@@ -16,8 +16,10 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalReposito
 import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
+import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,6 +50,7 @@ public class FestivalService {
 	private final PublicFestivalSourceRepository publicFestivalSourceRepository; /** 원본 저장용 **/
 	private final FestivalPublicApiClient festivalPublicApiClient;
 	private final ObjectMapper objectMapper;
+	private final ImageUrlResolver imageUrlResolver;
 
 	@Transactional
 	public FestivalResponse.SyncResponse syncPublicFestivals() {
@@ -168,6 +171,12 @@ public class FestivalService {
 		long likeCount = likeRepository.countByFestivalId(festivalId);
 		boolean likedByMe = memberId != null
 			&& likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId);
+		MemberResponse.MemberInfo submitter = festival.getMember() == null
+			? null
+			: MemberResponse.MemberInfo.from(
+				festival.getMember(),
+				imageUrlResolver.resolve(festival.getMember().getProfileImg())
+			);
 
 		return FestivalResponse.DetailResponse.from(
 			festival,
@@ -175,7 +184,8 @@ public class FestivalService {
 			inaccurateCount,
 			myVote,
 			likeCount,
-			likedByMe
+			likedByMe,
+			submitter
 		);
 	}
 

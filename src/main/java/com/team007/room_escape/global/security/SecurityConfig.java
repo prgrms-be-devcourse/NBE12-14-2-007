@@ -79,8 +79,8 @@ public class SecurityConfig {
 	static RoleHierarchy roleHierarchy() {
 		return RoleHierarchyImpl.withDefaultRolePrefix()
 				.role("ADMIN").implies("TRUSTED")
-				.role("TRUSTED").implies("NORMAL")
-				.role("NORMAL").implies("UNVERIFIED")
+				.role("TRUSTED").implies("RECOGNIZED")
+				.role("RECOGNIZED").implies("UNVERIFIED")
 				.role("UNVERIFIED").implies("WARNING")
 				.build();
 	}

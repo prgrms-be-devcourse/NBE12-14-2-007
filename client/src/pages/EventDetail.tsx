@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   Flag,
+  Heart,
   Landmark,
   MapPin,
   Pencil,
@@ -15,8 +16,10 @@ import {
   Share2,
   Ticket,
   Trash2,
+  UserRound,
   UsersRound,
 } from "lucide-react";
+import { ApiError } from "../lib/api";
 import { useApp, useLoad } from "../lib/context";
 import {
   errorText,
@@ -24,9 +27,14 @@ import {
   imageUrl,
   period,
   regions,
+  roleNames,
   safeUrl,
 } from "../lib/format";
-import type { EventView, FestivalAccuracyVote } from "../lib/types";
+import type {
+  EventView,
+  FestivalAccuracyVote,
+  FestivalMember,
+} from "../lib/types";
 import {
   Badge,
   Empty,
@@ -186,11 +194,6 @@ function EventDetail({ event }: { event: EventView }) {
               <MapPin size={17} />
               {regions[event.region] || ""} {event.regionDetail}
             </p>
-            {event.submitter && (
-              <p className="muted small-text">
-                제보자 · {event.submitter.nickname}
-              </p>
-            )}
           </div>
           <div
             className="detail-tabs"
@@ -351,6 +354,10 @@ function EventDetail({ event }: { event: EventView }) {
                           : "공공데이터를 통해 제공된 행사 정보입니다. 방문 전 행사 안내 페이지에서 최신 정보를 확인해 주세요."}
                   </p>
                 </div>
+                {event.source === "MEMBER" && event.submitter && (
+                  <SubmitterProfile member={event.submitter} />
+                )}
+                {!event.submissionId && <FestivalLikeButton event={event} />}
                 {event.source === "MEMBER" && !event.submissionId && (
                   <AccuracyVotePanel
                     festivalId={event.festivalId}
@@ -421,6 +428,143 @@ function EventDetail({ event }: { event: EventView }) {
   );
 }
 
+function SubmitterProfile({ member }: { member: FestivalMember }) {
+  const avatarUrl = imageUrl(member.profileImg, 120);
+  const [avatarVisible, setAvatarVisible] = useState(Boolean(avatarUrl));
+
+  return (
+    <section className="submitter-profile" aria-label="행사 제보자 정보">
+      {avatarUrl && avatarVisible ? (
+        <img
+          className="submitter-avatar"
+          src={avatarUrl}
+          alt={`${member.nickname} 프로필`}
+          loading="lazy"
+          onError={() => setAvatarVisible(false)}
+        />
+      ) : (
+        <span className="submitter-avatar fallback" aria-hidden="true">
+          <UserRound size={30} />
+        </span>
+      )}
+      <div className="submitter-profile-copy">
+        <small>이 행사를 알려준 이웃</small>
+        <div>
+          <strong>{member.nickname}</strong>
+          <TrustGradeBadge member={member} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TrustGradeBadge({ member }: { member: FestivalMember }) {
+  const grade =
+    member.role === "ROLE_RECOGNIZED"
+      ? "maker"
+      : member.role === "ROLE_TRUSTED"
+        ? "master"
+        : "basic";
+  const symbol = grade === "maker" ? "m" : grade === "master" ? "M" : null;
+  const description =
+    member.role === "ROLE_RECOGNIZED"
+      ? "좋아요 또는 정확해요를 10개 이상 받은 제보자예요."
+      : member.role === "ROLE_TRUSTED"
+        ? "좋아요와 정확해요를 모두 10개 이상 받은 제보자예요."
+        : member.role === "ROLE_ADMIN"
+          ? "방구석탈출 운영·관리 계정이에요."
+          : "이제 막 탈출 정보를 나누기 시작한 제보자예요.";
+  const tooltipId = `trust-grade-${member.id}`;
+
+  return (
+    <span
+      className="trust-grade-wrap"
+      tabIndex={0}
+      aria-describedby={tooltipId}
+    >
+      <Badge tone={`trust-grade-badge ${grade}`}>
+        {symbol && (
+          <span className="trust-grade-symbol" aria-hidden="true">
+            {symbol}
+          </span>
+        )}
+        <span>{roleNames[member.role]}</span>
+      </Badge>
+      <span className="trust-grade-tooltip" id={tooltipId} role="tooltip">
+        {description}
+      </span>
+    </span>
+  );
+}
+
+function FestivalLikeButton({ event }: { event: EventView }) {
+  const { api, member, authLoading, toast } = useApp();
+  const pending = useRef(false);
+  const [liked, setLiked] = useState(event.likedByMe ?? false);
+  const [likeCount, setLikeCount] = useState(event.likeCount ?? 0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function toggle() {
+    if (pending.current || authLoading) return;
+    if (!member) {
+      toast("로그인하면 행사에 좋아요를 남길 수 있어요.");
+      return;
+    }
+
+    pending.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api.likeFestival(event.festivalId, liked);
+      setLikeCount(result.likeCount);
+      setLiked(!liked);
+    } catch (e) {
+      if (e instanceof ApiError && ["LIKE000", "LIKE001"].includes(e.code)) {
+        try {
+          const current = await api.event(event.festivalId);
+          setLikeCount(current.likeCount ?? 0);
+          setLiked(current.likedByMe ?? false);
+        } catch (refreshError) {
+          setError(errorText(refreshError));
+        }
+      } else {
+        setError(errorText(e));
+      }
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="festival-like" aria-labelledby="festival-like-title">
+      <div>
+        <h2 id="festival-like-title">마음에 드는 행사인가요?</h2>
+        <p>좋아요로 관심 있는 행사를 표현해 주세요.</p>
+      </div>
+      <button
+        type="button"
+        className={`btn ${liked ? "liked" : "secondary"}`}
+        aria-label={`행사 좋아요${liked ? " 취소" : ""} ${likeCount}개`}
+        aria-pressed={liked}
+        aria-busy={busy}
+        disabled={busy || authLoading}
+        onClick={toggle}
+      >
+        <Heart
+          size={18}
+          fill={liked ? "currentColor" : "none"}
+          aria-hidden="true"
+        />
+        좋아요
+        <strong>{likeCount}</strong>
+      </button>
+      <FormError message={error} />
+    </section>
+  );
+}
+
 function AccuracyVotePanel({
   festivalId,
   initialVote,
@@ -469,7 +613,7 @@ function AccuracyVotePanel({
       <div className="accuracy-vote-actions">
         <button
           type="button"
-          className={data?.myVote === "ACCURATE" ? "selected accurate" : ""}
+          className={`accurate ${data?.myVote === "ACCURATE" ? "selected" : ""}`}
           aria-pressed={data?.myVote === "ACCURATE"}
           disabled={busy || authLoading}
           onClick={() => select("ACCURATE")}
@@ -480,7 +624,7 @@ function AccuracyVotePanel({
         </button>
         <button
           type="button"
-          className={data?.myVote === "INACCURATE" ? "selected inaccurate" : ""}
+          className={`inaccurate ${data?.myVote === "INACCURATE" ? "selected" : ""}`}
           aria-pressed={data?.myVote === "INACCURATE"}
           disabled={busy || authLoading}
           onClick={() => select("INACCURATE")}

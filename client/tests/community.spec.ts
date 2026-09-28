@@ -17,7 +17,7 @@ test("API mode retrieves the public review feed without private browse APIs", as
       data = {
         id: "me",
         nickname: "내 계정",
-        role: "ROLE_NORMAL",
+        role: "ROLE_UNVERIFIED",
         email: "me@example.com",
       };
     else if (path === "/api/v1/posts")

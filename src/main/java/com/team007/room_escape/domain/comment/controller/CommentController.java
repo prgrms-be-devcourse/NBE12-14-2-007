@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,7 @@ public class CommentController {
 
 	@Operation(summary = "댓글 작성", description = "특정 후기에 댓글을 작성합니다.")
 	@PostMapping("/posts/{id}/comments")
+	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<CommentResponse.CommentInfo>> createComment(
 			@PathVariable UUID id,
 			@Valid @RequestBody CommentRequest request,
@@ -52,6 +54,7 @@ public class CommentController {
 
 	@Operation(summary = "댓글 수정", description = "본인이 작성한 댓글을 수정합니다.")
 	@PatchMapping("/comments/{id}")
+	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<CommentResponse.CommentInfo>> updateComment(
 			@PathVariable Long id,
 			@Valid @RequestBody CommentRequest request,
