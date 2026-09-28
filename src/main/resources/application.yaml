@@ -45,6 +45,12 @@ spring:
           writetimeout: 5000
 
 management:
+  health:
+    mail:
+      # 메일 서버 연결을 health에 넣지 않는다.
+      # Railway는 SMTP를 막아서 운영에선 항상 DOWN이 되고, 앱 전체가 죽은 것으로 보인다.
+      # 메일은 부가 기능이라 안 보내져도 앱은 살아 있어야 한다.
+      enabled: false
   endpoints:
     web:
       exposure:
