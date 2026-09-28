@@ -202,6 +202,39 @@ export interface Comment {
   content: string;
   date: string;
 }
+export type CommunityCategory = "FREE" | "EVENT" | "RESTAURANT";
+export interface CommunityMember {
+  id: string | null;
+  nickname: string;
+  profileImg: string | null;
+  role: Role | null;
+}
+export interface CommunityPostInput {
+  category: CommunityCategory;
+  title: string;
+  content: string;
+}
+export interface CommunityPostSummary {
+  id: string;
+  category: CommunityCategory;
+  title: string;
+  member: CommunityMember;
+  viewCount: number;
+  commentCount: number;
+  createdAt: string;
+}
+export interface CommunityPostDetail extends CommunityPostSummary {
+  content: string;
+  updatedAt: string;
+}
+export interface CommunityComment {
+  id: number;
+  postId: string;
+  member: CommunityMember;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
 export interface InquiryInput {
   category: "QUESTION" | "REPORT";
   title: string;
