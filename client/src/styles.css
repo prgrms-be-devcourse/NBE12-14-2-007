@@ -2145,6 +2145,31 @@ select {
   color: #616b59;
   font-size: 13px;
 }
+.detail-accuracy-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid #e5aaa0;
+  border-radius: 10px;
+  background: #fff3f1;
+  color: #943e32;
+}
+.detail-accuracy-warning > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.detail-accuracy-warning strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #842f27;
+  font-size: 15px;
+}
+.detail-accuracy-warning p {
+  font-size: 13px;
+  line-height: 1.65;
+}
 .detail-hero {
   border-radius: 13px;
   overflow: hidden;
@@ -2350,6 +2375,16 @@ select {
 .trust-grade-badge.basic {
   color: #497155;
   background: #ecf4ed;
+}
+.trust-grade-badge.warning {
+  color: #a52d2d;
+  background: #fff0f0;
+  border-color: #e6aaaa;
+  font-weight: 800;
+}
+.trust-grade-warning-icon {
+  flex-shrink: 0;
+  stroke-width: 2.4;
 }
 .trust-grade-badge.maker {
   color: #a34d12;

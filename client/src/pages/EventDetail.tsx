@@ -122,6 +122,7 @@ function EventDetail({ event }: { event: EventView }) {
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
   const heroUrl = imageUrl(event.imgUrl, 1200);
+  const inaccurateVoteCount = event.accuracyVote?.inaccurateCount ?? 0;
   const [heroVisible, setHeroVisible] = useState(Boolean(heroUrl));
   // 리사이즈 프록시가 원본을 처음 받아 축소하는 동안(캐시 없을 때) 몇 초 걸릴 수 있어서,
   // 그 사이 빈 화면 대신 스켈레톤을 보여준다.
@@ -159,6 +160,19 @@ function EventDetail({ event }: { event: EventView }) {
           )}
         </div>
       </div>
+      {inaccurateVoteCount >= 10 && (
+        <div className="detail-accuracy-warning" role="alert">
+          <AlertTriangle size={20} aria-hidden="true" />
+          <div>
+            <strong>부정확한 정보일 수 있어요</strong>
+            <p>
+              이 행사에 ‘부정확해요’ 평가가 {inaccurateVoteCount}개
+              등록됐어요. 방문 전 공식 채널에서 일정과 장소를 다시 확인해
+              주세요.
+            </p>
+          </div>
+        </div>
+      )}
       {heroUrl && heroVisible && (
         <div className={`detail-hero ${heroLoaded ? "" : "loading"}`}>
           {!heroLoaded && (
@@ -460,14 +474,18 @@ function SubmitterProfile({ member }: { member: FestivalMember }) {
 
 function TrustGradeBadge({ member }: { member: FestivalMember }) {
   const grade =
-    member.role === "ROLE_RECOGNIZED"
+    member.role === "ROLE_WARNING"
+      ? "warning"
+      : member.role === "ROLE_RECOGNIZED"
       ? "maker"
       : member.role === "ROLE_TRUSTED"
         ? "master"
         : "basic";
   const symbol = grade === "maker" ? "m" : grade === "master" ? "M" : null;
   const description =
-    member.role === "ROLE_RECOGNIZED"
+    member.role === "ROLE_WARNING"
+      ? "운영 정책에 따라 현재 활동이 제한된 계정입니다."
+      : member.role === "ROLE_RECOGNIZED"
       ? "좋아요 또는 정확해요를 10개 이상 받은 제보자예요."
       : member.role === "ROLE_TRUSTED"
         ? "좋아요와 정확해요를 모두 10개 이상 받은 제보자예요."
@@ -483,11 +501,17 @@ function TrustGradeBadge({ member }: { member: FestivalMember }) {
       aria-describedby={tooltipId}
     >
       <Badge tone={`trust-grade-badge ${grade}`}>
-        {symbol && (
+        {grade === "warning" ? (
+          <AlertTriangle
+            className="trust-grade-warning-icon"
+            size={12}
+            aria-hidden="true"
+          />
+        ) : symbol ? (
           <span className="trust-grade-symbol" aria-hidden="true">
             {symbol}
           </span>
-        )}
+        ) : null}
         <span>{roleNames[member.role]}</span>
       </Badge>
       <span className="trust-grade-tooltip" id={tooltipId} role="tooltip">
