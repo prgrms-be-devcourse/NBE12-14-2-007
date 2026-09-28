@@ -149,8 +149,10 @@ export function Home() {
               )}
               {weather.data && weather.data.condition === "UNKNOWN" && (
                   <span className="weather-hint">
-                오늘 기준 +2일만 날씨 제공이 가능합니다
-              </span>
+                    {date < new Date().toISOString().slice(0, 10)
+                      ? "지난 날짜는 날씨 제공이 불가합니다"
+                      : "오늘 기준 +4일치만 날씨 제공이 가능합니다"}
+                  </span>
               )}
             </div>
             <div className="discovery-search-bar">

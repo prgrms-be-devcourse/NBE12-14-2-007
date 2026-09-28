@@ -11,7 +11,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 기상청 단기예보 기반 날씨 조회.
- * 단기예보는 오늘부터 2일 후까지만 제공되므로, 그 범위 밖의 날짜는 UNKNOWN으로 내려준다.
+ * 미래 날짜의 제공 범위는 고정 일수로 정하지 않고, KMA 응답에 해당 날짜 데이터가 있는지로 자연히 정해진다.
  * 외부 API 실패도 화면이 깨지면 안 되는 부가 기능이라, 예외를 던지지 않고 UNKNOWN으로 감싸서 돌려준다.
  */
 @Slf4j
@@ -36,15 +35,11 @@ public class WeatherService {
     /** 발표 후 실제 조회 가능해지기까지의 지연 */
     private static final Duration PUBLISH_DELAY = Duration.ofMinutes(10);
 
-    /** 단기예보 제공 범위(오늘 포함 2일 후까지) */
-    private static final int MAX_DAYS_AHEAD = 2;
-
     private final KmaWeatherApiClient client;
 
     public WeatherResponse getWeather(FestivalRegion region, LocalDate date) {
-        long daysAhead = ChronoUnit.DAYS.between(LocalDate.now(), date);
-        // 단기예보 제공 범위 밖(과거 또는 3일 후 이상) 판정
-        if (daysAhead < 0 || daysAhead > MAX_DAYS_AHEAD) {
+        // 과거 날짜만 막는다. 미래 상한은 KMA 응답에 그 날짜 데이터가 있는지로 shortTerm() 안에서 자연히 정해진다.
+        if (date.isBefore(LocalDate.now())) {
             return WeatherResponse.unknown(date);
         }
         try {

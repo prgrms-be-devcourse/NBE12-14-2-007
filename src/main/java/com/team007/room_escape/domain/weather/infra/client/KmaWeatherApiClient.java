@@ -60,7 +60,7 @@ public class KmaWeatherApiClient {
         return UriComponentsBuilder.fromUriString(properties.url())
             .queryParam("authKey", properties.serviceKey()) // data.go.kr의 serviceKey와 달리 이 API허브는 authKey
             .queryParam("dataType", "JSON")
-            .queryParam("numOfRows", 300) // 하루 8회 × 3일치 × 여러 category라 넉넉히 (너무 적으면 뒷부분이 잘림)
+            .queryParam("numOfRows", 1000) // 하루 8회 × 5일치 × 여러 category라 넉넉히 (300은 부족해서 뒷부분이 잘렸었음)
             .queryParam("pageNo", 1)
             .queryParam("base_date", baseDate)
             .queryParam("base_time", baseTime)
