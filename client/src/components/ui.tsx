@@ -6,64 +6,77 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  Cloud,
+  CloudRain,
+  CloudSnow,
   ImagePlus,
   LoaderCircle,
   MapPin,
   Search,
   Sprout,
+  Sun,
   X,
 } from "lucide-react";
 import { useApp } from "../lib/context";
 import { errorText, imageUrl, period, regions } from "../lib/format";
-import type { EventView } from "../lib/types";
+import type { EventView, WeatherCondition } from "../lib/types";
 
 export function Logo() {
   return (
     <span className="logo">
       <span className="logo-mark">
-        <svg viewBox="0 0 48 40" aria-hidden="true">
-          <path d="M14 5h20v31H14Z" fill="#bcecff" />
-          <path
-            d="M14 5h20v31H14"
-            fill="none"
-            stroke="#5f6c68"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M14 7 3 11v26l11-3Z"
-            fill="#fffdf8"
-            stroke="#7c8783"
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-          <path
-            d="m34 7 11 4v26l-11-3Z"
-            fill="#fffdf8"
-            stroke="#7c8783"
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M6 18 14 16M6 29l8-1M34 16l8 2M34 28l8 1"
-            fill="none"
-            stroke="#c7ceca"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <circle cx="11" cy="23" r="1.3" fill="#bb5a1b" />
-          <circle cx="37" cy="23" r="1.3" fill="#bb5a1b" />
-          <path
-            d="m18 35-4 4M24 35v5M30 35l4 4"
-            fill="none"
-            stroke="#ffd37a"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
+        <img src="/images/logo.png" alt="방구석탈출 로고" />
       </span>
       <span>방구석탈출</span>
+    </span>
+  );
+}
+const WEATHER_ICONS: Record<WeatherCondition, typeof Sun> = {
+  SUNNY: Sun,
+  CLOUDY: Cloud,
+  RAIN: CloudRain,
+  RAIN_SNOW: CloudSnow,
+  SNOW: CloudSnow,
+  UNKNOWN: Cloud,
+};
+export function WeatherIcon({
+  condition,
+  size = 18,
+}: {
+  condition: WeatherCondition;
+  size?: number;
+}) {
+  const Icon = WEATHER_ICONS[condition];
+  return <Icon size={size} aria-hidden="true" />;
+}
+const WEATHER_LABELS: Record<WeatherCondition, string> = {
+  SUNNY: "맑음",
+  CLOUDY: "흐림",
+  RAIN: "비",
+  RAIN_SNOW: "비/눈",
+  SNOW: "눈",
+  UNKNOWN: "",
+};
+/** UNKNOWN(예보 범위 밖·조회 실패)이면 아무것도 안 그린다. */
+export function WeatherBadge({
+  condition,
+  precipitationProbability,
+}: {
+  condition: WeatherCondition;
+  precipitationProbability?: number | null;
+}) {
+  if (condition === "UNKNOWN") return null;
+  return (
+    <span
+      className={`weather-badge weather-${condition.toLowerCase()}`}
+      title={
+        precipitationProbability != null
+          ? `강수확률 ${precipitationProbability}%`
+          : undefined
+      }
+    >
+      <WeatherIcon condition={condition} size={20} />
+      {WEATHER_LABELS[condition]}
     </span>
   );
 }

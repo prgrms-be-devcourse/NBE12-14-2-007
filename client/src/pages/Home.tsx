@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowRight,
   CalendarDays,
+  ChevronDown,
   ChevronRight,
   Compass,
   Landmark,
@@ -16,6 +17,7 @@ import {
 import { useApp, useLoad } from "../lib/context";
 import { demoEvents, previewPosts } from "../lib/demo";
 import { categories, dateText } from "../lib/format";
+import { regionGroups } from "../lib/regions";
 import {
   Badge,
   Empty,
@@ -23,8 +25,8 @@ import {
   Loading,
   Photo,
   SectionTitle,
+  WeatherBadge,
 } from "../components/ui";
-import { RegionSelects } from "../components/RegionSelects";
 
 export function Home() {
   const { mode, api } = useApp();
@@ -54,6 +56,11 @@ export function Home() {
             excludeClosed: true,
           }),
       [api, category],
+  );
+
+  const weather = useLoad(
+      () => (region && date ? api.weather(region, date) : Promise.resolve(null)),
+      [api, region, date],
   );
 
   return (
@@ -106,39 +113,56 @@ export function Home() {
                 navigate(`/explore?${params}`);
               }}
           >
-            <RegionSelects
-                value={region}
-                onChange={setRegion}
-                variant="discovery"
-            />
-            <label>
-              <CalendarDays size={20} />
-              <div>
-                <span>언제 떠날까요?</span>
+            <div className="discovery-search-filters">
+              <label className="filter-chip">
+                <MapPin size={15} />
+                <select
+                    aria-label="지역 선택"
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                >
+                  <option value="">전국</option>
+                  {regionGroups.map((group) => (
+                      <option key={group.value} value={group.value}>
+                        {group.label}
+                      </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} />
+              </label>
+              <label className="filter-chip">
+                <CalendarDays size={15} />
                 <input
                     aria-label="행사 날짜"
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                 />
-              </div>
-            </label>
-            <label className="keyword-search">
-              <Search size={20} />
-              <div>
-                <span>어떤 즐거움을 찾나요?</span>
-                <input
-                    aria-label="행사 검색어"
-                    placeholder="행사명, 키워드 검색"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-            </label>
-            <button className="btn primary search-submit">
+              </label>
+              {weather.data && weather.data.condition !== "UNKNOWN" && (
+                  <WeatherBadge
+                      condition={weather.data.condition}
+                      precipitationProbability={
+                        weather.data.precipitationProbability
+                      }
+                  />
+              )}
+              {weather.data && weather.data.condition === "UNKNOWN" && (
+                  <span className="weather-hint">
+                오늘 기준 +2일만 날씨 제공이 가능합니다
+              </span>
+              )}
+            </div>
+            <div className="discovery-search-bar">
               <Search size={19} />
-              행사 찾기
-            </button>
+              <input
+                  aria-label="행사 검색어"
+                  placeholder="어떤 행사를 찾고 있나요?"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+              />
+              <button className="btn primary">검색</button>
+            </div>
           </form>
         </section>
         <div className="container">

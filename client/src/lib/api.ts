@@ -32,6 +32,8 @@ import type {
   FestivalDetailItem,
   FestivalSearchInput,
   FestivalSearchItem,
+  WeatherCondition,
+  WeatherView,
 } from "./types";
 import {
   demoEvents,
@@ -320,6 +322,16 @@ export function createApi(mode: Mode) {
         ...result,
         content: result.content.map(toEventView),
       };
+    },
+    async weather(region: string, date: string): Promise<WeatherView> {
+      if (demo) {
+        // 미리보기 모드는 실제 서버가 없어서, 지역+날짜로 결정되는 값을 흉내낸다.
+        const conditions: WeatherCondition[] = ["SUNNY", "CLOUDY", "RAIN", "SNOW"];
+        const index = (region.length + date.length) % conditions.length;
+        return { condition: conditions[index], precipitationProbability: null, date };
+      }
+      const params = new URLSearchParams({ region, date });
+      return transport<WeatherView>(`/weather?${params}`);
     },
     async updateMe(input: {
       nickname?: string;
