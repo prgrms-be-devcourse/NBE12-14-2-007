@@ -2,7 +2,9 @@ package com.team007.room_escape.domain.festival.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -23,6 +25,7 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.domain.like.infra.dto.FestivalLikeCount;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -671,5 +674,40 @@ class FestivalServiceTest {
 		when(festivalRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(java.util.Optional.of(stale));
 
 		assertThat(festivalService.getFestival(1L, null).status()).isEqualTo(FestivalStatus.CLOSED);
+	}
+
+	@Test
+	@DisplayName("좋아요순이면 정렬을 뗀 페이지로 좋아요순 전용 쿼리를 쓰고, 목록에 좋아요 수를 붙인다")
+	void usesLikeSortQueryAndAttachesLikeCounts() {
+		LocalDate date = LocalDate.of(CURRENT_YEAR, 9, 20);
+		FestivalSearchRequest request = searchRequest(date);
+		Pageable pageable = PageRequest.of(1, 9, Sort.by(Sort.Direction.DESC, "likeCount"));
+		Pageable unsorted = PageRequest.of(1, 9);
+
+		Festival liked = Festival.builder().id(10L).providerType(ProviderType.PUBLIC).title("인기").build();
+		Festival notLiked = Festival.builder().id(11L).providerType(ProviderType.PUBLIC).title("조용").build();
+
+		when(festivalRepository.searchFestivalsOrderByLikeCount(
+				true, "경기",
+				true, FestivalRegion.GYEONGGI,
+				true, ProviderType.PUBLIC,
+				true, "행사",
+				true, date.atStartOfDay(), date.plusDays(1).atStartOfDay(),
+				false,
+				unsorted
+		)).thenReturn(new PageImpl<>(List.of(liked, notLiked), unsorted, 11));
+		when(likeRepository.countByFestivalIds(List.of(10L, 11L)))
+				.thenReturn(List.of(new FestivalLikeCount(10L, 7L)));
+
+		Page<FestivalResponse.ListResponse> result = festivalService.searchFestivals(request, pageable);
+
+		// 좋아요가 하나도 없는 행사는 집계 결과에 없으므로 0으로 채운다
+		assertThat(result.getContent())
+				.extracting(FestivalResponse.ListResponse::festivalId, FestivalResponse.ListResponse::likeCount)
+				.containsExactly(tuple(10L, 7L), tuple(11L, 0L));
+		assertThat(result.getTotalElements()).isEqualTo(11);
+		verify(festivalRepository, never()).searchFestivals(
+				anyBoolean(), any(), anyBoolean(), any(), anyBoolean(), any(),
+				anyBoolean(), any(), anyBoolean(), any(), any(), anyBoolean(), any());
 	}
 }
