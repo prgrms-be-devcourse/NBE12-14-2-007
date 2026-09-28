@@ -28,12 +28,23 @@ interface AppContextValue {
   toast: (message: string) => void;
 }
 const Context = createContext<AppContextValue | null>(null);
-export function AppProvider({ children }: { children: ReactNode }) {
+/**
+ * restoreSession=false 면 리프레시 쿠키로 로그인을 복구하지 않는다.
+ * 관리자 화면은 서비스 쪽 로그인을 이어받지 않고 항상 다시 로그인하게 하려고 끈다.
+ */
+export function AppProvider({
+  children,
+  restoreSession = true,
+}: {
+  children: ReactNode;
+  restoreSession?: boolean;
+}) {
   const [member, setMember] = useState<Member | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(restoreSession);
   const [message, setMessage] = useState("");
   const api = useMemo(() => createApi(CONTENT_MODE), []);
   useEffect(() => {
+    if (!restoreSession) return;
     let active = true;
     setAuthLoading(true);
     api
@@ -50,7 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [api]);
+  }, [api, restoreSession]);
   useEffect(() => {
     setCurrentMember(member);
   }, [member]);

@@ -1,0 +1,24 @@
+# 운영(Railway) 프로필. Dockerfile이 SPRING_PROFILES_ACTIVE=prod 로 켠다.
+# .env는 읽지 않는다. 모든 값은 Railway 서비스의 Variables에서 온다.
+server:
+  # Railway가 PORT를 넣어준다. 없으면 8080.
+  port: ${PORT:8080}
+
+spring:
+  # Railway Postgres를 참조 변수로 연결한다. 예)
+  #   DATASOURCE_URL=jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}
+  #   DATASOURCE_USERNAME=${{Postgres.PGUSER}}
+  #   DATASOURCE_PASSWORD=${{Postgres.PGPASSWORD}}
+  datasource:
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
+
+app:
+  cors:
+    # 프론트는 Vercel rewrite(/api → Railway)로 붙어서 같은 출처라 보통 비워 둔다.
+    # 다른 도메인에서 직접 부를 일이 생기면 CORS_ALLOWED_ORIGINS에 쉼표로 넣는다.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  cookie:
+    secure: true
+    same-site: Lax

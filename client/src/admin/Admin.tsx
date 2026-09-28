@@ -26,9 +26,12 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
-import { AppProvider, useApp, useLoad } from "../lib/context";
+import { RichTextContent } from "../components/RichText";
+import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { useApp, useLoad } from "../lib/context";
 import { errorText, period, regions, safeUrl } from "../lib/format";
 import type { AdminFestivalDetail, Role } from "../lib/types";
+import { AdminGuard } from "./AdminAuth";
 import {
   AdminProvider,
   roleNames,
@@ -68,14 +71,14 @@ const stamp = (date: string) =>
   });
 
 export function AdminLayout() {
-  // AdminProvider가 실제 어드민 API를 부르려면 토큰과 로그인 정보가 필요하다.
-  // AppProvider가 마운트될 때 리프레시 쿠키로 액세스 토큰을 복구한다.
+  // 토큰과 로그인 정보는 AdminRoot의 AppProvider가 들고 있다.
+  // 가드를 통과해야(관리자 토큰이 있어야) AdminProvider가 어드민 API를 부른다.
   return (
-    <AppProvider>
+    <AdminGuard>
       <AdminProvider>
         <AdminShell />
       </AdminProvider>
-    </AppProvider>
+    </AdminGuard>
   );
 }
 function AdminShell() {
@@ -1229,9 +1232,12 @@ function EventDetailBody({
   ].filter((row) => row.value);
   return (
     <>
-      <p className="adm-content-body">
-        {detail.festivalContent?.trim() || "등록된 행사 소개가 없습니다."}
-      </p>
+      <RichTextContent
+        content={
+          detail.festivalContent?.trim() || "등록된 행사 소개가 없습니다."
+        }
+        className="adm-content-body rich-text-content"
+      />
       {rows.length > 0 && (
         <dl className="adm-details">
           {rows.map((row) => (
@@ -1356,11 +1362,11 @@ function EventEditForm({
         />
       </Field>
       <Field label="행사 소개">
-        <textarea
-          rows={4}
+        <LazyRichTextEditor
           value={form.festivalContent}
-          onChange={(e) => set("festivalContent")(e.target.value)}
+          onChange={set("festivalContent")}
           placeholder="행사 상세 페이지에 노출되는 소개 글입니다."
+          ariaLabel="행사 소개"
         />
       </Field>
       <Field label="지역" required>

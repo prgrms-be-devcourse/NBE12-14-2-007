@@ -37,10 +37,37 @@ docker compose down
 
 볼륨이 없어서 `down` 하면 **회원·토큰 데이터가 전부 사라집니다.** 다시 `up` 하면 빈 DB + Flyway가 테이블을 새로 만듭니다.
 
+## 설정 파일 (local / prod)
+
+설정은 프로필로 나뉩니다. 로컬은 로컬 설정만, 운영은 운영 설정만 읽습니다.
+
+| 파일 | 언제 | 내용 |
+| --- | --- | --- |
+| `application.yaml` | 항상 | 공통 설정 (JPA, 메일, JWT, R2, 배치 주기 …) |
+| `application-local.yaml` | 로컬 (프로필 미지정 시 기본) | `.env` 로딩, 개발 DB 기본값, CORS `localhost:3000/3001`, 쿠키 `Secure=false` |
+| `application-prod.yaml` | 운영 (Railway) | `.env` 안 읽음, 모든 값은 Railway Variables, `PORT` 사용, 쿠키 `Secure=true` |
+
+- IDE나 `bootRun`으로 켜면 아무 설정 없이 **local**입니다.
+- Docker 이미지로 뜨면 `Dockerfile`의 `SPRING_PROFILES_ACTIVE=prod` 때문에 **prod**입니다 (Railway, 부하 테스트).
+- 로컬에서 운영 설정으로 켜 보고 싶으면 `SPRING_PROFILES_ACTIVE=prod` 환경 변수를 주면 됩니다. 이때는 `.env`를 읽지 않습니다.
+
+### 운영(Railway) Variables
+
+`application.yaml`의 공통 키(아래 표) + 이것들을 Railway 서비스 Variables에 넣습니다.
+
+| 키 | 값 |
+| --- | --- |
+| `DATASOURCE_URL` | `jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}` |
+| `DATASOURCE_USERNAME` | `${{Postgres.PGUSER}}` |
+| `DATASOURCE_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `CORS_ALLOWED_ORIGINS` | (선택) 쉼표 구분. 프론트가 Vercel rewrite로 붙으면 필요 없음 |
+
+`${{Postgres.…}}`는 Railway의 참조 변수 문법입니다. DB 서비스 이름이 `Postgres`가 아니면 그 이름으로 바꿉니다.
+
 ## 설정 (.env)
 
-`.env` 파일 하나로 **`docker compose`와 스프링 앱이 모두** 설정을 읽습니다.
-`application.yaml` 맨 위의 이 설정 덕분입니다.
+로컬에서는 `.env` 파일 하나로 **`docker compose`와 스프링 앱이 모두** 설정을 읽습니다.
+`application-local.yaml`의 이 설정 덕분입니다. 운영(prod)에서는 읽지 않습니다.
 
 ```yaml
 spring:
@@ -56,10 +83,11 @@ spring:
 | 키 | 용도 |
 | --- | --- |
 | `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_PORT` | docker compose가 사용 |
-| `DATASOURCE_URL` / `DATASOURCE_USERNAME` / `DATASOURCE_PASSWORD` | 스프링 DB 접속 |
+| `DATASOURCE_URL` / `DATASOURCE_USERNAME` / `DATASOURCE_PASSWORD` | 스프링 DB 접속. 로컬은 생략하면 아래 기본 DB 설정 |
 | `JWT_SECRET` / `JWT_REFRESH_SECRET` | 토큰 서명 키 |
-| `COOKIE_SECURE` / `COOKIE_SAME_SITE` / `COOKIE_PATH` | Refresh 쿠키 옵션 |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | Gmail 발송 계정 (앱 비밀번호) |
 | `PUBLIC_FESTIVAL_SERVICE_KEY` | 공공 행사 API 키 |
+| `KMA_WEATHER_SERVICE_KEY` | 기상청 날씨 API 키 |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` / `R2_BUCKET` / `R2_PUBLIC_URL` | 이미지 저장소 (Cloudflare R2) |
 
 기본 DB 설정은 이렇습니다.
@@ -331,6 +359,19 @@ r2StorageService.delete(oldKey);   // 삭제 실패는 로그만 남고 흐름�
 - 컬럼을 바꾸면 **엔티티 + 새** `V3__....sql` 둘 다 수정하세요. 이미 적용된 `V1` 파일을 고치면 checksum 에러가 납니다.
 - 즉 엔티티 변경시 `resources`안에  `db/migration` 에다가 `Vn_~~~~.sql` 로 만들어달라는겁니다.
 - 조회용 인덱스는 아직 없습니다. 유니크만 있습니다 (이메일, 좋아요 중복, 계정당 Refresh 1개).
+
+### 시드 데이터 (`db/seed`)
+
+데모 회원·행사 같은 **데이터만 넣는 SQL은 `db/seed`** 에 둡니다. 스키마(테이블·컬럼·제약)는 `db/migration` 입니다.
+
+| 폴더 | local | prod |
+| --- | --- | --- |
+| `db/migration` | ✅ | ✅ |
+| `db/seed` | ✅ | ❌ |
+
+- 운영 DB에 데모 계정(관리자 포함)이 들어가지 않게 하려고 나눴습니다. 설정은 `application-local.yaml`의 `spring.flyway.locations`.
+- 버전 번호는 두 폴더가 **같은 순번을 공유**합니다. 새 시드를 만들 때도 `db/migration`의 마지막 번호 다음 번호를 쓰세요 (겹치면 Flyway가 기동 실패).
+- 시드 SQL에는 `CREATE`/`ALTER` 같은 스키마 변경을 넣지 마세요. 운영에는 안 돌아서 로컬과 스키마가 달라집니다.
 
 
 

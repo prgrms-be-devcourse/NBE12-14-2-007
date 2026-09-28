@@ -10,6 +10,7 @@ import { MyPage } from "./pages/MyPage";
 import { AuthPage } from "./pages/Auth";
 import { AppProvider } from "./lib/context";
 import { AdminReviews } from "./admin/AdminReviews";
+import { AdminLogin, AdminRoot } from "./admin/AdminAuth";
 import {
   AdminLayout,
   AdminDashboard,
@@ -22,16 +23,19 @@ import {
 export function App() {
   return (
     <Routes>
-      <Route path="admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="members" element={<AdminMembers />} />
-        <Route
-          path="events"
-          element={<AdminContent kind="events" key="events" />}
-        />
-        <Route path="reviews" element={<AdminReviews />} />
-        <Route path="inquiries" element={<AdminTickets />} />
-        <Route path="activity" element={<AdminActivity />} />
+      <Route path="admin" element={<AdminRoot />}>
+        <Route path="login" element={<AdminLogin />} />
+        <Route element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="members" element={<AdminMembers />} />
+          <Route
+            path="events"
+            element={<AdminContent kind="events" key="events" />}
+          />
+          <Route path="reviews" element={<AdminReviews />} />
+          <Route path="inquiries" element={<AdminTickets />} />
+          <Route path="activity" element={<AdminActivity />} />
+        </Route>
       </Route>
       <Route
         element={

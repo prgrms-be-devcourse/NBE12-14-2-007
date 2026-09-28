@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
+import { RichTextContent } from "../components/RichText";
 import {
   Empty,
   ErrorState,
@@ -190,7 +191,10 @@ function AdminReviewDetail({
             {data.thumbnail && (
               <Photo src={data.thumbnail} alt="후기 첨부 사진" />
             )}
-            <p className="adm-content-body">{data.content}</p>
+            <RichTextContent
+              content={data.content}
+              className="adm-content-body rich-text-content"
+            />
           </>
         )
       )}
