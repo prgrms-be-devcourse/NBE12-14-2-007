@@ -88,6 +88,35 @@ export function clearSession() {
   refreshPromise = null;
   sessionVersion += 1;
 }
+
+interface AccessTokenClaims {
+  sub: string;
+  role: Role;
+  nickname: string;
+  exp: number;
+}
+/**
+ * 액세스 토큰 payload를 읽는다. 서명 검증은 하지 않는다.
+ * 화면 분기용일 뿐이고, 실제 권한은 서버가 매 요청마다 서명을 검증해서 막는다.
+ */
+export function accessTokenClaims(): AccessTokenClaims | null {
+  const payload = accessToken?.split(".")[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+export function isTokenExpired(claims: AccessTokenClaims) {
+  return claims.exp * 1000 <= Date.now();
+}
+/** 만료된 액세스 토큰을 리프레시 쿠키로 다시 받는다. */
+export function refreshAccessToken() {
+  return refresh();
+}
 async function transport<T>(
   path: string,
   method = "GET",
@@ -260,6 +289,15 @@ export function createApi(mode: Mode) {
       );
       accessToken = token.accessToken;
       return transport<Member>("/members/me");
+    },
+    /** 관리자 로그인. 토큰의 role이 ROLE_ADMIN이 아니면 토큰을 버리고 거부한다. */
+    async adminLogin(email: string, password: string) {
+      const member = await this.login(email, password);
+      if (accessTokenClaims()?.role !== "ROLE_ADMIN") {
+        clearSession();
+        throw new ApiError("관리자 계정이 아니에요.", 403);
+      }
+      return member;
     },
     async signup(input: SignupInput) {
       return transport<void>("/auth/signup", "POST", input);
