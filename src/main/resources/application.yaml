@@ -1,16 +1,12 @@
+# 로컬·운영 공통 설정.
+# 환경마다 다른 값(DB, 쿠키, CORS, .env 로딩)은 프로필 파일로 나눴다.
+#   application-local.yaml  로컬 개발 (프로필을 안 주면 이게 켜진다)
+#   application-prod.yaml   Railway 운영 (Dockerfile이 SPRING_PROFILES_ACTIVE=prod 로 띄운다)
 spring:
-  # 프로젝트 루트의 .env를 properties 파일로 읽어들인다.
-  # 아래 플레이스홀더에 기본값이 없으므로 .env가 없으면 앱이 뜨지 않는다.
-  # 실행 위치(작업 디렉터리)가 프로젝트 루트여야 .env를 찾는다.
-  # OS 환경변수가 있으면 .env 값보다 우선한다.
-  config:
-    import: optional:file:.env[.properties]
+  profiles:
+    default: local
   application:
     name: roomescape
-  datasource:
-    url: ${DATASOURCE_URL}
-    username: ${DATASOURCE_USERNAME}
-    password: ${DATASOURCE_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
@@ -20,6 +16,7 @@ spring:
         default_batch_fetch_size: 100
   flyway:
     enabled: true
+    # 스키마만. 시드 데이터(db/seed)는 local 프로필에서만 추가된다.
     locations: classpath:db/migration
   data:
     web:
@@ -72,9 +69,8 @@ jwt:
 
 app:
   cookie:
-    secure: ${COOKIE_SECURE}
-    same-site: ${COOKIE_SAME_SITE}
-    path: ${COOKIE_PATH}
+    # secure / same-site 는 환경마다 달라서 프로필 파일에 있다.
+    path: /api/v1/auth
 
 privacy:
   # 탈퇴 후 개인정보를 보관하는 기간(개월).

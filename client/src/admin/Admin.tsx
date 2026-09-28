@@ -26,7 +26,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
-import { AppProvider, useApp, useLoad } from "../lib/context";
+import { useApp, useLoad } from "../lib/context";
+import { AdminGuard } from "./AdminAuth";
 import { errorText, period, regions, safeUrl } from "../lib/format";
 import type { AdminFestivalDetail, Role } from "../lib/types";
 import {
@@ -68,14 +69,14 @@ const stamp = (date: string) =>
   });
 
 export function AdminLayout() {
-  // AdminProvider가 실제 어드민 API를 부르려면 토큰과 로그인 정보가 필요하다.
-  // AppProvider가 마운트될 때 리프레시 쿠키로 액세스 토큰을 복구한다.
+  // 토큰과 로그인 정보는 AdminRoot의 AppProvider가 들고 있다.
+  // 가드를 통과해야(관리자 토큰이 있어야) AdminProvider가 어드민 API를 부른다.
   return (
-    <AppProvider>
+    <AdminGuard>
       <AdminProvider>
         <AdminShell />
       </AdminProvider>
-    </AppProvider>
+    </AdminGuard>
   );
 }
 function AdminShell() {

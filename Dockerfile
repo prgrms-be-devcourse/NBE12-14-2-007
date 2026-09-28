@@ -31,5 +31,8 @@ ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=50 \
     -XX:+UseSerialGC \
     -XX:+ExitOnOutOfMemoryError"
 
+# 이미지로 뜨면(Railway, 부하 테스트) 항상 운영 프로필이다. 로컬 IDE 실행은 local.
+ENV SPRING_PROFILES_ACTIVE=prod
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

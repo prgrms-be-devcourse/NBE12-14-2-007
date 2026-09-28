@@ -88,6 +88,38 @@ export function clearSession() {
   refreshPromise = null;
   sessionVersion += 1;
 }
+
+interface AccessTokenClaims {
+  sub: string;
+  role: Role;
+  nickname: string;
+  exp: number;
+}
+/**
+ * 액세스 토큰 payload를 읽는다. 서명 검증은 하지 않는다.
+ * 화면 분기용일 뿐이고, 실제 권한은 서버가 매 요청마다 서명을 검증해서 막는다.
+ */
+export function accessTokenClaims(): AccessTokenClaims | null {
+  const payload = accessToken?.split(".")[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+export function isTokenExpired(claims: AccessTokenClaims) {
+  return claims.exp * 1000 <= Date.now();
+}
+/** 만료된 액세스 토큰을 리프레시 쿠키로 다시 받는다. */
+export function refreshAccessToken() {
+  return refresh();
+}
+// TODO 어드민 화면 디버깅용. 원인 찾으면 지울 것.
+const isAdminPath = (path: string) =>
+  path.startsWith("/admin/") || path === "/festivals/sync";
 async function transport<T>(
   path: string,
   method = "GET",
@@ -98,6 +130,12 @@ async function transport<T>(
   const form = body instanceof FormData;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const logAdmin = isAdminPath(path);
+  if (logAdmin)
+    console.log(
+      `[admin] → ${method} ${path}${retry ? "" : " (재시도)"}`,
+      body ?? "",
+    );
   let response: Response;
   try {
     response = await fetch(`/api/v1${path}`, {
@@ -112,7 +150,8 @@ async function transport<T>(
       },
       body: body === undefined ? undefined : form ? body : JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (logAdmin) console.error(`[admin] ✕ ${method} ${path} 연결 실패`, error);
     throw new ApiError(
       "서버에 연결하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.",
     );
@@ -122,6 +161,8 @@ async function transport<T>(
   if (requestSession !== sessionVersion) {
     throw new ApiError("세션이 변경되어 이전 요청을 취소했어요.");
   }
+  if (logAdmin && (response.status === 401 || response.status === 204))
+    console.log(`[admin] ← ${response.status} ${method} ${path}`);
   if (response.status === 401 && retry && !path.startsWith("/auth/")) {
     try {
       await refresh();
@@ -140,6 +181,10 @@ async function transport<T>(
   }
   if (response.status === 204) return undefined as T;
   const result = await response.json().catch(() => null);
+  if (logAdmin) {
+    const log = response.ok && result?.success ? console.log : console.error;
+    log(`[admin] ← ${response.status} ${method} ${path}`, result);
+  }
   if (!response.ok || !result?.success) {
     throw new ApiError(
       result?.message ||
@@ -260,6 +305,15 @@ export function createApi(mode: Mode) {
       );
       accessToken = token.accessToken;
       return transport<Member>("/members/me");
+    },
+    /** 관리자 로그인. 토큰의 role이 ROLE_ADMIN이 아니면 토큰을 버리고 거부한다. */
+    async adminLogin(email: string, password: string) {
+      const member = await this.login(email, password);
+      if (accessTokenClaims()?.role !== "ROLE_ADMIN") {
+        clearSession();
+        throw new ApiError("관리자 계정이 아니에요.", 403);
+      }
+      return member;
     },
     async signup(input: SignupInput) {
       return transport<void>("/auth/signup", "POST", input);
