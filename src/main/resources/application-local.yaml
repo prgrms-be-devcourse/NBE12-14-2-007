@@ -1,0 +1,20 @@
+# 로컬 개발 프로필. 프로필을 따로 주지 않으면 이게 켜진다.
+spring:
+  # 프로젝트 루트의 .env를 properties 파일로 읽어들인다. 로컬에서만 쓴다.
+  # 실행 위치(작업 디렉터리)가 프로젝트 루트여야 .env를 찾는다.
+  # OS 환경변수가 있으면 .env 값보다 우선한다.
+  config:
+    import: optional:file:.env[.properties]
+  # docker compose(개발용 DB) 기본값. .env에 적으면 그 값이 우선한다.
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/roomescape}
+    username: ${DATASOURCE_USERNAME:roomescape}
+    password: ${DATASOURCE_PASSWORD:roomescape}
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001
+  cookie:
+    # 로컬은 http라서 Secure 쿠키를 쓰면 브라우저가 저장하지 않는다.
+    secure: false
+    same-site: Lax

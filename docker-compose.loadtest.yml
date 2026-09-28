@@ -27,6 +27,7 @@ services:
       retries: 10
 
   app:
+    # Dockerfile이 prod 프로필로 띄운다. 운영과 같은 설정에 DB 주소만 이 compose의 db로 바꾼다.
     build: .
     env_file:
       - .env
@@ -34,7 +35,6 @@ services:
       DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       DATASOURCE_USERNAME: ${POSTGRES_USER}
       DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      COOKIE_SECURE: "false"
       KMA_WEATHER_SERVICE_KEY: ${KMA_WEATHER_SERVICE_KEY:-loadtest-dummy}
       TZ: Asia/Seoul
     cpus: ${LOADTEST_CPUS:-1}
