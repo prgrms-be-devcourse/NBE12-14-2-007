@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://CHANGE-ME.up.railway.app/api/:path*"
+      "destination": "https://roomescape-api.up.railway.app/api/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
