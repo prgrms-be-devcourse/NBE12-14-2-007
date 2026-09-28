@@ -25,6 +25,10 @@ dependencies {
 	// 이메일 인증 코드를 담아두는 로컬 캐시. expireAfterWrite로 만료를 알아서 처리한다.
 	implementation("com.github.ben-manes.caffeine:caffeine")
 
+	// 메트릭 수집. /actuator/prometheus 로 Prometheus 형식 메트릭을 내보낸다.
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-mail")

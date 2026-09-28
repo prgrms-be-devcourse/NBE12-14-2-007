@@ -47,6 +47,21 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # 필요한 것만 연다. env, heapdump 등은 민감 정보가 나가므로 열지 않는다.
+        include: health, info, prometheus
+  metrics:
+    tags:
+      # Prometheus/Grafana에서 어느 앱의 메트릭인지 구분하는 라벨
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        # 응답시간 히스토그램을 남겨야 p95/p99를 계산할 수 있다.
+        http.server.requests: true
+
 jwt:
   secret: ${JWT_SECRET}
   issuer: roomescape
