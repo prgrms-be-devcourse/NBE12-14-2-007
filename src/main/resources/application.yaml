@@ -50,7 +50,7 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   issuer: roomescape
-  access-token-validity-seconds: 1800
+  access-token-validity-seconds: 300
   refresh-secret: ${JWT_REFRESH_SECRET}
   refresh-token-validity-seconds: 1209600
   refresh-cleanup-cron: "0 0 4 * * *"
