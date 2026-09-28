@@ -2149,6 +2149,12 @@ select {
 .detail-title .action-row {
   gap: 8px;
 }
+.festival-like {
+  margin-top: 18px;
+}
+.festival-like strong {
+  font-variant-numeric: tabular-nums;
+}
 .state-label {
   font-size: 12px;
   color: #606c53;
