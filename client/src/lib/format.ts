@@ -128,6 +128,10 @@ function resized(url: string, width: number) {
 export function imageUrl(value?: string | null, width = 480) {
   if (!value) return undefined;
   if (value.startsWith("/images/") || value.startsWith("blob:")) return value;
+  // 백엔드가 이미 리사이즈해서 R2에 올린 이미지는 weserv.nl을 한 번 더 거칠 필요가 없다.
+  // 레거시 이미지(아직 이관 안 된 공공 API 원본 URL)는 아래 weserv.nl 경로로 계속 처리된다.
+  const r2Base = import.meta.env.VITE_IMAGE_BASE_URL;
+  if (r2Base && value.startsWith(r2Base)) return value;
   const resolved =
     safeUrl(value) ||
     (import.meta.env.VITE_IMAGE_BASE_URL
