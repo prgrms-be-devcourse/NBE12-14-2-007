@@ -16,6 +16,7 @@ spring:
         default_batch_fetch_size: 100
   flyway:
     enabled: true
+    # 스키마만. 시드 데이터(db/seed)는 local 프로필에서만 추가된다.
     locations: classpath:db/migration
   data:
     web:

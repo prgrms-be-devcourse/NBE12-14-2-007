@@ -35,6 +35,8 @@ services:
       DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       DATASOURCE_USERNAME: ${POSTGRES_USER}
       DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # prod 프로필이라 시드가 안 들어가는데, 부하 시나리오는 시드 행사를 조회하므로 넣어 준다.
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       KMA_WEATHER_SERVICE_KEY: ${KMA_WEATHER_SERVICE_KEY:-loadtest-dummy}
       TZ: Asia/Seoul
     cpus: ${LOADTEST_CPUS:-1}

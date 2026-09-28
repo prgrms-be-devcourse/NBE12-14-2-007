@@ -360,6 +360,19 @@ r2StorageService.delete(oldKey);   // 삭제 실패는 로그만 남고 흐름�
 - 즉 엔티티 변경시 `resources`안에  `db/migration` 에다가 `Vn_~~~~.sql` 로 만들어달라는겁니다.
 - 조회용 인덱스는 아직 없습니다. 유니크만 있습니다 (이메일, 좋아요 중복, 계정당 Refresh 1개).
 
+### 시드 데이터 (`db/seed`)
+
+데모 회원·행사 같은 **데이터만 넣는 SQL은 `db/seed`** 에 둡니다. 스키마(테이블·컬럼·제약)는 `db/migration` 입니다.
+
+| 폴더 | local | prod |
+| --- | --- | --- |
+| `db/migration` | ✅ | ✅ |
+| `db/seed` | ✅ | ❌ |
+
+- 운영 DB에 데모 계정(관리자 포함)이 들어가지 않게 하려고 나눴습니다. 설정은 `application-local.yaml`의 `spring.flyway.locations`.
+- 버전 번호는 두 폴더가 **같은 순번을 공유**합니다. 새 시드를 만들 때도 `db/migration`의 마지막 번호 다음 번호를 쓰세요 (겹치면 Flyway가 기동 실패).
+- 시드 SQL에는 `CREATE`/`ALTER` 같은 스키마 변경을 넣지 마세요. 운영에는 안 돌아서 로컬과 스키마가 달라집니다.
+
 
 
 ## 부하 테스트
