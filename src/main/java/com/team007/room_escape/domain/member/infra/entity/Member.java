@@ -88,9 +88,9 @@ public class Member extends SoftDeletableEntity {
 		this.password = encodedPassword;
 	}
 
-	/** 신뢰 등급 재계산 배치용. 관리자 권한은 자동 계산으로 덮어쓰지 않는다. */
+	/** 활동 기반 신뢰 등급 재계산용. 제재 회원과 관리자는 자동 계산으로 덮어쓰지 않는다. */
 	public void applyTrustGrade(MemberRole grade) {
-		if (role == MemberRole.ROLE_ADMIN || grade == MemberRole.ROLE_ADMIN) {
+		if (role == MemberRole.ROLE_WARNING || role == MemberRole.ROLE_ADMIN) {
 			return;
 		}
 		this.role = grade;

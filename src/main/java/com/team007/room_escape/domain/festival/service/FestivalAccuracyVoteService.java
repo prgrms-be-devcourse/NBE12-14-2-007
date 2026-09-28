@@ -10,6 +10,7 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracy
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
@@ -25,6 +26,7 @@ public class FestivalAccuracyVoteService {
     private final FestivalAccuracyVoteRepository accuracyVoteRepository;
     private final FestivalRepository festivalRepository;
     private final MemberRepository memberRepository;
+    private final MemberTrustGradeService memberTrustGradeService;
 
     @Transactional
     public AccuracyVoteResponse vote(
@@ -34,6 +36,13 @@ public class FestivalAccuracyVoteService {
     ) {
         Member member = findActiveMember(memberId);
         Festival festival = findUserSubmittedFestival(festivalId);
+
+        if (festival.getMember() != null
+                && festival.getMember().getId().equals(memberId)) {
+            throw new BusinessException(
+                    FestivalExceptionCode.SELF_ACCURACY_VOTE_NOT_ALLOWED
+            );
+        }
 
         FestivalAccuracyVote vote = accuracyVoteRepository
                 .findByFestivalAndMember(festival, member)
@@ -46,7 +55,9 @@ public class FestivalAccuracyVoteService {
         vote.changeVote(request.voteType());
         accuracyVoteRepository.save(vote);
 
-        return buildResponse(festival, vote.getVoteType());
+        AccuracyVoteResponse response = buildResponse(festival, vote.getVoteType());
+        memberTrustGradeService.refreshForFestival(festival);
+        return response;
     }
 
     @Transactional
@@ -61,7 +72,9 @@ public class FestivalAccuracyVoteService {
                 .findByFestivalAndMember(festival, member)
                 .ifPresent(accuracyVoteRepository::delete);
 
-        return buildResponse(festival, null);
+        AccuracyVoteResponse response = buildResponse(festival, null);
+        memberTrustGradeService.refreshForFestival(festival);
+        return response;
     }
 
     private AccuracyVoteResponse buildResponse(

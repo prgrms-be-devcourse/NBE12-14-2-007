@@ -2,7 +2,7 @@ export type Mode = "preview" | "api";
 export type Role =
   | "ROLE_WARNING"
   | "ROLE_UNVERIFIED"
-  | "ROLE_NORMAL"
+  | "ROLE_RECOGNIZED"
   | "ROLE_TRUSTED"
   | "ROLE_ADMIN";
 export interface Member {
@@ -40,9 +40,15 @@ export interface EventView extends Festival {
   accuracyVote?: FestivalAccuracyVote;
   likeCount?: number;
   likedByMe?: boolean;
-  submitter?: { id: string; nickname: string };
+  submitter?: FestivalMember | null;
   preview?: boolean;
   submissionId?: string;
+}
+export interface FestivalMember {
+  id: string;
+  nickname: string;
+  profileImg: string | null;
+  role: Role;
 }
 export interface FestivalSearchInput {
   keyword?: string;
@@ -92,6 +98,7 @@ export interface FestivalDetailItem {
   myVote: "ACCURATE" | "INACCURATE" | null;
   likeCount: number;
   likedByMe: boolean;
+  member: FestivalMember | null;
 }
 export interface FestivalAccuracyVote {
   accurateCount: number;

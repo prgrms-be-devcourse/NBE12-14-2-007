@@ -7,6 +7,7 @@ import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
@@ -28,6 +29,7 @@ public class LikeService {
 	private final PostRepository postRepository;
 	private final FestivalRepository festivalRepository;
 	private final MemberRepository memberRepository;
+	private final MemberTrustGradeService memberTrustGradeService;
 
 	/** 후기 */
 	@Transactional
@@ -93,6 +95,10 @@ public class LikeService {
 		Member member = memberRepository.findById(memberId)
 				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
 
+		if (festival.getMember() != null && festival.getMember().getId().equals(memberId)) {
+			throw new BusinessException(LikeExceptionCode.SELF_FESTIVAL_LIKE_NOT_ALLOWED);
+		}
+
 		if(likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId)) {
 			throw new BusinessException(LikeExceptionCode.LIKE_ALREADY_EXISTS);
 		}
@@ -103,6 +109,8 @@ public class LikeService {
 				.build();
 
 		likeRepository.save(like);
+		likeRepository.flush();
+		memberTrustGradeService.refreshForFestival(festival);
 
 		Long likeCount = likeRepository.countByFestivalId(festivalId);
 
@@ -119,7 +127,10 @@ public class LikeService {
 		Like like = likeRepository.findByFestivalIdAndMemberId(festivalId, memberId)
 				.orElseThrow(() -> new BusinessException(LikeExceptionCode.LIKE_NOT_FOUND));
 
+		Festival festival = like.getFestival();
 		likeRepository.delete(like);
+		likeRepository.flush();
+		memberTrustGradeService.refreshForFestival(festival);
 
 		Long likeCount = likeRepository.countByFestivalId(festivalId);
 

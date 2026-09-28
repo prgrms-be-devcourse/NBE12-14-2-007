@@ -64,9 +64,9 @@ export const categories = [
 ];
 export const roleNames: Record<string, string> = {
   ROLE_WARNING: "활동 제한",
-  ROLE_UNVERIFIED: "새로운 이웃",
-  ROLE_NORMAL: "일반 회원",
-  ROLE_TRUSTED: "신뢰 회원",
+  ROLE_UNVERIFIED: "탈출 꿈나무",
+  ROLE_RECOGNIZED: "탈출 메이커",
+  ROLE_TRUSTED: "탈출 마스터",
   ROLE_ADMIN: "관리자",
 };
 export function dateText(value?: string | null) {

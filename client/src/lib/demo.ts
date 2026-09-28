@@ -121,7 +121,7 @@ export const demoMember: Member = {
   email: "preview@example.com",
   phone: null,
   profileImg: null,
-  role: "ROLE_NORMAL",
+  role: "ROLE_UNVERIFIED",
   createdAt: "2026-09-01T09:00:00",
   updatedAt: "2026-09-01T09:00:00",
 };
@@ -130,7 +130,12 @@ export const demoCommunityEvents: EventView[] = [
     ...demoEvents[4],
     festivalId: 3001,
     submissionId: undefined,
-    submitter: { id: "demo-neighbor", nickname: "소소한 여행자" },
+    submitter: {
+      id: "demo-neighbor",
+      nickname: "소소한 여행자",
+      profileImg: null,
+      role: "ROLE_RECOGNIZED",
+    },
     title: "동네 책방, 가을 낭독회",
     category: "체험",
     regionDetail: "행궁동 작은 책방",
@@ -142,7 +147,12 @@ export const demoCommunityEvents: EventView[] = [
     ...demoEvents[5],
     festivalId: 3002,
     submissionId: undefined,
-    submitter: { id: "demo-neighbor-2", nickname: "주말 수집가" },
+    submitter: {
+      id: "demo-neighbor-2",
+      nickname: "주말 수집가",
+      profileImg: null,
+      role: "ROLE_TRUSTED",
+    },
     title: "호숫가 작은 음악회",
     partcptExpnInfo: "무료",
     category: "공연",
@@ -163,7 +173,12 @@ export function previewSubmittedEvents(): EventView[] {
       submissionId: undefined,
       source: "MEMBER" as const,
       preview: true,
-      submitter: { id: data.member.id, nickname: data.member.nickname },
+      submitter: {
+        id: data.member.id,
+        nickname: data.member.nickname,
+        profileImg: data.member.profileImg,
+        role: data.member.role,
+      },
     })),
   ];
 }

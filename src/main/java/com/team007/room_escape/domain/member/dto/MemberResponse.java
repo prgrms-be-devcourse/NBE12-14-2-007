@@ -84,12 +84,12 @@ public class MemberResponse {
         MemberRole role,
         String profileImg
     ) {
-        public static MemberInfo form(Member member) {
+        public static MemberInfo from(Member member, String profileImgUrl) {
             return MemberInfo.builder()
                 .id(member.getId())
                 .nickname(member.getNickname())
                 .role(member.getRole())
-                .profileImg(member.getProfileImg())
+                .profileImg(profileImgUrl)
                 .build();
         }
     }

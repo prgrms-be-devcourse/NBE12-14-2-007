@@ -5,6 +5,7 @@ import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
+import com.team007.room_escape.domain.member.dto.MemberResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -138,11 +139,14 @@ public class FestivalResponse {
             long likeCount,
 
             @Schema(description = "현재 사용자의 좋아요 여부", example = "true")
-            boolean likedByMe
+            boolean likedByMe,
+
+            @Schema(description = "회원 제보 행사 작성자 정보. 공공데이터 행사는 null", nullable = true)
+            MemberResponse.MemberInfo member
     ) {
 
         public static DetailResponse from(Festival festival) {
-            return from(festival, 0, 0, null, 0, false);
+            return from(festival, 0, 0, null, 0, false, null);
         }
 
         public static DetailResponse from(
@@ -151,7 +155,8 @@ public class FestivalResponse {
                 long inaccurateCount,
                 FestivalAccuracyVoteType myVote,
                 long likeCount,
-                boolean likedByMe
+                boolean likedByMe,
+                MemberResponse.MemberInfo member
         ) {
             return DetailResponse.builder()
                     .festivalId(festival.getId())
@@ -180,6 +185,7 @@ public class FestivalResponse {
                     .myVote(myVote)
                     .likeCount(likeCount)
                     .likedByMe(likedByMe)
+                    .member(member)
                     .build();
         }
     }

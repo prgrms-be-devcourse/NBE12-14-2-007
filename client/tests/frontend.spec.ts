@@ -7,7 +7,7 @@ const member = {
   nickname: "계약 검증 회원",
   profileImg: null,
   phone: null,
-  role: "ROLE_NORMAL",
+  role: "ROLE_UNVERIFIED",
   createdAt: "2026-09-01T10:00:00",
   updatedAt: "2026-09-01T10:00:00",
 };

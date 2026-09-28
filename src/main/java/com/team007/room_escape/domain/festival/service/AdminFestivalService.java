@@ -14,6 +14,7 @@ import com.team007.room_escape.domain.festival.dto.FestivalResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
+import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -33,6 +34,7 @@ public class AdminFestivalService {
 		Set.of("beginDe", "endDe", "title", "createdAt");
 
 	private final FestivalRepository festivalRepository;
+	private final MemberTrustGradeService memberTrustGradeService;
 
 	/**
 	 * 관리자 행사 검색. 조건을 비우면 전체를 조회한다.
@@ -66,6 +68,8 @@ public class AdminFestivalService {
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
 		festival.delete();
+		festivalRepository.flush();
+		memberTrustGradeService.refreshForFestival(festival);
 	}
 
 	/**

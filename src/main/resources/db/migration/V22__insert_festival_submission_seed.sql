@@ -15,7 +15,7 @@ VALUES (
     '00000000-0000-7000-8000-000000000001',
     'roomescape@example.com',
     '$2a$10$3J0CLAJcpClv0aXxx62Ir.isAsHcL4iA8CG2ahEZz9vVp9tM4pWgu',
-    'ROLE_NORMAL',
+    'ROLE_ADMIN',
     '방구석탈출 운영팀',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP,
@@ -290,7 +290,7 @@ WITH seed (
             '2026-10-25 22:00:00',
             '매주 일요일 14:00~22:00',
             NULL,
-            '02-120',
+            '02-6401-9717',
             '서울특별시'
         ),
         (
