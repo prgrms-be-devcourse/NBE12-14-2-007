@@ -43,7 +43,7 @@ public class PostController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "후기 검색", description = "후기를 검색합니다.")
+	@Operation(summary = "후기 검색", description = "후기를 검색합니다. sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다.")
 	@GetMapping("/posts")
 	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPosts(
 			@RequestParam(required = false) PostSearchType type,
@@ -70,7 +70,7 @@ public class PostController {
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
 
-	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기를 검색합니다.")
+	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기를 검색합니다. sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다.")
 	@GetMapping("/festivals/{id}/posts")
 	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPostsByFestival(
 			@PathVariable Long id,
