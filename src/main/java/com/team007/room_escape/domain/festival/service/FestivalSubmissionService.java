@@ -12,10 +12,9 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalSubmissionRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
-import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.util.RichTextSanitizer;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,13 +34,12 @@ public class FestivalSubmissionService {
 
     private final FestivalRepository festivalRepository;
     private final FestivalSubmissionRepository festivalSubmissionRepository;
-    private final MemberRepository memberRepository;
+    private final MemberReader memberReader;
     private final RichTextSanitizer richTextSanitizer;
 
     @Transactional
     public CreateFestivalSubmissionResponse create(UUID memberId, CreateOrUpdateFestivalSubmissionRequest request) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+        Member member = memberReader.getUnrestrictedMember(memberId);
 
         String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
 
@@ -117,6 +115,8 @@ public class FestivalSubmissionService {
             UUID submissionId,
             CreateOrUpdateFestivalSubmissionRequest request
     ) {
+        memberReader.getUnrestrictedMember(memberId);
+
         FestivalSubmission submission = festivalSubmissionRepository
                 .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
                 .orElseThrow(() -> new BusinessException(

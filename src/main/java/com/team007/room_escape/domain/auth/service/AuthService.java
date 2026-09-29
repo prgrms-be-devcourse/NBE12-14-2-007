@@ -73,10 +73,8 @@ public class AuthService {
 		return issueTokens(member);
 	}
 
-	/**
-	 * 등급·닉네임·프로필은 리프레시 토큰 claim이 아니라 DB에서 다시 읽는다.
-	 * claim을 그대로 쓰면 제재(WARNING)나 등급 변경이 리프레시 토큰 만료 전까지 반영되지 않는다.
-	 */
+	/**등급·닉네임·프로필은 리프레시 토큰 claim이 아니라 DB에서 다시 읽는다.
+	 * claim을 그대로 쓰면 제재(WARNING)나 등급 변경이 리프레시 토큰 만료 전까지 반영되지 않는다.*/
 	@Transactional(readOnly = true)
 	public String refresh(String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank()) {
