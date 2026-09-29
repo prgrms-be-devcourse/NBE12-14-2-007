@@ -25,7 +25,14 @@ import {
   ShieldCheck,
   UsersRound,
 } from "lucide-react";
-import { Badge, Empty, Field, Logo, Modal } from "../components/ui";
+import {
+  Badge,
+  Empty,
+  FESTIVAL_DEFAULT_IMAGE,
+  Field,
+  Logo,
+  Modal,
+} from "../components/ui";
 import { RichTextContent } from "../components/RichText";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { useApp, useLoad } from "../lib/context";
@@ -1196,11 +1203,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
                 <div className="adm-content-cell">
                   {isEvent && (
                     <div className="adm-thumbnail">
-                      {item.image ? (
-                        <img src={item.image} alt="" />
-                      ) : (
-                        <CalendarDays size={20} />
-                      )}
+                      <img src={item.image || FESTIVAL_DEFAULT_IMAGE} alt="" />
                     </div>
                   )}
                   <div>

@@ -72,6 +72,8 @@ export interface FestivalSearchItem {
   region: string;
   status: "OPEN" | "CLOSED";
   likeCount: number;
+  /** 회원 제보 행사의 제보자. 공공데이터 행사는 null */
+  member: FestivalMember | null;
 }
 // GET /api/v1/festivals/{festivalId} 응답 그대로의 모양
 export interface FestivalDetailItem {
