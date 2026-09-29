@@ -1,6 +1,7 @@
 package com.team007.room_escape.global.storage;
 
 import com.team007.room_escape.global.response.ApiResponse;
+import com.team007.room_escape.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
@@ -8,6 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -60,11 +62,12 @@ public class ImageController {
 	)
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<ApiResponse<UploadInfo>> upload(
+		@AuthenticationPrincipal CustomUserDetails principal,
 		// 이름을 생략하면 컴파일 옵션(-parameters)에 의존하게 된다. 명시해두면 어떤 빌드에서도 안전하다.
 		@RequestParam("type") ImageType type,
 		@RequestPart("file") MultipartFile file
 	) {
-		String key = r2StorageService.upload(file, type.getDirectory());
+		String key = r2StorageService.upload(file, type.getDirectory(), principal.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(
 			new UploadInfo(key, imageUrlResolver.resolve(key))));

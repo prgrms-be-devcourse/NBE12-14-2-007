@@ -45,14 +45,7 @@ public class AuthRequest {
 		
 		@ValidPhone
 		@Schema(description = "휴대폰 번호. 하이픈 없이 숫자만", example = "01012345678")
-		String phone,
-
-		@Size(max = 2048)
-		@Schema(
-			description = "프로필 이미지 key. 업로드 API(/api/v1/images)가 돌려준 key를 넣는다. 공개 URL이 아니다",
-			example = "profiles/0befc150-badb-4674-a99d-ded96f03814a.png"
-		)
-		String profileImg
+		String phone
 	) {
 	}
 }

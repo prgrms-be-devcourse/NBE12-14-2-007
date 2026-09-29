@@ -32,10 +32,11 @@ public class AuthService {
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenService refreshTokenService;
 
+	/** 비회원은 이미지를 올릴 수 없어서 프로필 사진은 가입 후 마이페이지에서 등록한다. */
 	@Transactional
 	public void signup(Signup request) {
-		log.info("[가입] 요청 email={} nickname={} phone={} profileImg={}",
-			request.email(), request.nickname(), request.phone(), request.profileImg());
+		log.info("[가입] 요청 email={} nickname={} phone={}",
+			request.email(), request.nickname(), request.phone());
 
 		// 탈퇴 회원까지 본다. 탈퇴 직후 같은 이메일로 다시 가입하는 것을 막기 위함이다.
 		if (memberRepository.existsByEmail(request.email())) {
@@ -51,7 +52,6 @@ public class AuthService {
 			log.warn("[가입] 닉네임 중복 nickname={}", request.nickname());
 			throw new BusinessException(MemberExceptionCode.NICKNAME_DUPLICATED);
 		}
-
 		Member saved = memberRepository.save(
 			Member.builder()
 				.email(request.email())
@@ -59,14 +59,11 @@ public class AuthService {
 				.nickname(request.nickname())
 				// 빈 문자열이 그대로 저장되면 "번호 없음"과 구분이 안 되고 DB 제약에도 걸린다.
 				.phone(emptyToNull(request.phone()))
-				// 업로드 API가 돌려준 key를 그대로 저장한다. 공개 URL은 응답 시 조립한다.
-				.profileImg(request.profileImg())
 				.role(MemberRole.ROLE_UNVERIFIED)
 				.build()
 		);
 
-		log.info("[가입] 완료 id={} email={} profileImg={}",
-			saved.getId(), saved.getEmail(), saved.getProfileImg());
+		log.info("[가입] 완료 id={} email={}", saved.getId(), saved.getEmail());
 	}
 
 	@Transactional
