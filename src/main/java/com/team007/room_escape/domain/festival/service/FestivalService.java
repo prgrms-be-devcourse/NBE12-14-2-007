@@ -25,6 +25,7 @@ import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -326,7 +327,7 @@ public class FestivalService {
 	/** 경기도 API 응답(Dto) -> Entity **/
 	private Festival toGyeonggiFestival(FestivalApiRow row) {
 		LocalDateTime beginDe = parseDate(row.beginDe());
-		LocalDateTime endDe = parseDate(row.endDe());
+		LocalDateTime endDe = parseEndDate(row.endDe());
 
 		return Festival.builder()
 			.providerType(ProviderType.PUBLIC)
@@ -355,6 +356,15 @@ public class FestivalService {
 			return null;
 		}
 		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atStartOfDay();
+	}
+
+	/** 종료일은 그 날 끝(23:59:59.999...)까지로 해석한다. 마지막 날 낮에 진행 중인 행사가
+	 *  자정이 지나자마자 이미 종료된 것으로 잘못 판정되는 걸 막기 위함이다. */
+	private LocalDateTime parseEndDate(String yyyyMMdd) {
+		if (yyyyMMdd == null || yyyyMMdd.isBlank()) {
+			return null;
+		}
+		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atTime(LocalTime.MAX);
 	}
 
 	private FestivalStatus resolveStatus(LocalDateTime endDe) {
