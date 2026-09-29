@@ -8,5 +8,7 @@ public enum InquiryTargetType {
 	FESTIVAL,
 	POST,
 	COMMENT,
-	MEMBER
+	MEMBER,
+	COMMUNITY_POST,
+	COMMUNITY_COMMENT
 }

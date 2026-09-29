@@ -89,7 +89,13 @@ export interface Ticket {
   status: "PENDING" | "ANSWERED";
   answer: string;
   target?: {
-    kind: "events" | "reviews" | "comments" | "members";
+    kind:
+      | "events"
+      | "reviews"
+      | "comments"
+      | "members"
+      | "communityPosts"
+      | "communityComments";
     id: string;
     title: string;
   };
@@ -299,6 +305,8 @@ const ticketTargets = {
   POST: { kind: "reviews", name: "후기" },
   COMMENT: { kind: "comments", name: "댓글" },
   MEMBER: { kind: "members", name: "회원" },
+  COMMUNITY_POST: { kind: "communityPosts", name: "커뮤니티 글" },
+  COMMUNITY_COMMENT: { kind: "communityComments", name: "커뮤니티 댓글" },
 } as const;
 
 function toTicket(item: AdminInquiryListItem): Ticket {
