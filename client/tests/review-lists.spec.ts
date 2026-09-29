@@ -291,7 +291,7 @@ test("preview searches before pagination and preserves likes sorting", async ({
   await setup(page, { role: "ROLE_UNVERIFIED", preview: true });
   await page.goto("/reviews");
   await expect(page.locator(".post-row")).toHaveCount(3);
-  await expect(page.getByLabel("후기 정렬")).toHaveValue("likes,desc");
+  await expect(page.getByLabel("후기 정렬")).toHaveValue("likeCount,desc");
   await expect(page.locator(".post-row h3").first()).toHaveText(
     "걷는 것만으로도 좋았던 저녁",
   );

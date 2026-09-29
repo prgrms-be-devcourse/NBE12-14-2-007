@@ -45,6 +45,8 @@ import {
   Modal,
 } from "../components/ui";
 import { FestivalPosts } from "./Reviews";
+import { RichTextContent } from "../components/RichText";
+import { ReportableName, ReportButton } from "../components/ReportButton";
 
 export function EventDetailPage() {
   const { eventId, submissionId } = useParams();
@@ -166,9 +168,8 @@ function EventDetail({ event }: { event: EventView }) {
           <div>
             <strong>부정확한 정보일 수 있어요</strong>
             <p>
-              이 행사에 ‘부정확해요’ 평가가 {inaccurateVoteCount}개
-              등록됐어요. 방문 전 공식 채널에서 일정과 장소를 다시 확인해
-              주세요.
+              이 행사에 ‘부정확해요’ 평가가 {inaccurateVoteCount}개 등록됐어요.
+              방문 전 공식 채널에서 일정과 장소를 다시 확인해 주세요.
             </p>
           </div>
         </div>
@@ -271,10 +272,12 @@ function EventDetail({ event }: { event: EventView }) {
                   </div>
                 </section>
                 <section className="detail-section detail-description">
-                  <p className="prose">
-                    {event.festivalContent ||
-                      "아직 등록된 상세 소개가 없어요. 행사 참고 링크에서 자세한 내용을 확인해 주세요."}
-                  </p>
+                  <RichTextContent
+                    content={
+                      event.festivalContent ||
+                      "아직 등록된 상세 소개가 없어요. 행사 참고 링크에서 자세한 내용을 확인해 주세요."
+                    }
+                  />
                   {externalUrl ? (
                     <a
                       className="btn primary"
@@ -383,13 +386,18 @@ function EventDetail({ event }: { event: EventView }) {
               <FestivalPosts festivalId={event.festivalId} />
             )}
           </div>
-          <Link
-            className="report-link"
-            to={`/mypage?tab=inquiries&report=${encodeURIComponent(`행사 정보 문의: ${event.title}\n행사 주소: ${window.location.href}`)}`}
-          >
-            <Flag size={14} />
-            잘못된 정보가 있나요?
-          </Link>
+          {!event.submissionId && (
+            <ReportButton
+              className="report-link"
+              target={{
+                type: "FESTIVAL",
+                id: String(event.festivalId),
+                name: event.title,
+              }}
+            >
+              <Flag size={14} />이 행사 신고 및 제보
+            </ReportButton>
+          )}
           {event.submissionId && (
             <button
               className="text-button muted delete-submission"
@@ -464,7 +472,7 @@ function SubmitterProfile({ member }: { member: FestivalMember }) {
       <div className="submitter-profile-copy">
         <small>이 행사를 알려준 이웃</small>
         <div>
-          <strong>{member.nickname}</strong>
+          <ReportableName memberId={member.id} nickname={member.nickname} />
           <TrustGradeBadge member={member} />
         </div>
       </div>
@@ -477,21 +485,21 @@ function TrustGradeBadge({ member }: { member: FestivalMember }) {
     member.role === "ROLE_WARNING"
       ? "warning"
       : member.role === "ROLE_RECOGNIZED"
-      ? "maker"
-      : member.role === "ROLE_TRUSTED"
-        ? "master"
-        : "basic";
+        ? "maker"
+        : member.role === "ROLE_TRUSTED"
+          ? "master"
+          : "basic";
   const symbol = grade === "maker" ? "m" : grade === "master" ? "M" : null;
   const description =
     member.role === "ROLE_WARNING"
       ? "운영 정책에 따라 현재 활동이 제한된 계정입니다."
       : member.role === "ROLE_RECOGNIZED"
-      ? "좋아요 또는 정확해요를 10개 이상 받은 제보자예요."
-      : member.role === "ROLE_TRUSTED"
-        ? "좋아요와 정확해요를 모두 10개 이상 받은 제보자예요."
-        : member.role === "ROLE_ADMIN"
-          ? "방구석탈출 운영·관리 계정이에요."
-          : "이제 막 탈출 정보를 나누기 시작한 제보자예요.";
+        ? "좋아요 또는 정확해요를 10개 이상 받은 제보자예요."
+        : member.role === "ROLE_TRUSTED"
+          ? "좋아요와 정확해요를 모두 10개 이상 받은 제보자예요."
+          : member.role === "ROLE_ADMIN"
+            ? "방구석탈출 운영·관리 계정이에요."
+            : "이제 막 탈출 정보를 나누기 시작한 제보자예요.";
   const tooltipId = `trust-grade-${member.id}`;
 
   return (

@@ -32,6 +32,7 @@ export function Layout() {
             <NavLink to="/explore">지역 문화행사</NavLink>
             <NavLink to="/submissions/new">행사 제보</NavLink>
             <NavLink to="/reviews">행사 후기</NavLink>
+            <NavLink to="/community">커뮤니티</NavLink>
           </nav>
           <div className="header-actions">
             <Link className="header-submit" to="/submissions/new">
@@ -79,6 +80,7 @@ export function Layout() {
               <Link to="/explore">지역 문화행사</Link>
               <Link to="/submissions/new">행사 제보</Link>
               <Link to="/reviews">행사 후기</Link>
+              <Link to="/community">커뮤니티</Link>
               <Link to="/mypage?tab=inquiries">문의하기</Link>
               <Link to="/admin">시스템 관리자</Link>
             </div>

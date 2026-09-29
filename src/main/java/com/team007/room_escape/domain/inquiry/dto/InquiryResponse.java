@@ -3,6 +3,7 @@ package com.team007.room_escape.domain.inquiry.dto;
 import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
+import com.team007.room_escape.domain.inquiry.infra.entity.InquiryTargetType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Builder;
@@ -17,6 +18,8 @@ public class InquiryResponse {
 	public record Info(
 		UUID id,
 		InquiryCategory category,
+		InquiryTargetType targetType,
+		String targetId,
 		String title,
 		String content,
 		/** 공개 URL. 첨부가 없으면 null */
@@ -34,6 +37,8 @@ public class InquiryResponse {
 			return Info.builder()
 				.id(inquiry.getId())
 				.category(inquiry.getCategory())
+				.targetType(inquiry.getTargetType())
+				.targetId(inquiry.getTargetId())
 				.title(inquiry.getTitle())
 				.content(inquiry.getContent())
 				.img(imgUrl)

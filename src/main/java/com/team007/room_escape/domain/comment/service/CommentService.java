@@ -5,12 +5,11 @@ import com.team007.room_escape.domain.comment.infra.dto.CommentResponse;
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.comment.infra.repository.CommentRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommentExceptionCode;
-import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +24,7 @@ import java.util.UUID;
 public class CommentService {
 
 	private final CommentRepository commentRepository;
-	private final MemberRepository memberRepository;
+	private final MemberReader memberReader;
 	private final PostRepository postRepository;
 
 	@Transactional
@@ -34,14 +33,9 @@ public class CommentService {
 			CommentRequest request,
 			UUID memberId
 	) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+		Member member = memberReader.getUnrestrictedMember(memberId);
 
-		if(member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
-
-		Post post = postRepository.findById(postId)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		Comment comment = Comment.builder()
@@ -69,12 +63,7 @@ public class CommentService {
 			CommentRequest request,
 			UUID memberId
 	) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if(member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		memberReader.getUnrestrictedMember(memberId);
 
 		Comment comment = commentRepository.findById(id)
 				.orElseThrow(() -> new BusinessException(CommentExceptionCode.COMMENT_NOT_FOUND));

@@ -8,6 +8,11 @@ import { EventDetailPage } from "./pages/EventDetail";
 import { Reviews, ReviewDetailPage, ReviewFormPage } from "./pages/Reviews";
 import { MyPage } from "./pages/MyPage";
 import { AuthPage } from "./pages/Auth";
+import {
+  CommunityDetailPage,
+  CommunityFormPage,
+  CommunityPage,
+} from "./pages/Community";
 import { AppProvider } from "./lib/context";
 import { AdminReviews } from "./admin/AdminReviews";
 import { AdminLogin, AdminRoot } from "./admin/AdminAuth";
@@ -61,6 +66,10 @@ export function App() {
         <Route path="reviews/new" element={<ReviewFormPage />} />
         <Route path="reviews/:postId" element={<ReviewDetailPage />} />
         <Route path="reviews/:postId/edit" element={<ReviewFormPage />} />
+        <Route path="community" element={<CommunityPage />} />
+        <Route path="community/new" element={<CommunityFormPage />} />
+        <Route path="community/:postId" element={<CommunityDetailPage />} />
+        <Route path="community/:postId/edit" element={<CommunityFormPage />} />
         <Route path="mypage" element={<MyPage />} />
         <Route path="login" element={<AuthPage key="login" />} />
         <Route path="signup" element={<AuthPage key="signup" signup />} />

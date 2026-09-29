@@ -59,10 +59,45 @@ public class R2StorageService {
 					.bucket(properties.bucket())
 					.key(key)
 					.contentType(file.getContentType())
+					// key가 UUID라 이 URL의 내용은 평생 안 바뀐다 -> 1년 캐시해도 안전함 (CDN·브라우저 둘 다 적용됨)
+					.cacheControl("public, max-age=31536000, immutable")
 					.build(),
 				RequestBody.fromInputStream(file.getInputStream(), file.getSize())
 			);
 		} catch (IOException | SdkException e) {
+			log.error("R2 업로드 실패 key={}", key, e);
+			throw new BusinessException(StorageExceptionCode.UPLOAD_FAILED);
+		}
+		return key;
+	}
+
+	/**
+	 * 서버가 직접 만든 바이트 배열을 업로드한다 (외부 URL 다운로드·리사이즈 결과 등).
+	 * MultipartFile이 없는 경우(HTTP 요청이 아닌 배치 처리 등)에 사용한다.
+	 *
+	 * @param content     업로드할 바이트 데이터 (예: 리사이즈된 이미지)
+	 * @param contentType MIME 타입. MultipartFile처럼 자동으로 안 들어오므로 호출부가 직접 넘겨야 한다
+	 * @param directory   버킷 안의 논리적 폴더 (예: festivals)
+	 * @return 저장 key
+	 */
+	public String upload(byte[] content, String contentType, String directory) {
+		String extension = ALLOWED_TYPES.get(contentType);
+		if (extension == null) {
+			throw new BusinessException(StorageExceptionCode.UNSUPPORTED_FILE_TYPE);
+		}
+
+		String key = "%s/%s.%s".formatted(directory, UUID.randomUUID(), extension);
+		try {
+			s3Client.putObject(
+				PutObjectRequest.builder()
+					.bucket(properties.bucket())
+					.key(key)
+					.contentType(contentType)
+					.cacheControl("public, max-age=31536000, immutable")
+					.build(),
+				RequestBody.fromBytes(content)
+			);
+		} catch (SdkException e) {
 			log.error("R2 업로드 실패 key={}", key, e);
 			throw new BusinessException(StorageExceptionCode.UPLOAD_FAILED);
 		}

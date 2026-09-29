@@ -45,6 +45,13 @@ public class Inquiry extends SoftDeletableEntity {
 	@Column(nullable = false, length = 32)
 	private InquiryCategory category;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "target_type", length = 32)
+	private InquiryTargetType targetType;
+
+	@Column(name = "target_id")
+	private String targetId;
+
 	@Column(nullable = false)
 	private String title;
 
@@ -95,6 +102,10 @@ public class Inquiry extends SoftDeletableEntity {
 	public void update(InquiryCategory category, String title, String content, String img) {
 		if (category != null) {
 			this.category = category;
+			if (category == InquiryCategory.QUESTION) {
+				this.targetType = null;
+				this.targetId = null;
+			}
 		}
 		if (title != null && !title.isBlank()) {
 			this.title = title;

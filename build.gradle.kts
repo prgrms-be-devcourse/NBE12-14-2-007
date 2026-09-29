@@ -25,6 +25,9 @@ dependencies {
 	// 이메일 인증 코드를 담아두는 로컬 캐시. expireAfterWrite로 만료를 알아서 처리한다.
 	implementation("com.github.ben-manes.caffeine:caffeine")
 
+	// 행사 이미지를 R2에 올리기 전 리사이즈하는 데 사용한다.
+	implementation("net.coobird:thumbnailator:0.4.20")
+
 	// 메트릭 수집. /actuator/prometheus 로 Prometheus 형식 메트릭을 내보낸다.
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
@@ -39,6 +42,8 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+	// 사용자가 작성한 후기·행사 소개 HTML에서 허용하지 않은 태그와 속성을 제거한다.
+	implementation("com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:20260924.2")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 	compileOnly("org.projectlombok:lombok")

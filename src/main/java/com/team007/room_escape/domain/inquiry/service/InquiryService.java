@@ -8,10 +8,9 @@ import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
 import com.team007.room_escape.domain.inquiry.infra.repository.InquiryRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.InquiryExceptionCode;
-import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import com.team007.room_escape.global.storage.R2StorageService;
 
@@ -26,7 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class InquiryService {
 
 	private final InquiryRepository inquiryRepository;
-	private final MemberRepository memberRepository;
+	private final MemberReader memberReader;
+	private final InquiryTargetValidator targetValidator;
 	private final ImageUrlResolver imageUrlResolver;
 	/** 첨부를 교체할 때 옛 파일을 지우려면 저장소를 직접 다뤄야 한다. */
 	private final R2StorageService r2StorageService;
@@ -38,13 +38,15 @@ public class InquiryService {
 	 */
 	@Transactional
 	public InquiryResponse.Info create(UUID memberId, InquiryRequest.Create request) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+		Member member = memberReader.getActiveMember(memberId);
+		targetValidator.validate(request.targetType(), request.targetId());
 
 		// 요청 DTO는 이 줄에서 엔티티로 끝내고, 리포지토리에는 엔티티만 넘긴다.
 		Inquiry inquiry = Inquiry.builder()
 			.member(member)
 			.category(request.category())
+			.targetType(request.targetType())
+			.targetId(emptyToNull(request.targetId()))
 			.title(request.title())
 			.content(request.content())
 			// img는 업로드 API가 돌려준 R2 key다. 공개 URL이 아니다.

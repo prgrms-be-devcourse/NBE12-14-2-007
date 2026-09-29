@@ -13,7 +13,7 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -31,7 +31,7 @@ class FestivalAccuracyVoteServiceTest {
 
 	@Mock FestivalAccuracyVoteRepository accuracyVoteRepository;
 	@Mock FestivalRepository festivalRepository;
-	@Mock MemberRepository memberRepository;
+	@Mock MemberReader memberReader;
 	@Mock MemberTrustGradeService memberTrustGradeService;
 
 	@InjectMocks FestivalAccuracyVoteService accuracyVoteService;
@@ -49,8 +49,7 @@ class FestivalAccuracyVoteServiceTest {
 		CreateOrUpdateFestivalAccuracyVoteRequest request =
 			new CreateOrUpdateFestivalAccuracyVoteRequest(FestivalAccuracyVoteType.ACCURATE);
 
-		when(memberRepository.findByIdAndDeletedAtIsNull(memberId))
-			.thenReturn(Optional.of(member));
+		when(memberReader.getActiveMember(memberId)).thenReturn(member);
 		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(
 			1L, ProviderType.MEMBER
 		)).thenReturn(Optional.of(festival));

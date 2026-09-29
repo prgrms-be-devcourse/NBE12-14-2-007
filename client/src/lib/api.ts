@@ -13,6 +13,11 @@ import type {
   AdminPostSummary,
   Page,
   Comment,
+  CommunityCategory,
+  CommunityComment,
+  CommunityPostDetail,
+  CommunityPostInput,
+  CommunityPostSummary,
   Inquiry,
   InquiryInput,
   AdminInquiryListItem,
@@ -120,6 +125,9 @@ export function refreshAccessToken() {
 // TODO 어드민 화면 디버깅용. 원인 찾으면 지울 것.
 const isAdminPath = (path: string) =>
   path.startsWith("/admin/") || path === "/festivals/sync";
+const DEFAULT_TIMEOUT_MS = 15000;
+// 동기화는 기존 이미지를 실제로 다운로드·리사이즈·R2 업로드까지 하느라 기본 타임아웃을 넘길 수 있다.
+const SYNC_TIMEOUT_MS = 60000;
 async function transport<T>(
   path: string,
   method = "GET",
@@ -129,7 +137,8 @@ async function transport<T>(
   const requestSession = sessionVersion;
   const form = body instanceof FormData;
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const timeoutMs = path === "/festivals/sync" ? SYNC_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   const logAdmin = isAdminPath(path);
   if (logAdmin)
     console.log(
@@ -254,6 +263,7 @@ function toEventView(item: FestivalSearchItem): EventView {
     hostInstNm: null,
     writngDe: null,
     status: item.status,
+    likeCount: item.likeCount,
   };
 }
 
@@ -333,6 +343,7 @@ export function createApi(mode: Mode) {
       const keyword = input.keyword?.trim().toLowerCase() || "";
 
       if (demo) {
+        const demoLikes = readDemo().likes;
         const items = demoEvents
           .filter(
             (event) =>
@@ -348,10 +359,17 @@ export function createApi(mode: Mode) {
                   event.endDe.slice(0, 10) >= input.date)) &&
               (!input.excludeClosed || event.status !== "CLOSED"),
           )
+          .map((event) => ({
+            ...event,
+            likeCount: demoLikes[`festival:${event.festivalId}`] || 0,
+          }))
           .sort((a, b) =>
             input.sort === "name"
               ? a.title.localeCompare(b.title, "ko")
-              : a.beginDe.localeCompare(b.beginDe),
+              : input.sort === "likes"
+                ? b.likeCount - a.likeCount ||
+                  a.beginDe.localeCompare(b.beginDe)
+                : a.beginDe.localeCompare(b.beginDe),
           );
 
         return pageOf(items, page, 9);
@@ -368,6 +386,7 @@ export function createApi(mode: Mode) {
       if (input.date) params.set("date", input.date);
       if (input.excludeClosed) params.set("excludeClosed", "true");
       if (input.sort === "name") params.set("sort", "title,asc");
+      if (input.sort === "likes") params.set("sort", "likeCount,desc");
 
       const result = await transport<Page<FestivalSearchItem>>(
         `/festivals?${params.toString()}`,
@@ -380,9 +399,18 @@ export function createApi(mode: Mode) {
     async weather(region: string, date: string): Promise<WeatherView> {
       if (demo) {
         // 미리보기 모드는 실제 서버가 없어서, 지역+날짜로 결정되는 값을 흉내낸다.
-        const conditions: WeatherCondition[] = ["SUNNY", "CLOUDY", "RAIN", "SNOW"];
+        const conditions: WeatherCondition[] = [
+          "SUNNY",
+          "CLOUDY",
+          "RAIN",
+          "SNOW",
+        ];
         const index = (region.length + date.length) % conditions.length;
-        return { condition: conditions[index], precipitationProbability: null, date };
+        return {
+          condition: conditions[index],
+          precipitationProbability: null,
+          date,
+        };
       }
       const params = new URLSearchParams({ region, date });
       return transport<WeatherView>(`/weather?${params}`);
@@ -544,13 +572,11 @@ export function createApi(mode: Mode) {
     async posts(
       festivalId?: number,
       page = 0,
-      sort: ReviewSort = demo ? "likes,desc" : "createdAt,desc",
+      sort: ReviewSort = demo ? "likeCount,desc" : "createdAt,desc",
       search: PostSearch = {},
     ): Promise<Page<PostSummary>> {
       const keyword = search.keyword?.trim();
       if (!demo) {
-        if (sort === "likes,desc")
-          throw new ApiError("좋아요순 정렬을 준비하고 있어요.");
         const params = new URLSearchParams({
           page: String(page),
           size: "6",
@@ -711,6 +737,70 @@ export function createApi(mode: Mode) {
         d.comments = d.comments.filter((c) => c.id !== commentId);
       });
     },
+    async communityPosts(
+      page = 0,
+      category?: CommunityCategory,
+      keyword?: string,
+    ) {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "10",
+        sort: "createdAt,desc",
+      });
+      if (category) params.set("category", category);
+      if (keyword?.trim()) params.set("keyword", keyword.trim());
+      return transport<Page<CommunityPostSummary>>(
+        `/community/posts?${params}`,
+      );
+    },
+    async communityPost(postId: string) {
+      return transport<CommunityPostDetail>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+      );
+    },
+    async createCommunityPost(input: CommunityPostInput) {
+      return transport<CommunityPostDetail>("/community/posts", "POST", input);
+    },
+    async updateCommunityPost(postId: string, input: CommunityPostInput) {
+      return transport<CommunityPostDetail>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+        "PATCH",
+        input,
+      );
+    },
+    async deleteCommunityPost(postId: string) {
+      return transport<void>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+        "DELETE",
+      );
+    },
+    async communityComments(postId: string, page = 0) {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "20",
+        sort: "createdAt,asc",
+      });
+      return transport<Page<CommunityComment>>(
+        `/community/posts/${encodeURIComponent(postId)}/comments?${params}`,
+      );
+    },
+    async createCommunityComment(postId: string, content: string) {
+      return transport<CommunityComment>(
+        `/community/posts/${encodeURIComponent(postId)}/comments`,
+        "POST",
+        { content },
+      );
+    },
+    async updateCommunityComment(commentId: number, content: string) {
+      return transport<CommunityComment>(
+        `/community/comments/${commentId}`,
+        "PATCH",
+        { content },
+      );
+    },
+    async deleteCommunityComment(commentId: number) {
+      return transport<void>(`/community/comments/${commentId}`, "DELETE");
+    },
     async likeCount(postId: string) {
       return demo
         ? readDemo().likes[postId] || 0
@@ -758,7 +848,7 @@ export function createApi(mode: Mode) {
       );
     },
     /**
-     * [ADMIN] 문의·신고 목록. 관리자 화면 전용이며 ROLE_ADMIN이 아니면 403이 온다.
+     * [ADMIN] 문의·신고·제보 목록. 관리자 화면 전용이며 ROLE_ADMIN이 아니면 403이 온다.
      *
      * 예시 데이터 모드에서도 실제 서버를 부른다. 관리자 화면은 로그인한
      * 관리자만 들어오므로 예시로 흉내 낼 이유가 없다.
@@ -858,6 +948,7 @@ export function createApi(mode: Mode) {
         memberWarning,
         inquiryPending,
         inquiryReport,
+        inquiryTip,
         festivalTotal,
         festivalOpen,
         postTotal,
@@ -872,6 +963,11 @@ export function createApi(mode: Mode) {
           status: "PENDING",
           category: "REPORT",
         }).then(total),
+        this.adminInquiries({
+          size: 1,
+          status: "PENDING",
+          category: "TIP",
+        }).then(total),
         this.adminFestivals({ size: 1 }).then(total),
         this.adminFestivals({ size: 1, excludeClosed: true }).then(total),
         this.adminPosts({ size: 1 }).then(total),
@@ -882,6 +978,7 @@ export function createApi(mode: Mode) {
         memberWarning,
         inquiryPending,
         inquiryReport,
+        inquiryTip,
         festivalTotal,
         festivalOpen,
         postTotal,

@@ -17,6 +17,9 @@ import {
 import { ApiError } from "../lib/api";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
+import { isRichTextEmpty, RichTextContent } from "../components/RichText";
+import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { ReportableName, ReportButton } from "../components/ReportButton";
 import { useApp, useLoad } from "../lib/context";
 import { readDemo } from "../lib/demo";
 import { dateText, dateTimeText, errorText } from "../lib/format";
@@ -87,9 +90,7 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
               update({ sort: e.target.value });
             }}
           >
-            <option value="likes,desc" disabled={mode === "api"}>
-              좋아요순{mode === "api" ? " (준비 중)" : ""}
-            </option>
+            <option value="likeCount,desc">좋아요순</option>
             <option value="createdAt,desc">최신순</option>
             <option value="createdAt,asc">오래된순</option>
           </select>
@@ -102,11 +103,6 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
           </Link>
         </div>
       </div>
-      {mode === "api" && (
-        <p className="quiet-note review-sort-note">
-          좋아요순 정렬은 준비 중이에요. 현재는 작성일 기준으로 볼 수 있어요.
-        </p>
-      )}
       {loading ? (
         <Loading />
       ) : error ? (
@@ -227,7 +223,10 @@ function ReviewDetail({ id }: { id: string }) {
         <div className="article-meta">
           <span className="avatar">{post.member.nickname[0]}</span>
           <div>
-            <strong>{post.member.nickname}</strong>
+            <ReportableName
+              memberId={post.member.id}
+              nickname={post.member.nickname}
+            />
             <span>{dateText(post.date)}</span>
           </div>
           <div className="article-actions">
@@ -255,7 +254,7 @@ function ReviewDetail({ id }: { id: string }) {
             alt={post.title}
           />
         )}
-        <div className="prose">{post.content}</div>
+        <RichTextContent content={post.content} />
         <div className="review-reactions">
           <button
             disabled={busy || likes.loading}
@@ -267,13 +266,21 @@ function ReviewDetail({ id }: { id: string }) {
             {liked ? "도움이 됐어요" : "도움돼요"}
             {likes.data !== null && <strong>{likes.data}</strong>}
           </button>
-          <Link
-            className="text-button muted"
-            to={`/mypage?tab=inquiries&report=${encodeURIComponent(`후기 신고: ${post.title}\n후기 주소: ${window.location.origin}/reviews/${post.id}`)}`}
-          >
-            <Flag size={14} />
-            신고하기
-          </Link>
+          {!own && (
+            <ReportButton
+              target={{
+                type: "POST",
+                id: post.id,
+                name: post.title,
+                details: [
+                  `후기 주소: ${window.location.origin}/reviews/${post.id}`,
+                ],
+              }}
+            >
+              <Flag size={14} />
+              신고하기
+            </ReportButton>
+          )}
         </div>
         {likes.error && (
           <ErrorState message={likes.error} retry={likes.reload} />
@@ -449,9 +456,28 @@ function CommentRow({
       <span className="avatar small">{comment.nickname[0]}</span>
       <div>
         <div className="comment-meta">
-          <strong>{comment.nickname}</strong>
+          <ReportableName
+            memberId={comment.memberId}
+            nickname={comment.nickname}
+          />
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
           <span />
+          {!own && (
+            <ReportButton
+              ariaLabel={`${comment.nickname} 님의 댓글 신고`}
+              target={{
+                type: "COMMENT",
+                id: String(comment.id),
+                name: `${comment.nickname} 님의 댓글 "${comment.content.slice(0, 30)}${comment.content.length > 30 ? "…" : ""}"`,
+                details: [
+                  `후기 주소: ${window.location.origin}/reviews/${comment.postId}`,
+                  `댓글 내용: ${comment.content}`,
+                ],
+              }}
+            >
+              신고
+            </ReportButton>
+          )}
           {own && (
             <button
               className="text-button"
@@ -598,7 +624,7 @@ function ReviewForm({
   const [error, setError] = useState("");
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (title.trim().length < 2 || !content.trim()) {
+    if (title.trim().length < 2 || isRichTextEmpty(content)) {
       setError("제목은 2자 이상, 내용을 함께 입력해 주세요.");
       return;
     }
@@ -646,12 +672,11 @@ function ReviewForm({
           />
         </Field>
         <Field label="후기 내용" required>
-          <textarea
-            required
-            rows={10}
+          <LazyRichTextEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
             placeholder="어떤 점이 좋았나요? 다음에 방문할 이웃에게 전하고 싶은 팁도 좋아요."
+            ariaLabel="후기 내용"
           />
         </Field>
         <span className="upload-label">기억에 남은 사진</span>

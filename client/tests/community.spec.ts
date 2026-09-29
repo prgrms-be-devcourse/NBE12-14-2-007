@@ -68,7 +68,7 @@ test("review feed includes multiple events and keeps review and event links sepa
   await page.goto("/reviews");
   await expect(page.getByLabel("후기를 볼 행사")).toHaveCount(0);
   await expect(page.locator(".post-row")).toHaveCount(3);
-  await expect(page.getByLabel("후기 정렬")).toHaveValue("likes,desc");
+  await expect(page.getByLabel("후기 정렬")).toHaveValue("likeCount,desc");
   await expect(page.locator(".post-row h3").first()).toHaveText(
     "걷는 것만으로도 좋았던 저녁",
   );
@@ -95,7 +95,7 @@ test("review feed includes multiple events and keeps review and event links sepa
     }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "행사 후기", exact: true }).click();
-  await expect(page.getByLabel("후기 정렬")).toHaveValue("likes,desc");
+  await expect(page.getByLabel("후기 정렬")).toHaveValue("likeCount,desc");
   await expect(page.locator(".post-row")).toHaveCount(1);
   await page
     .getByRole("link", { name: "걷는 것만으로도 좋았던 저녁", exact: true })

@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Admin Inquiry", description = "관리자 문의·신고 API")
+@Tag(name = "Admin Inquiry", description = "관리자 문의·신고·제보 API")
 @RestController
 @RequestMapping("/api/v1/admin/inquiries")
 @RequiredArgsConstructor
@@ -36,7 +36,7 @@ public class AdminInquiryController {
 	private final AdminInquiryService adminInquiryService;
 
 	@Operation(
-		summary = "[ADMIN] 문의·신고 목록 조회",
+		summary = "[ADMIN] 문의·신고·제보 목록 조회",
 		description = """
 			제목, 답변 상태, 문의 종류로 검색한다. 조건을 비우면 전체를 조회한다.
 			includeDeleted=true 면 삭제된 문의도 함께 조회한다.
@@ -58,7 +58,7 @@ public class AdminInquiryController {
 	}
 
 	@Operation(
-		summary = "[ADMIN] 문의·신고 상세 조회",
+		summary = "[ADMIN] 문의·신고·제보 상세 조회",
 		description = """
 			본문, 첨부, 작성자, 답변까지 함께 조회한다.
 			목록 응답에는 본문과 답변이 없으므로 답변을 쓰기 전에 이 API로 내용을 확인한다.
@@ -76,7 +76,7 @@ public class AdminInquiryController {
 	}
 
 	@Operation(
-		summary = "[ADMIN] 문의·신고 답변 등록",
+		summary = "[ADMIN] 문의·신고·제보 답변 등록",
 		description = """
 			답변을 등록하고 상태를 ANSWERED로 바꾼다.
 			이미 답변이 있으면 덮어쓴다. 잘못 쓴 답변을 고칠 수 있어야 하기 때문이다.

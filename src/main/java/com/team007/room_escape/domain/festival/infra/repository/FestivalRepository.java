@@ -64,8 +64,83 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 			Pageable pageable
 	);
 
+	/**
+	 * 좋아요순 행사 검색. 검색 조건은 searchFestivals 와 같다.
+	 * like 를 행사별로 먼저 한 번 집계한 뒤 붙인다. (행사마다 세거나 like 를 그대로 JOIN 하면 느리다)
+	 * 동점이면 곧 시작하는 행사 먼저(기본 목록과 같은 기준), 그래도 같으면 id 로 순서를 고정한다.
+	 */
+	@Query(
+		value = """
+        SELECT f
+        FROM Festival f
+        LEFT JOIN (
+            SELECT l.festival.id AS festivalId, COUNT(l) AS likeCount
+            FROM Like l
+            WHERE l.festival IS NOT NULL
+            GROUP BY l.festival.id
+        ) lc ON lc.festivalId = f.id
+        WHERE f.deletedAt IS NULL
+          AND (:hasKeyword = false
+                OR LOWER(COALESCE(f.title, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.instNm, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.regionDetail, ''))
+                    LIKE CONCAT('%', :keyword, '%'))
+          AND (:hasRegion = false OR f.region = :region)
+          AND (:hasProviderType = false OR f.providerType = :providerType)
+          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+        ORDER BY COALESCE(lc.likeCount, 0) DESC, f.beginDe ASC, f.id DESC
+        """,
+		countQuery = """
+        SELECT COUNT(f)
+        FROM Festival f
+        WHERE f.deletedAt IS NULL
+          AND (:hasKeyword = false
+                OR LOWER(COALESCE(f.title, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.instNm, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.regionDetail, ''))
+                    LIKE CONCAT('%', :keyword, '%'))
+          AND (:hasRegion = false OR f.region = :region)
+          AND (:hasProviderType = false OR f.providerType = :providerType)
+          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+        """)
+	Page<Festival> searchFestivalsOrderByLikeCount(
+			@Param("hasKeyword") boolean hasKeyword,
+			@Param("keyword") String keyword,
+
+			@Param("hasRegion") boolean hasRegion,
+			@Param("region") FestivalRegion region,
+
+			@Param("hasProviderType") boolean hasProviderType,
+			@Param("providerType") ProviderType providerType,
+
+			@Param("hasCategory") boolean hasCategory,
+			@Param("category") String category,
+
+			@Param("hasDate") boolean hasDate,
+			@Param("dateStart") LocalDateTime dateStart,
+			@Param("dateEnd") LocalDateTime dateEnd,
+			@Param("excludeClosed") boolean excludeClosed,
+
+			Pageable pageable
+	);
+
 	/** 종료일이 지났는데 아직 OPEN인 행사 조회 (CLOSED로 갱신하기 전에, 어떤 행사가 바뀌는지 응답에 담으려고) */
 	List<Festival> findByStatusAndEndDeBefore(FestivalStatus status, LocalDateTime now);
+
+	/**
+	 * imgUrl이 아직 R2 공개 URL로 시작하지 않는(=외부 원본 URL을 그대로 쓰는) 행사를 조회한다.
+	 * 동기화 배치가 돌 때마다 이 중 일부를 R2로 이관한다.
+	 */
+	@Query("SELECT f FROM Festival f WHERE f.imgUrl IS NOT NULL AND f.imgUrl NOT LIKE CONCAT(:r2PublicUrl, '%')")
+	Page<Festival> findLegacyImages(@Param("r2PublicUrl") String r2PublicUrl, Pageable pageable);
 
 	/** endDe가 지난 OPEN 행사를 CLOSED로 일괄 갱신 (반환값: 갱신된 건수)
 	 *  clearAutomatically=true: 벌크 UPDATE는 영속성 컨텍스트를 거치지 않아서,
@@ -82,6 +157,8 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	);
 
 	Optional<Festival> findByIdAndDeletedAtIsNull(Long festivalId);
+
+	boolean existsByIdAndDeletedAtIsNull(Long festivalId);
 
 	/** 신규 등록용 중복 확인 */
 	boolean existsByBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(

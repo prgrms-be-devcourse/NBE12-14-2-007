@@ -15,8 +15,11 @@ import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.domain.like.infra.dto.FestivalLikeCount;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
+import com.team007.room_escape.domain.like.type.LikeSort;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
+import com.team007.room_escape.global.config.R2Properties;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
@@ -25,7 +28,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,6 +48,7 @@ public class FestivalService {
 	/** API가 날짜열"260916"형태로 넘겨줘서 해석하는 규칙**/
 	private static final DateTimeFormatter API_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 	private static final int MAX_PAGE_SIZE = 1000; // API 문서상 1회 요청 최대 건수
+	private static final int LEGACY_IMAGE_BATCH_SIZE = 30;
 
 	private final FestivalRepository festivalRepository;
 	private final FestivalAccuracyVoteRepository accuracyVoteRepository;
@@ -51,6 +57,8 @@ public class FestivalService {
 	private final FestivalPublicApiClient festivalPublicApiClient;
 	private final ObjectMapper objectMapper;
 	private final ImageUrlResolver imageUrlResolver;
+	private final FestivalImageProcessor festivalImageProcessor;
+	private final R2Properties r2Properties;
 
 	@Transactional
 	public FestivalResponse.SyncResponse syncPublicFestivals() {
@@ -79,6 +87,7 @@ public class FestivalService {
 		int n = (int) (currentYearRows.size() - dbCount);
 		if (n <= 0) {
 			log.info("신규 행사 없음 ({}년 {}건, 저장된 {}건)", currentYear, currentYearRows.size(), dbCount);
+			migrateLegacyImages();
 			return new FestivalResponse.SyncResponse(closedFestivals, List.of());
 		}
 
@@ -98,6 +107,7 @@ public class FestivalService {
 		} catch (Exception e) {
 			log.error("신규 행사 저장 실패, 원본 스냅샷은 반영됨", e);
 		}
+		migrateLegacyImages();
 		return new FestivalResponse.SyncResponse(closedFestivals, savedFestivals);
 	}
 
@@ -118,7 +128,30 @@ public class FestivalService {
 				? null
 				: request.date().plusDays(1).atStartOfDay();
 
-		return festivalRepository.searchFestivals(
+		if (LikeSort.isRequested(pageable)) {
+			return toListResponses(festivalRepository.searchFestivalsOrderByLikeCount(
+					keyword != null,
+					keyword,
+
+					request.region() != null,
+					request.region(),
+
+					request.providerType() != null,
+					request.providerType(),
+
+					category != null,
+					category,
+
+					request.date() != null,
+					dateStart,
+					dateEnd,
+					Boolean.TRUE.equals(request.excludeClosed()),
+
+					LikeSort.withoutSort(pageable)
+			));
+		}
+
+		return toListResponses(festivalRepository.searchFestivals(
 				keyword != null,
 				keyword,
 
@@ -137,7 +170,21 @@ public class FestivalService {
 				Boolean.TRUE.equals(request.excludeClosed()),
 
 				pageable
-		).map(FestivalResponse.ListResponse::from);
+		));
+	}
+
+	/** 페이지에 담긴 행사들의 좋아요 수를 한 번에 세서 응답에 붙인다. (행사마다 세면 N+1) */
+	private Page<FestivalResponse.ListResponse> toListResponses(Page<Festival> festivals) {
+		if (festivals.isEmpty()) {
+			return festivals.map(festival -> FestivalResponse.ListResponse.from(festival, 0L));
+		}
+
+		List<Long> festivalIds = festivals.getContent().stream().map(Festival::getId).toList();
+		Map<Long, Long> likeCounts = likeRepository.countByFestivalIds(festivalIds).stream()
+				.collect(Collectors.toMap(FestivalLikeCount::festivalId, FestivalLikeCount::likeCount));
+
+		return festivals.map(festival ->
+				FestivalResponse.ListResponse.from(festival, likeCounts.getOrDefault(festival.getId(), 0L)));
 	}
 
 	/** 행사 상세와 정확도 평가·좋아요 정보를 한 번에 조회한다. */
@@ -241,6 +288,22 @@ public class FestivalService {
 		return yyyyMMdd != null && yyyyMMdd.startsWith(String.valueOf(year));
 	}
 
+	/**
+	 * 아직 R2로 옮겨지지 않은 기존 행사 이미지를 배치 실행마다 조금씩 이관한다.
+	 * 하루 3번(스케줄러 주기) 돌면서 전체 백로그가 자연스럽게 줄어든다.
+	 * 실패해도 동기화 자체(신규 저장 결과)는 정상 반환되어야 하므로 예외를 여기서 삼킨다.
+	 */
+	private void migrateLegacyImages() {
+		try {
+			Page<Festival> legacy = festivalRepository.findLegacyImages(
+				r2Properties.publicUrl(), Pageable.ofSize(LEGACY_IMAGE_BATCH_SIZE));
+			legacy.forEach(f -> f.updateImgUrl(festivalImageProcessor.process(f.getImgUrl())));
+			log.info("기존 행사 이미지 {}건 이관 시도", legacy.getNumberOfElements());
+		} catch (Exception e) {
+			log.warn("기존 이미지 이관 실패, 동기화는 계속 진행", e);
+		}
+	}
+
 	// TODO: 서울 API 연동 시 toSeoulFestival() 추가
 	/** 경기도 API 응답(Dto) -> Entity **/
 	private Festival toGyeonggiFestival(FestivalApiRow row) {
@@ -258,7 +321,7 @@ public class FestivalService {
 			.telnoInfo(row.telnoInfo())
 			.hostInstNm(row.hostInstNm())
 			.hmpgUrl(row.hmpgUrl())
-			.imgUrl(row.imageUrl())
+			.imgUrl(festivalImageProcessor.process(row.imageUrl()))
 			.beginDe(beginDe)
 			.endDe(endDe)
 			.writngDe(parseDate(row.writngDe()))
