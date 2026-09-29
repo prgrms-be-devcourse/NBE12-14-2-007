@@ -35,9 +35,9 @@ import type {
 } from "../lib/types";
 
 const categoryLabels: Record<CommunityCategory, string> = {
-  FREE: "자유 이야기",
-  EVENT: "행사 추천",
-  RESTAURANT: "맛집 추천",
+  FREE: "자유",
+  EVENT: "행사",
+  RESTAURANT: "맛집",
 };
 const COMMUNITY_COMMENT_PAGE_SIZE = 20;
 
@@ -105,9 +105,9 @@ export function CommunityPage() {
       <nav className="community-categories" aria-label="커뮤니티 카테고리">
         {[
           ["", "전체"],
-          ["FREE", "자유 이야기"],
-          ["EVENT", "행사 추천"],
-          ["RESTAURANT", "맛집 추천"],
+          ["FREE", "자유"],
+          ["EVENT", "행사"],
+          ["RESTAURANT", "맛집"],
         ].map(([value, label]) => (
           <button
             key={value}
@@ -534,9 +534,9 @@ export function CommunityFormPage() {
               setCategory(event.target.value as CommunityCategory)
             }
           >
-            <option value="FREE">자유 이야기</option>
-            <option value="EVENT">행사 추천</option>
-            <option value="RESTAURANT">맛집 추천</option>
+            <option value="FREE">자유</option>
+            <option value="EVENT">행사</option>
+            <option value="RESTAURANT">맛집</option>
           </select>
         </Field>
         <Field label="제목" required>
