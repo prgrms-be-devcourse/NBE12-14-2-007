@@ -127,12 +127,16 @@ public class PostService {
 	}
 
 	@Transactional(readOnly = true)
-	public PostResponse.DetailResponse getPostDetail(UUID id) {
+	public PostResponse.DetailResponse getPostDetail(UUID id, UUID memberId) {
 
 		Post post = postRepository.findByIdAndDeletedAtIsNull(id)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
-		return PostResponse.DetailResponse.from(post);
+		// 화면이 좋아요 버튼 상태를 복원할 수 있도록 내가 눌렀는지 함께 내려준다.
+		boolean likedByMe = memberId != null
+				&& likeRepository.existsByPostIdAndMemberId(id, memberId);
+
+		return PostResponse.DetailResponse.from(post, likedByMe);
 	}
 
 	@Transactional
@@ -157,7 +161,10 @@ public class PostService {
 			request.thumbnail()
 		);
 
-		return PostResponse.DetailResponse.from(post);
+		return PostResponse.DetailResponse.from(
+				post,
+				likeRepository.existsByPostIdAndMemberId(postId, memberId)
+		);
 	}
 
 	@Transactional
