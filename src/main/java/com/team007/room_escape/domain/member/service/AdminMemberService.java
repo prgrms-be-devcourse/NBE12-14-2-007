@@ -41,6 +41,15 @@ public class AdminMemberService {
 		).map(this::toAdminInfo);
 	}
 
+	/** 관리자 회원 단건 조회. 신고된 회원이 탈퇴했어도 확인할 수 있게 탈퇴 회원도 찾는다. */
+	@Transactional(readOnly = true)
+	public MemberResponse.AdminInfo get(UUID memberId) {
+		Member member = memberRepository.findById(memberId)
+			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+
+		return toAdminInfo(member);
+	}
+
 	/**
 	 * 회원 등급을 변경한다.
 	 *

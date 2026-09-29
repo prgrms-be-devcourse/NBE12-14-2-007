@@ -137,7 +137,8 @@ async function transport<T>(
   const requestSession = sessionVersion;
   const form = body instanceof FormData;
   const controller = new AbortController();
-  const timeoutMs = path === "/festivals/sync" ? SYNC_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+  const timeoutMs =
+    path === "/festivals/sync" ? SYNC_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   const logAdmin = isAdminPath(path);
   if (logAdmin)
@@ -1023,6 +1024,12 @@ export function createApi(mode: Mode) {
         params.set(key, String(value));
       }
       return transport<Page<AdminMemberInfo>>(`/admin/members?${params}`);
+    },
+    /** [ADMIN] 회원 단건. 탈퇴 회원도 온다. 목록 페이지에 없는 회원을 열 때 쓴다. */
+    async adminMember(memberId: string) {
+      return transport<AdminMemberInfo>(
+        `/admin/members/${encodeURIComponent(memberId)}`,
+      );
     },
     /**
      * [ADMIN] 회원 등급 변경.

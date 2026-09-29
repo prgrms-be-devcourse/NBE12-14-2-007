@@ -61,6 +61,18 @@ public class AdminMemberController {
 	}
 
 	@Operation(
+		summary = "[ADMIN] 회원 단건 조회",
+		description = "회원 한 명의 정보를 조회한다. 탈퇴 회원도 조회된다. 없으면 404(MEMBER000)."
+	)
+	@GetMapping("/{memberId}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ApiResponse<MemberResponse.AdminInfo>> get(
+		@PathVariable("memberId") UUID memberId
+	) {
+		return ResponseEntity.ok(ApiResponse.success(adminMemberService.get(memberId)));
+	}
+
+	@Operation(
 		summary = "[ADMIN] 회원 등급 변경",
 		description = """
 			회원의 신뢰 등급을 변경한다. 다음 네 가지는 거부된다.

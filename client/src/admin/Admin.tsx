@@ -36,6 +36,7 @@ import {
   AdminProvider,
   roleNames,
   statusNames,
+  toMember,
   useAdmin,
   type AdminMember,
   type ContentItem,
@@ -700,20 +701,60 @@ export function AdminDashboard() {
 }
 
 export function AdminMembers() {
-  const { data, membersLoading, membersError, reloadMembers, stats } =
-    useAdmin();
-  const [params] = useSearchParams();
-  // 회원 신고 문의에서 넘어오면 그 회원을 찾아 바로 연다.
-  const requested = params.get("item");
-  const [query, setQuery] = useState(requested ?? "");
+  const { api } = useApp();
+  const {
+    data,
+    membersLoading,
+    membersError,
+    reloadMembers,
+    stats,
+    memberQuery,
+    setMemberQuery,
+    membersPage,
+  } = useAdmin();
+  const [params, setParams] = useSearchParams();
+  // 회원 신고 문의에서 ?item=회원ID 로 넘어오면 그 회원을 바로 연다.
+  const selected = params.get("item");
+  const [query, setQuery] = useState("");
   const [role, setRole] = useState("");
-  const [selected, setSelected] = useState<string | null>(requested);
-  const items = data.members.filter(
-    (item) =>
-      includes(query, item.name, item.email, item.id) &&
-      (!role || item.role === role),
-  );
-  const member = data.members.find((item) => item.id === selected);
+  // 지금 페이지에 없는 회원은 따로 불러온다.
+  const [fetched, setFetched] = useState<AdminMember | null>(null);
+  const [fetchError, setFetchError] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setMemberQuery({
+        keyword: query.trim() || undefined,
+        role: (role as Role) || undefined,
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [query, role, setMemberQuery]);
+  const items = data.members;
+  const listed = items.find((item) => item.id === selected);
+  useEffect(() => {
+    if (!selected || listed) return;
+    let active = true;
+    setFetchError("");
+    api
+      .adminMember(selected)
+      .then((found) => {
+        if (active) setFetched(toMember(found));
+      })
+      .catch((error) => {
+        if (active) setFetchError(errorText(error));
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, selected, listed]);
+  const member = listed ?? (fetched?.id === selected ? fetched : undefined);
+  function select(id: string | null) {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      id ? next.set("item", id) : next.delete("item");
+      return next;
+    });
+  }
   return (
     <>
       <Heading
@@ -735,7 +776,7 @@ export function AdminMembers() {
         <Toolbar
           query={query}
           setQuery={setQuery}
-          placeholder="닉네임, 이메일, 회원 ID 검색"
+          placeholder="닉네임, 이메일 검색"
         >
           <select
             aria-label="회원 등급 필터"
@@ -755,10 +796,15 @@ export function AdminMembers() {
             "불러오는 중…"
           ) : (
             <>
-              검색 결과 <strong>{items.length}</strong>명
+              검색 결과 <strong>{membersPage.totalElements}</strong>명
             </>
           )}
         </div>
+        {fetchError && (
+          <p className="adm-dialog-note" role="alert">
+            요청한 회원을 불러오지 못했습니다. {fetchError}
+          </p>
+        )}
         {membersError && (
           <p className="adm-dialog-note" role="alert">
             {membersError}{" "}
@@ -811,7 +857,7 @@ export function AdminMembers() {
                 <button
                   className="adm-row-button"
                   aria-label={`${member.name} 회원 관리`}
-                  onClick={() => setSelected(member.id)}
+                  onClick={() => select(member.id)}
                 >
                   상세 관리
                   <ChevronRight size={14} />
@@ -820,9 +866,18 @@ export function AdminMembers() {
             </tr>
           ))}
         </Table>
+        <Pagination
+          page={membersPage.number}
+          totalPages={membersPage.totalPages}
+          onChange={(page) => setMemberQuery({ ...memberQuery, page })}
+        />
       </section>
       {member && (
-        <MemberDialog member={member} onClose={() => setSelected(null)} />
+        <MemberDialog
+          key={member.id}
+          member={member}
+          onClose={() => select(null)}
+        />
       )}
     </>
   );
@@ -871,7 +926,7 @@ function MemberDialog({
             setSaving(true);
             setSaveError("");
             try {
-              await changeRole(member.id, role, reason);
+              await changeRole(member, role, reason);
               onClose();
             } catch (error) {
               // 실패하면 닫지 않는다. 고른 등급이 남아 있어야 다시 시도한다.
