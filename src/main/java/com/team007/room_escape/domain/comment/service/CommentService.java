@@ -52,6 +52,10 @@ public class CommentService {
 	@Transactional(readOnly = true)
 	public List<CommentResponse.CommentInfo> getComments(UUID postId, Pageable page) {
 
+		if(!postRepository.existsByIdAndDeletedAtIsNull(postId)) {
+			throw new BusinessException(PostExceptionCode.POST_NOT_FOUND);
+		}
+
 		return commentRepository.findAllByPostId(postId, page).stream()
 				.map(CommentResponse.CommentInfo::from)
 				.toList();
