@@ -61,11 +61,12 @@ public class MemberService {
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
 		validateNickname(member, request.nickname());
+		r2StorageService.requireOwnedBy(request.profileImg(), member.getProfileImg(), memberId);
 
 		String previousProfileImg = member.getProfileImg();
 		member.updateProfile(request.nickname(), request.phone(), request.profileImg());
 
-		deleteReplacedProfileImage(previousProfileImg, member.getProfileImg());
+		deleteReplacedProfileImage(previousProfileImg, member.getProfileImg(), memberId);
 
 		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
 	}
@@ -162,10 +163,10 @@ public class MemberService {
 	}
 
 	/** 교체된 옛 이미지는 R2에서 지운다. 안 지우면 쓰지 않는 파일이 계속 쌓인다. */
-	private void deleteReplacedProfileImage(String previousKey, String currentKey) {
+	private void deleteReplacedProfileImage(String previousKey, String currentKey, UUID memberId) {
 		if (previousKey == null || previousKey.equals(currentKey)) {
 			return;
 		}
-		r2StorageService.delete(previousKey);
+		r2StorageService.deleteOwnedBy(previousKey, memberId);
 	}
 }

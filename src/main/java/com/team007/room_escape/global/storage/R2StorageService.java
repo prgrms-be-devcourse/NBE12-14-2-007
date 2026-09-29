@@ -37,12 +37,16 @@ public class R2StorageService {
 	private final R2Properties properties;
 
 	/**
-	 * 파일을 업로드하고 저장 key를 돌려준다.
+	 * 사용자가 올린 파일을 업로드하고 저장 key를 돌려준다.
+	 *
+	 * key에 업로드한 회원 ID를 넣어 두고, 저장·삭제할 때 본인 파일인지 이 값으로 확인한다.
+	 * key는 공개 URL에 그대로 드러나므로 key를 안다고 해서 주인이라고 볼 수 없다.
 	 *
 	 * @param directory 버킷 안의 논리적 폴더 (예: posts, profiles)
-	 * @return 저장 key (예: posts/0198....jpg)
+	 * @param ownerId   업로드한 회원 ID
+	 * @return 저장 key (예: posts/{회원ID}/0198....jpg)
 	 */
-	public String upload(MultipartFile file, String directory) {
+	public String upload(MultipartFile file, String directory, UUID ownerId) {
 		if (file == null || file.isEmpty()) {
 			throw new BusinessException(StorageExceptionCode.EMPTY_FILE);
 		}
@@ -52,7 +56,7 @@ public class R2StorageService {
 			throw new BusinessException(StorageExceptionCode.UNSUPPORTED_FILE_TYPE);
 		}
 
-		String key = "%s/%s.%s".formatted(directory, UUID.randomUUID(), extension);
+		String key = "%s/%s/%s.%s".formatted(directory, ownerId, UUID.randomUUID(), extension);
 		try {
 			s3Client.putObject(
 				PutObjectRequest.builder()
@@ -102,6 +106,38 @@ public class R2StorageService {
 			throw new BusinessException(StorageExceptionCode.UPLOAD_FAILED);
 		}
 		return key;
+	}
+
+	/**
+	 * 이 회원이 업로드한 key인지. key 형식은 {폴더}/{회원ID}/{파일명}이다.
+	 * 회원 ID가 들어가기 전에 올린 옛 key({폴더}/{파일명})는 주인을 알 수 없으므로 false다.
+	 */
+	public boolean isOwnedBy(String key, UUID memberId) {
+		if (key == null || memberId == null) {
+			return false;
+		}
+		String[] parts = key.split("/");
+		return parts.length == 3 && parts[1].equals(memberId.toString());
+	}
+
+	/**
+	 * 새로 저장하려는 이미지 key가 본인 것인지 확인한다.
+	 * 비우는 경우(null, 빈 문자열)와 지금 값을 그대로 다시 보내는 경우는 통과시킨다.
+	 */
+	public void requireOwnedBy(String newKey, String currentKey, UUID memberId) {
+		if (newKey == null || newKey.isBlank() || newKey.equals(currentKey)) {
+			return;
+		}
+		if (!isOwnedBy(newKey, memberId)) {
+			throw new BusinessException(StorageExceptionCode.IMAGE_NOT_OWNED);
+		}
+	}
+
+	/** 본인이 올린 파일일 때만 지운다. 주인을 알 수 없는 옛 파일은 남겨둔다. */
+	public void deleteOwnedBy(String key, UUID memberId) {
+		if (isOwnedBy(key, memberId)) {
+			delete(key);
+		}
 	}
 
 	/** 삭제 실패는 로그만 남긴다. 파일이 남는 것보다 비즈니스 흐름이 끊기는 게 더 나쁘다. */

@@ -434,5 +434,4 @@ export interface SignupInput {
   password: string;
   nickname: string;
   phone?: string;
-  profileImg?: string;
 }
