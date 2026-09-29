@@ -15,7 +15,9 @@ import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSourceRepository;
+import com.team007.room_escape.domain.like.infra.dto.FestivalLikeCount;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
+import com.team007.room_escape.domain.like.type.LikeSort;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -25,7 +27,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -118,7 +122,30 @@ public class FestivalService {
 				? null
 				: request.date().plusDays(1).atStartOfDay();
 
-		return festivalRepository.searchFestivals(
+		if (LikeSort.isRequested(pageable)) {
+			return toListResponses(festivalRepository.searchFestivalsOrderByLikeCount(
+					keyword != null,
+					keyword,
+
+					request.region() != null,
+					request.region(),
+
+					request.providerType() != null,
+					request.providerType(),
+
+					category != null,
+					category,
+
+					request.date() != null,
+					dateStart,
+					dateEnd,
+					Boolean.TRUE.equals(request.excludeClosed()),
+
+					LikeSort.withoutSort(pageable)
+			));
+		}
+
+		return toListResponses(festivalRepository.searchFestivals(
 				keyword != null,
 				keyword,
 
@@ -137,7 +164,21 @@ public class FestivalService {
 				Boolean.TRUE.equals(request.excludeClosed()),
 
 				pageable
-		).map(FestivalResponse.ListResponse::from);
+		));
+	}
+
+	/** 페이지에 담긴 행사들의 좋아요 수를 한 번에 세서 응답에 붙인다. (행사마다 세면 N+1) */
+	private Page<FestivalResponse.ListResponse> toListResponses(Page<Festival> festivals) {
+		if (festivals.isEmpty()) {
+			return festivals.map(festival -> FestivalResponse.ListResponse.from(festival, 0L));
+		}
+
+		List<Long> festivalIds = festivals.getContent().stream().map(Festival::getId).toList();
+		Map<Long, Long> likeCounts = likeRepository.countByFestivalIds(festivalIds).stream()
+				.collect(Collectors.toMap(FestivalLikeCount::festivalId, FestivalLikeCount::likeCount));
+
+		return festivals.map(festival ->
+				FestivalResponse.ListResponse.from(festival, likeCounts.getOrDefault(festival.getId(), 0L)));
 	}
 
 	/** 행사 상세와 정확도 평가·좋아요 정보를 한 번에 조회한다. */

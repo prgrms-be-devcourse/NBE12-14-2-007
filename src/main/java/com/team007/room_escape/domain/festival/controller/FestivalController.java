@@ -36,7 +36,8 @@ public class FestivalController {
 	@Operation(summary = "행사 통합 검색", description = """
                 검색어와 지역, 데이터 출처, 행사 카테고리, 날짜를 이용해
                 공공행사와 사용자 등록 행사를 통합 검색합니다.
-                모든 검색 조건은 선택사항입니다""")
+                모든 검색 조건은 선택사항입니다.
+                sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다""")
 	@GetMapping
 	public ResponseEntity<ApiResponse<Page<FestivalResponse.ListResponse>>>
 	searchFestivals(

@@ -102,9 +102,10 @@ public class PostResponse {
             String festivalTitle,
             String title,
             String thumbnail,
-            LocalDateTime date
+            LocalDateTime date,
+            long likeCount
     ) {
-        public static ListResponse from(Post post) {
+        public static ListResponse from(Post post, long likeCount) {
             return new ListResponse(
                     post.getId(),
                     MemberInfo.from(post),
@@ -112,7 +113,8 @@ public class PostResponse {
                     post.getFestival().getTitle(),
                     post.getTitle(),
                     post.getThumbnail(),
-                    post.getUpdatedAt()
+                    post.getUpdatedAt(),
+                    likeCount
             );
         }
     }

@@ -9,6 +9,7 @@ import {
   Cloud,
   CloudRain,
   CloudSnow,
+  Heart,
   ImagePlus,
   LoaderCircle,
   MapPin,
@@ -200,7 +201,18 @@ export function EventCard({
         </p>
         <div className="card-bottom">
           <span>{event.partcptExpnInfo || "비용 정보 확인 필요"}</span>
-          <ArrowRight size={17} />
+          <span className="post-like-count">
+            {event.likeCount !== undefined && (
+              <span
+                className="post-like-count"
+                aria-label={`좋아요 ${event.likeCount}개`}
+              >
+                <Heart size={13} />
+                {event.likeCount}
+              </span>
+            )}
+            <ArrowRight size={17} />
+          </span>
         </div>
       </div>
     </Link>

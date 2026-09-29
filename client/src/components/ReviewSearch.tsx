@@ -25,10 +25,12 @@ export function useReviewQuery(preview = false) {
       : 0;
   const requestedSort = params.get("sort");
   const sort: ReviewSort =
-    requestedSort === "createdAt,asc" || requestedSort === "createdAt,desc"
+    requestedSort === "likeCount,desc" ||
+    requestedSort === "createdAt,asc" ||
+    requestedSort === "createdAt,desc"
       ? requestedSort
       : preview
-        ? "likes,desc"
+        ? "likeCount,desc"
         : "createdAt,desc";
   function update(values: Record<string, string | number>) {
     setParams((current) => {

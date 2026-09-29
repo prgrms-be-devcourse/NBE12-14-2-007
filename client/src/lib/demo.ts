@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import { parseDateTime } from "./format";
 
-export type ReviewSort = "likes,desc" | "createdAt,desc" | "createdAt,asc";
+export type ReviewSort = "likeCount,desc" | "createdAt,desc" | "createdAt,asc";
 
 // Fictional UI examples. Never sent to the backend or used as a network fallback.
 const eventBase = {
@@ -275,7 +275,7 @@ export function readDemo(): DemoState {
 }
 export function previewPosts(
   festivalId?: number,
-  sort: ReviewSort = "likes,desc",
+  sort: ReviewSort = "likeCount,desc",
 ) {
   const data = readDemo();
   return data.posts
@@ -286,7 +286,7 @@ export function previewPosts(
     .sort((a, b) => {
       const newestFirst =
         parseDateTime(b.date).getTime() - parseDateTime(a.date).getTime();
-      if (sort === "likes,desc")
+      if (sort === "likeCount,desc")
         return (
           b.likeCount - a.likeCount || newestFirst || a.id.localeCompare(b.id)
         );

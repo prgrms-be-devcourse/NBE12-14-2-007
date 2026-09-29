@@ -47,10 +47,13 @@ public class FestivalResponse {
             FestivalRegion region,
 
             @Schema(description = "행사 상태", example = "OPEN")
-            FestivalStatus status
+            FestivalStatus status,
+
+            @Schema(description = "좋아요 수")
+            long likeCount
     ) {
 
-        public static ListResponse from(Festival festival) {
+        public static ListResponse from(Festival festival, long likeCount) {
             return ListResponse.builder()
                     .festivalId(festival.getId())
                     .providerType(festival.getProviderType())
@@ -62,6 +65,7 @@ public class FestivalResponse {
                     .endDe(festival.getEndDe())
                     .region(festival.getRegion())
                     .status(FestivalStatus.from(festival.getEndDe()))
+                    .likeCount(likeCount)
                     .build();
         }
     }
