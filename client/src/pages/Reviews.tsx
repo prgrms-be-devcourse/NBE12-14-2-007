@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import {
   Link,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -153,26 +154,25 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
 }
 export function ReviewDetailPage() {
   const { postId = "" } = useParams();
-  const { member, authLoading } = useApp();
+  const { authLoading } = useApp();
+  // 비회원도 볼 수 있다. 로그인 확인이 끝난 뒤에 불러와야 내 좋아요 상태가 맞게 온다.
   return (
     <div className="container page-space narrow">
       <Link to="/reviews" className="back-link">
         <ArrowLeft size={16} />
         후기 목록으로
       </Link>
-      {authLoading ? (
-        <Loading />
-      ) : member ? (
-        <ReviewDetail key={postId} id={postId} />
-      ) : (
-        <LoginRequired />
-      )}
+      {authLoading ? <Loading /> : <ReviewDetail key={postId} id={postId} />}
     </div>
   );
+}
+function loginPath(location: { pathname: string; search: string }) {
+  return `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
 }
 function ReviewDetail({ id }: { id: string }) {
   const { api, member, mode, toast } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     data: post,
     loading,
@@ -180,13 +180,21 @@ function ReviewDetail({ id }: { id: string }) {
     reload,
   } = useLoad(() => api.post(id), [api, id]);
   const likes = useLoad(() => api.likeCount(id), [api, id]);
-  const [liked, setLiked] = useState(
-    mode === "preview" && readDemo().liked.includes(id),
-  );
+  // 누르기 전에는 서버가 알려준 상태를 쓰고, 누른 뒤에는 그 결과를 쓴다.
+  const [likedOverride, setLiked] = useState<boolean | null>(null);
+  const liked =
+    likedOverride ??
+    (mode === "preview"
+      ? readDemo().liked.includes(id)
+      : Boolean(post?.likedByMe));
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [actionError, setActionError] = useState("");
   async function like(remove: boolean) {
+    if (!member) {
+      navigate(loginPath(location));
+      return;
+    }
     setBusy(true);
     setActionError("");
     try {
@@ -206,7 +214,8 @@ function ReviewDetail({ id }: { id: string }) {
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error} retry={reload} />;
   if (!post) return null;
-  const own = post.member.id === member?.id;
+  // 탈퇴한 작성자는 id가 null이라, 비회원(member 없음)과 비교하면 같다고 나올 수 있다.
+  const own = Boolean(member) && post.member.id === member?.id;
   const canDelete = own || member?.role === "ROLE_ADMIN";
   return (
     <>
@@ -325,6 +334,7 @@ function ReviewDetail({ id }: { id: string }) {
 }
 function Comments({ postId }: { postId: string }) {
   const { api, member } = useApp();
+  const location = useLocation();
   const [page, setPage] = useState(0);
   const { data, loading, error, reload } = useLoad(
     () => api.comments(postId, page),
@@ -354,25 +364,31 @@ function Comments({ postId }: { postId: string }) {
       <h2>
         함께 이야기해요 <MessageCircle size={20} />
       </h2>
-      <form className="comment-form" onSubmit={submit}>
-        <label className="sr-only" htmlFor="new-comment">
-          댓글 내용
-        </label>
-        <textarea
-          id="new-comment"
-          required
-          maxLength={500}
-          rows={3}
-          placeholder="따뜻한 한마디를 남겨주세요."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-        <div>
-          <span className="muted small-text">{content.length} / 500</span>
-          <SubmitButton busy={busy}>댓글 남기기</SubmitButton>
-        </div>
-        <FormError message={formError} />
-      </form>
+      {member ? (
+        <form className="comment-form" onSubmit={submit}>
+          <label className="sr-only" htmlFor="new-comment">
+            댓글 내용
+          </label>
+          <textarea
+            id="new-comment"
+            required
+            maxLength={500}
+            rows={3}
+            placeholder="따뜻한 한마디를 남겨주세요."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+          <div>
+            <span className="muted small-text">{content.length} / 500</span>
+            <SubmitButton busy={busy}>댓글 남기기</SubmitButton>
+          </div>
+          <FormError message={formError} />
+        </form>
+      ) : (
+        <p className="muted">
+          댓글을 남기려면 <Link to={loginPath(location)}>로그인</Link>해 주세요.
+        </p>
+      )}
       {loading ? (
         <Loading />
       ) : error ? (
@@ -680,7 +696,7 @@ function ReviewForm({
           />
         </Field>
         <span className="upload-label">기억에 남은 사진</span>
-        <Upload type="POST" value={thumbnail} onChange={setThumbnail} />
+        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
       </div>
       <FormError message={error} />
       <div className="form-actions">

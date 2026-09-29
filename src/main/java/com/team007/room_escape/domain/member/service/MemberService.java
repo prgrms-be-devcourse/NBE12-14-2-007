@@ -61,11 +61,12 @@ public class MemberService {
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
 		validateNickname(member, request.nickname());
+		r2StorageService.requireOwnedBy(request.profileImg(), member.getProfileImg(), memberId);
 
 		String previousProfileImg = member.getProfileImg();
 		member.updateProfile(request.nickname(), request.phone(), request.profileImg());
 
-		deleteReplacedProfileImage(previousProfileImg, member.getProfileImg());
+		deleteReplacedProfileImage(previousProfileImg, member.getProfileImg(), memberId);
 
 		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
 	}
@@ -75,8 +76,10 @@ public class MemberService {
 	 *
 	 * 받는 주소는 요청으로 받지 않고 DB의 가입 이메일을 쓴다.
 	 * 주소를 입력받으면 남의 계정 코드를 자기 메일로 빼돌릴 수 있기 때문이다.
+	 *
+	 * 트랜잭션을 걸지 않는다. 코드는 캐시에 저장돼 DB에 쓸 게 없고,
+	 * 메일 발송이 느려지는 동안 DB 커넥션을 붙잡고 있을 이유가 없다.
 	 */
-	@Transactional
 	public void sendPasswordChangeCode(UUID memberId) {
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
@@ -162,10 +165,10 @@ public class MemberService {
 	}
 
 	/** 교체된 옛 이미지는 R2에서 지운다. 안 지우면 쓰지 않는 파일이 계속 쌓인다. */
-	private void deleteReplacedProfileImage(String previousKey, String currentKey) {
+	private void deleteReplacedProfileImage(String previousKey, String currentKey, UUID memberId) {
 		if (previousKey == null || previousKey.equals(currentKey)) {
 			return;
 		}
-		r2StorageService.delete(previousKey);
+		r2StorageService.deleteOwnedBy(previousKey, memberId);
 	}
 }

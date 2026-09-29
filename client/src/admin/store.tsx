@@ -14,6 +14,7 @@ import type {
   AdminInquiryQuery,
   AdminInquiryListItem,
   AdminMemberInfo,
+  AdminMemberQuery,
   AdminStats,
   AdminFestivalListItem,
   InquiryCategory,
@@ -23,6 +24,7 @@ import type {
 /** 어드민 행사 목록 한 페이지 크기. */
 const EVENT_PAGE_SIZE = 20;
 const TICKET_PAGE_SIZE = 20;
+const MEMBER_PAGE_SIZE = 20;
 
 export const roleNames: Record<Role, string> = {
   ROLE_UNVERIFIED: "탈출 꿈나무",
@@ -114,6 +116,15 @@ function sameQuery(a: AdminFestivalQuery, b: AdminFestivalQuery) {
     a.keyword === b.keyword &&
     a.providerType === b.providerType &&
     a.excludeClosed === b.excludeClosed &&
+    a.includeDeleted === b.includeDeleted &&
+    a.page === b.page &&
+    a.size === b.size
+  );
+}
+function sameMemberQuery(a: AdminMemberQuery, b: AdminMemberQuery) {
+  return (
+    a.keyword === b.keyword &&
+    a.role === b.role &&
     a.includeDeleted === b.includeDeleted &&
     a.page === b.page &&
     a.size === b.size
@@ -249,7 +260,7 @@ function read(): AdminState {
   return seed();
 }
 /** 서버 회원 한 줄을 화면이 쓰는 AdminMember 모양으로 바꾼다. */
-function toMember(item: AdminMemberInfo): AdminMember {
+export function toMember(item: AdminMemberInfo): AdminMember {
   return {
     id: item.id,
     name: item.nickname,
@@ -319,12 +330,17 @@ interface AdminContextValue {
   data: AdminData;
   /**
    * 등급 변경. 서버에 저장하므로 실패할 수 있다.
+   * 현재 페이지에 없는 회원(신고 문의에서 바로 연 회원)도 바꿀 수 있게 회원 자체를 받는다.
    *
    * TODO reason을 서버로 보낼 것. 저장할 이력 테이블이 없어 지금은
    *      입력칸을 잠가 뒀고(MemberDialog), 운영 기록(로컬)에만 남는다.
    *      파라미터는 이력 테이블이 생기면 바로 쓰려고 남겨 둔다.
    */
-  changeRole: (id: string, role: Role, reason: string) => Promise<void>;
+  changeRole: (
+    member: AdminMember,
+    role: Role,
+    reason: string,
+  ) => Promise<void>;
   /**
    * 노출 상태 변경.
    *
@@ -369,6 +385,10 @@ interface AdminContextValue {
   reloadMembers: () => void;
   membersLoading: boolean;
   membersError: string;
+  memberQuery: AdminMemberQuery;
+  /** page를 빼고 부르면 0으로 되돌린다. 행사 검색 조건과 같은 규칙이다. */
+  setMemberQuery: (next: AdminMemberQuery) => void;
+  membersPage: PageMeta;
   /** 문의 목록을 서버에서 다시 불러온다. */
   reloadTickets: () => void;
   ticketsLoading: boolean;
@@ -405,6 +425,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [membersLoading, setMembersLoading] = useState(true);
   const [membersError, setMembersError] = useState("");
   const [membersRevision, setMembersRevision] = useState(0);
+  const [membersPage, setMembersPage] = useState<PageMeta>(emptyPage);
+  const [memberQuery, setMemberQueryState] = useState<AdminMemberQuery>({
+    page: 0,
+    size: MEMBER_PAGE_SIZE,
+    includeDeleted: true,
+  });
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [ticketsError, setTicketsError] = useState("");
@@ -426,6 +452,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const merged = { page: 0, size: EVENT_PAGE_SIZE, ...next };
       // 같은 조건이면 상태를 바꾸지 않는다. 안 그러면 effect가 다시 돌아 요청이 두 번 나간다.
       return sameQuery(current, merged) ? current : merged;
+    });
+  }, []);
+  const setMemberQuery = useCallback((next: AdminMemberQuery) => {
+    setMemberQueryState((current) => {
+      // 탈퇴 회원도 신고 대상이 될 수 있어 항상 함께 본다.
+      const merged = {
+        page: 0,
+        size: MEMBER_PAGE_SIZE,
+        includeDeleted: true,
+        ...next,
+      };
+      return sameMemberQuery(current, merged) ? current : merged;
     });
   }, []);
   const setTicketQuery = useCallback((next: AdminInquiryQuery) => {
@@ -503,14 +541,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setMembersLoading(true);
     setMembersError("");
     api
-      // 문의와 같은 이유로 한 번에 받아 두고 화면에서 거른다.
-      // size는 서버 max-page-size(50)가 상한이다.
-      .adminMembers({ size: 50, includeDeleted: true })
+      // 검색·필터는 서버가 한다. 한 페이지만 받아서 거르면 그 밖의 회원은 찾을 수 없다.
+      .adminMembers(memberQuery)
       .then((page) => {
-        if (active) setMembers(page.content.map(toMember));
+        if (!active) return;
+        setMembers(page.content.map(toMember));
+        setMembersPage({
+          totalElements: page.totalElements,
+          totalPages: page.totalPages,
+          number: page.number,
+        });
       })
       .catch((error) => {
-        if (active) setMembersError(errorText(error));
+        if (!active) return;
+        setMembersError(errorText(error));
+        setMembersPage(emptyPage);
       })
       .finally(() => {
         if (active) setMembersLoading(false);
@@ -518,7 +563,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [api, ready, authLoading, membersRevision]);
+  }, [api, ready, authLoading, membersRevision, memberQuery]);
   useEffect(() => {
     if (!ready) {
       // 관리자가 아니면 목록을 부를 이유가 없다. 로딩 표시도 끝내야 한다.
@@ -634,6 +679,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         },
         membersLoading,
         membersError,
+        memberQuery,
+        setMemberQuery,
+        membersPage,
         reloadMembers() {
           setMembersRevision((current) => current + 1);
         },
@@ -645,11 +693,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         reloadTickets() {
           setTicketsRevision((current) => current + 1);
         },
-        async changeRole(id, role, reason) {
-          const member = members.find((item) => item.id === id);
+        async changeRole(member, role, reason) {
+          const id = member.id;
           // 아래 조건은 서버도 똑같이 막는다. 여기서 거르는 건 헛된 요청을 줄이기 위함이다.
           if (
-            !member ||
             member.role === "ROLE_ADMIN" ||
             role === "ROLE_ADMIN" ||
             role === member.role

@@ -25,8 +25,10 @@ import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +39,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 import java.util.Locale;
 
@@ -59,11 +62,17 @@ public class FestivalService {
 	private final ImageUrlResolver imageUrlResolver;
 	private final FestivalImageProcessor festivalImageProcessor;
 	private final R2Properties r2Properties;
+	private final TransactionTemplate transactionTemplate;
 
-	@Transactional
+	/**
+	 * 공공 API 호출과 이미지 다운로드·R2 업로드는 몇 분씩 걸릴 수 있어 트랜잭션 밖에서 한다.
+	 * 전체를 한 트랜잭션으로 묶으면 그동안 DB 커넥션을 붙잡아 다른 요청이 커넥션을 못 얻는다.
+	 * DB 작업만 단계별로 짧은 트랜잭션에서 바로 커밋한다.
+	 */
 	public FestivalResponse.SyncResponse syncPublicFestivals() {
 		/** API 호출과 무관하게, 기존에 저장된 행사 중 종료일이 지난 건 먼저 CLOSED로 갱신 **/
-		List<FestivalResponse.SyncedFestival> closedFestivals = closeExpiredFestivals();
+		List<FestivalResponse.SyncedFestival> closedFestivals = transactionTemplate.execute(
+			status -> closeExpiredFestivals());
 
 		List<FestivalApiRow> allRows = fetchAllRows();
 
@@ -92,14 +101,14 @@ public class FestivalService {
 		}
 
 		List<FestivalResponse.SyncedFestival> savedFestivals = List.of();
-		/** 이 블록에서 예외가 나도 밖으로 던지지 않아야, 트랜잭션이 정상 종료되면서
-		 *  위에서 먼저 저장해둔 원본 스냅샷(saveRawSource)이 롤백되지 않고 커밋된다 **/
+		/** 원본 스냅샷(saveRawSource)은 이미 따로 커밋돼서, 여기서 실패해도 남는다 **/
 		try {
 			List<Festival> festivals = currentYearRows.stream()
 				.limit(n) // 필터링된 목록의 앞에서부터 N건만 신규로 간주
-				.map(this::toGyeonggiFestival)
+				.map(this::toGyeonggiFestival) // 이미지 다운로드·업로드가 여기서 일어난다
 				.toList();
 
+			// 이미지 처리가 다 끝난 뒤에 저장만 한 트랜잭션으로 묶는다 (saveAll은 자체 트랜잭션)
 			festivalRepository.saveAll(festivals);
 			// 저장이 끝난 뒤에 만들어야 DB가 붙여준 행사 번호(id)가 채워져 있다
 			savedFestivals = festivals.stream().map(FestivalResponse.SyncedFestival::from).toList();
@@ -274,9 +283,12 @@ public class FestivalService {
 	private void saveRawSource(List<FestivalApiRow> rows) {
 		try {
 			String json = objectMapper.writeValueAsString(rows);
-			publicFestivalSourceRepository.deleteAll();
-			// 몇 건 받아왔는지 확인하려고 source(jsonb)를 매번 파싱하지 않도록, 건수를 별도 컬럼에 같이 저장
-			publicFestivalSourceRepository.save(new PublicFestivalSource(json, rows.size()));
+			// 지우기와 저장은 한 트랜잭션이어야 한다. 따로 커밋되면 저장 실패 시 스냅샷이 비어버린다.
+			transactionTemplate.executeWithoutResult(status -> {
+				publicFestivalSourceRepository.deleteAll();
+				// 몇 건 받아왔는지 확인하려고 source(jsonb)를 매번 파싱하지 않도록, 건수를 별도 컬럼에 같이 저장
+				publicFestivalSourceRepository.save(new PublicFestivalSource(json, rows.size()));
+			});
 		} catch (Exception e) {
 			// 원본 저장은 부가 기능이라, 실패해도 배치 본 로직(신규 행사 저장)까지 막으면 안 된다
 			log.warn("원본 데이터 저장 실패, 배치는 계속 진행", e);
@@ -292,13 +304,20 @@ public class FestivalService {
 	 * 아직 R2로 옮겨지지 않은 기존 행사 이미지를 배치 실행마다 조금씩 이관한다.
 	 * 하루 3번(스케줄러 주기) 돌면서 전체 백로그가 자연스럽게 줄어든다.
 	 * 실패해도 동기화 자체(신규 저장 결과)는 정상 반환되어야 하므로 예외를 여기서 삼킨다.
+	 * 이미지 처리는 트랜잭션 밖에서 먼저 끝내고, URL 갱신만 트랜잭션 안에서 한다.
 	 */
 	private void migrateLegacyImages() {
 		try {
 			Page<Festival> legacy = festivalRepository.findLegacyImages(
 				r2Properties.publicUrl(), Pageable.ofSize(LEGACY_IMAGE_BATCH_SIZE));
-			legacy.forEach(f -> f.updateImgUrl(festivalImageProcessor.process(f.getImgUrl())));
-			log.info("기존 행사 이미지 {}건 이관 시도", legacy.getNumberOfElements());
+
+			Map<Long, String> processedUrls = new HashMap<>();
+			legacy.forEach(f -> processedUrls.put(f.getId(), festivalImageProcessor.process(f.getImgUrl())));
+
+			transactionTemplate.executeWithoutResult(status ->
+				festivalRepository.findAllById(processedUrls.keySet())
+					.forEach(f -> f.updateImgUrl(processedUrls.get(f.getId()))));
+			log.info("기존 행사 이미지 {}건 이관 시도", processedUrls.size());
 		} catch (Exception e) {
 			log.warn("기존 이미지 이관 실패, 동기화는 계속 진행", e);
 		}
@@ -308,7 +327,7 @@ public class FestivalService {
 	/** 경기도 API 응답(Dto) -> Entity **/
 	private Festival toGyeonggiFestival(FestivalApiRow row) {
 		LocalDateTime beginDe = parseDate(row.beginDe());
-		LocalDateTime endDe = parseDate(row.endDe());
+		LocalDateTime endDe = parseEndDate(row.endDe());
 
 		return Festival.builder()
 			.providerType(ProviderType.PUBLIC)
@@ -320,7 +339,7 @@ public class FestivalService {
 			.partcptExpnInfo(row.partcptExpnInfo())
 			.telnoInfo(row.telnoInfo())
 			.hostInstNm(row.hostInstNm())
-			.hmpgUrl(row.hmpgUrl())
+			.hmpgUrl(normalizeHomepageUrl(row.hmpgUrl()))
 			.imgUrl(festivalImageProcessor.process(row.imageUrl()))
 			.beginDe(beginDe)
 			.endDe(endDe)
@@ -331,12 +350,39 @@ public class FestivalService {
 			.build();
 	}
 
+	/** 공공 API의 HMPG_URL은 스킴(https://) 없이 오는 경우가 많아, 없으면 붙여서 정상적인 링크로 만든다.
+	 *  중간에 불필요한 문자가 섞여 온 경우(예: ": https://...")도 http로 시작하는 지점부터 잘라낸다. */
+	private String normalizeHomepageUrl(String value) {
+		if (value == null || value.isBlank()
+				|| value.equals("-") || value.equalsIgnoreCase("undefined")) {
+			return null;
+		}
+		String trimmed = value.trim();
+		int httpIndex = trimmed.toLowerCase().indexOf("http://");
+		if (httpIndex < 0) {
+			httpIndex = trimmed.toLowerCase().indexOf("https://");
+		}
+		if (httpIndex >= 0) {
+			return trimmed.substring(httpIndex);
+		}
+		return "https://" + trimmed;
+	}
+
 	/** 날짜 + 문자열 변환 + null 방어 **/
 	private LocalDateTime parseDate(String yyyyMMdd) {
 		if (yyyyMMdd == null || yyyyMMdd.isBlank()) {
 			return null;
 		}
 		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atStartOfDay();
+	}
+
+	/** 종료일은 그 날 끝(23:59:59.999...)까지로 해석한다. 마지막 날 낮에 진행 중인 행사가
+	 *  자정이 지나자마자 이미 종료된 것으로 잘못 판정되는 걸 막기 위함이다. */
+	private LocalDateTime parseEndDate(String yyyyMMdd) {
+		if (yyyyMMdd == null || yyyyMMdd.isBlank()) {
+			return null;
+		}
+		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atTime(LocalTime.MAX);
 	}
 
 	private FestivalStatus resolveStatus(LocalDateTime endDe) {

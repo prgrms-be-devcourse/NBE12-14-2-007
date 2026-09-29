@@ -84,9 +84,16 @@ public class PostController {
 
 	@Operation(summary = "후기 단건 조회", description = "후기 상세 정보를 조회합니다.")
 	@GetMapping("/posts/{id}")
-	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(@PathVariable UUID id) {
+	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(
+			@PathVariable UUID id,
+			@AuthenticationPrincipal CustomUserDetails user
+	) {
 
-		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(id);
+		// 비회원도 볼 수 있는 API라서 로그인 정보가 없으면 user가 null이다.
+		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(
+				id,
+				user == null ? null : user.getId()
+		);
 
 		return ResponseEntity.ok(ApiResponse.success(postDetailDto));
 	}

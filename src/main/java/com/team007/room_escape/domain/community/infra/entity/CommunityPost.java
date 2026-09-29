@@ -61,8 +61,4 @@ public class CommunityPost extends SoftDeletableEntity {
 		this.title = title;
 		this.content = content;
 	}
-
-	public void increaseViewCount() {
-		viewCount++;
-	}
 }

@@ -49,16 +49,14 @@ public class SecurityConfig {
 				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/api/v1/auth/**").permitAll()
-				// 회원가입 화면에서 프로필 이미지를 올리려면 토큰이 없는 상태로도 업로드가 돼야 한다.
-				// TODO 누구나 호출할 수 있어 R2 용량을 소진시키는 남용이 가능하다.
-				//      가입 화면 외의 용도가 늘어나기 전에 업로드 제한(IP별 횟수 등)을 붙일 것.
-				.requestMatchers(HttpMethod.POST, "/api/v1/images").permitAll()
 				// TODO url 한꺼번에 정리하기 (지금은 공개 API가 늘어날 때마다 규칙을 한 줄씩 추가하고 있음)
 				.requestMatchers(HttpMethod.GET, "/api/v1/festivals/**").permitAll()
-				.requestMatchers(HttpMethod.GET, "/api/v1/posts").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/posts/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/community/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/weather").permitAll()
 				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+				// 비회원의 R2 용량 남용을 막고, 제재(ROLE_WARNING) 회원은 글쓰기와 같은 기준으로 막는다.
+				.requestMatchers(HttpMethod.POST, "/api/v1/images").hasRole("UNVERIFIED")
 				.requestMatchers(
 					"/v3/api-docs/**",
 					"/swagger-ui/**",

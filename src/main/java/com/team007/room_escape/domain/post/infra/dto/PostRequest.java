@@ -17,7 +17,7 @@ public record PostRequest(
         String content,
 
         @Size(max = 2048)
-        @Schema(description = "썸네일 이미지 URL", example = "https://example.com/thumbnail.jpg")
+        @Schema(description = "썸네일 이미지 key (이미지 업로드 API가 돌려준 key)", example = "posts/{회원ID}/{파일명}.png")
         String thumbnail
 
 ) {

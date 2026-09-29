@@ -132,13 +132,8 @@ export function imageUrl(value?: string | null, width = 480) {
   // 레거시 이미지(아직 이관 안 된 공공 API 원본 URL)는 아래 weserv.nl 경로로 계속 처리된다.
   const r2Base = import.meta.env.VITE_IMAGE_BASE_URL;
   if (r2Base && value.startsWith(r2Base)) return value;
-  const resolved =
-    safeUrl(value) ||
-    (import.meta.env.VITE_IMAGE_BASE_URL
-      ? safeUrl(
-          `${import.meta.env.VITE_IMAGE_BASE_URL.replace(/\/$/, "")}/${value}`,
-        )
-      : undefined);
+  // 백엔드가 이미지 필드를 모두 완성된 URL로 내려주므로 key를 URL로 조립하지 않는다.
+  const resolved = safeUrl(value);
   return resolved ? resized(resolved, width) : undefined;
 }
 export function errorText(error: unknown) {

@@ -11,6 +11,7 @@ import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommentExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class CommentService {
 	private final CommentRepository commentRepository;
 	private final MemberReader memberReader;
 	private final PostRepository postRepository;
+	private final ImageUrlResolver imageUrlResolver;
 
 	@Transactional
 	public CommentResponse.CommentInfo createComment(
@@ -46,14 +48,18 @@ public class CommentService {
 
 		commentRepository.save(comment);
 
-		return CommentResponse.CommentInfo.from(comment);
+		return CommentResponse.CommentInfo.from(comment, imageUrlResolver);
 	}
 
 	@Transactional(readOnly = true)
 	public List<CommentResponse.CommentInfo> getComments(UUID postId, Pageable page) {
 
+		if(!postRepository.existsByIdAndDeletedAtIsNull(postId)) {
+			throw new BusinessException(PostExceptionCode.POST_NOT_FOUND);
+		}
+
 		return commentRepository.findAllByPostId(postId, page).stream()
-				.map(CommentResponse.CommentInfo::from)
+				.map(comment -> CommentResponse.CommentInfo.from(comment, imageUrlResolver))
 				.toList();
 	}
 
@@ -74,7 +80,7 @@ public class CommentService {
 
 		comment.update(request.content());
 
-		return CommentResponse.CommentInfo.from(comment);
+		return CommentResponse.CommentInfo.from(comment, imageUrlResolver);
 	}
 
 	@Transactional

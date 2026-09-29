@@ -176,6 +176,7 @@ export interface PostSummary {
 }
 export interface PostDetail extends PostSummary {
   content: string;
+  likedByMe?: boolean;
 }
 export interface AdminPostSummary extends PostSummary {
   deletedAt: string | null;
@@ -434,5 +435,4 @@ export interface SignupInput {
   password: string;
   nickname: string;
   phone?: string;
-  profileImg?: string;
 }

@@ -13,6 +13,7 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.CommunityExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import com.team007.room_escape.global.util.RichTextSanitizer;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -35,6 +36,7 @@ public class CommunityService {
 	private final CommunityCommentRepository commentRepository;
 	private final MemberRepository memberRepository;
 	private final RichTextSanitizer richTextSanitizer;
+	private final ImageUrlResolver imageUrlResolver;
 
 	@Transactional(readOnly = true)
 	public Page<CommunityResponse.PostSummary> getPosts(
@@ -54,15 +56,18 @@ public class CommunityService {
 			));
 		return posts.map(post -> CommunityResponse.PostSummary.from(
 			post,
-			commentCounts.getOrDefault(post.getId(), 0L)
+			commentCounts.getOrDefault(post.getId(), 0L),
+			imageUrlResolver
 		));
 	}
 
 	@Transactional
 	public CommunityResponse.PostDetail getPost(UUID postId) {
+		if (postRepository.increaseViewCount(postId) == 0) {
+			throw new BusinessException(CommunityExceptionCode.POST_NOT_FOUND);
+		}
 		CommunityPost post = getPostEntity(postId);
-		post.increaseViewCount();
-		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId));
+		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId), imageUrlResolver);
 	}
 
 	@Transactional
@@ -83,7 +88,7 @@ public class CommunityService {
 			.build();
 		postRepository.save(post);
 
-		return CommunityResponse.PostDetail.from(post, 0);
+		return CommunityResponse.PostDetail.from(post, 0, imageUrlResolver);
 	}
 
 	@Transactional
@@ -101,7 +106,7 @@ public class CommunityService {
 			request.title().trim(),
 			sanitizeRequiredContent(request.content())
 		);
-		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId));
+		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId), imageUrlResolver);
 	}
 
 	@Transactional
@@ -117,7 +122,7 @@ public class CommunityService {
 	public Page<CommunityResponse.CommentInfo> getComments(UUID postId, Pageable pageable) {
 		getPostEntity(postId);
 		return commentRepository.findAllByPostId(postId, pageable)
-			.map(CommunityResponse.CommentInfo::from);
+			.map(comment -> CommunityResponse.CommentInfo.from(comment, imageUrlResolver));
 	}
 
 	@Transactional
@@ -136,7 +141,7 @@ public class CommunityService {
 			.content(content)
 			.build();
 		commentRepository.save(comment);
-		return CommunityResponse.CommentInfo.from(comment);
+		return CommunityResponse.CommentInfo.from(comment, imageUrlResolver);
 	}
 
 	@Transactional
@@ -149,7 +154,7 @@ public class CommunityService {
 		CommunityComment comment = getCommentEntity(commentId);
 		checkAuthor(comment.getMember().getId(), memberId, CommunityExceptionCode.COMMENT_FORBIDDEN);
 		comment.update(request.content().trim());
-		return CommunityResponse.CommentInfo.from(comment);
+		return CommunityResponse.CommentInfo.from(comment, imageUrlResolver);
 	}
 
 	@Transactional

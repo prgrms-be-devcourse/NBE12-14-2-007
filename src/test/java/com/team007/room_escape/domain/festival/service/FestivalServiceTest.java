@@ -6,6 +6,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,12 +45,15 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -80,8 +85,22 @@ class FestivalServiceTest {
 	@Mock
 	private ObjectMapper objectMapper;
 
+	@Mock
+	private FestivalImageProcessor festivalImageProcessor;
+
+	/** 실제 DB 없이 콜백만 그대로 실행되도록 가짜 트랜잭션 매니저를 끼운다. */
+	@Spy
+	private TransactionTemplate transactionTemplate =
+		new TransactionTemplate(Mockito.mock(PlatformTransactionManager.class));
+
 	@InjectMocks
 	private FestivalService festivalService;
+
+	/** 이미지 이관은 이 테스트의 관심사가 아니라서 원본 URL을 그대로 돌려준다. */
+	@BeforeEach
+	void stubImageProcessor() {
+		lenient().when(festivalImageProcessor.process(any())).thenAnswer(inv -> inv.getArgument(0));
+	}
 
 	/**
 	 * 올해 날짜(currentYear+MMdd)를 가진 FestivalApiRow를 만드는 헬퍼

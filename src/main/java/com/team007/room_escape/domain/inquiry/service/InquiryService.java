@@ -40,6 +40,7 @@ public class InquiryService {
 	public InquiryResponse.Info create(UUID memberId, InquiryRequest.Create request) {
 		Member member = memberReader.getActiveMember(memberId);
 		targetValidator.validate(request.targetType(), request.targetId());
+		r2StorageService.requireOwnedBy(request.img(), null, memberId);
 
 		// 요청 DTO는 이 줄에서 엔티티로 끝내고, 리포지토리에는 엔티티만 넘긴다.
 		Inquiry inquiry = Inquiry.builder()
@@ -104,10 +105,12 @@ public class InquiryService {
 			throw new BusinessException(InquiryExceptionCode.INQUIRY_ALREADY_ANSWERED);
 		}
 
+		r2StorageService.requireOwnedBy(request.img(), inquiry.getImg(), memberId);
+
 		String previousImg = inquiry.getImg();
 		inquiry.update(request.category(), request.title(), request.content(), request.img());
 
-		deleteReplacedImage(previousImg, inquiry.getImg());
+		deleteReplacedImage(previousImg, inquiry.getImg(), memberId);
 
 		return InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg()));
 	}
@@ -126,10 +129,10 @@ public class InquiryService {
 	}
 
 	/** 교체된 옛 첨부는 R2에서 지운다. 안 지우면 쓰지 않는 파일이 계속 쌓인다. */
-	private void deleteReplacedImage(String previousKey, String currentKey) {
+	private void deleteReplacedImage(String previousKey, String currentKey, UUID memberId) {
 		if (previousKey == null || previousKey.equals(currentKey)) {
 			return;
 		}
-		r2StorageService.delete(previousKey);
+		r2StorageService.deleteOwnedBy(previousKey, memberId);
 	}
 }
