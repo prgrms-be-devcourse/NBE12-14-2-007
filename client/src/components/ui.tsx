@@ -21,6 +21,7 @@ import {
 import { useApp } from "../lib/context";
 import { errorText, imageUrl, period, regions } from "../lib/format";
 import type { EventView, WeatherCondition } from "../lib/types";
+import { TrustGradeBadge } from "./TrustGradeBadge";
 
 export function Logo() {
   return (
@@ -134,25 +135,45 @@ export function Badge({
 }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
+/** 행사 이미지가 없거나 불러오지 못했을 때 보여주는 기본 이미지 */
+export const FESTIVAL_DEFAULT_IMAGE = "/images/festival-default.jpg";
+
 export function Photo({
   src,
   alt,
   className = "",
+  fallbackSrc,
 }: {
   src?: string | null;
   alt: string;
   className?: string;
+  /** 원본이 없거나 깨졌을 때 대신 보여줄 이미지. 이것마저 실패하면 기본 안내 화면을 보여준다. */
+  fallbackSrc?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    setFallbackFailed(false);
+  }, [src, fallbackSrc]);
   const url = imageUrl(src);
-  return url && !failed ? (
+  if (url && !failed)
+    return (
+      <img
+        className={className}
+        src={url}
+        alt={alt}
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+    );
+  return fallbackSrc && !fallbackFailed ? (
     <img
       className={className}
-      src={url}
+      src={fallbackSrc}
       alt={alt}
       loading="lazy"
-      onError={() => setFailed(true)}
+      onError={() => setFallbackFailed(true)}
     />
   ) : (
     <div className={`photo-fallback ${className}`} role="img" aria-label={alt}>
@@ -174,7 +195,11 @@ export function EventCard({
   return (
     <Link to={path} className={`event-card ${list ? "list-card" : ""}`}>
       <div className="event-photo">
-        <Photo src={event.imgUrl} alt={event.title} />
+        <Photo
+          src={event.imgUrl}
+          alt={event.title}
+          fallbackSrc={FESTIVAL_DEFAULT_IMAGE}
+        />
         <span className="image-label">{event.category}</span>
       </div>
       <div className="event-copy">
@@ -189,7 +214,10 @@ export function EventCard({
         </div>
         <h3>{event.title}</h3>
         {event.submitter && (
-          <p className="event-submitter">제보자 · {event.submitter.nickname}</p>
+          <p className="event-submitter">
+            <span>{event.submitter.nickname}</span>
+            <TrustGradeBadge member={event.submitter} />
+          </p>
         )}
         <p>
           <MapPin size={14} />
@@ -200,7 +228,6 @@ export function EventCard({
           {period(event.beginDe, event.endDe)}
         </p>
         <div className="card-bottom">
-          <span>{event.partcptExpnInfo || "비용 정보 확인 필요"}</span>
           <span className="post-like-count">
             {event.likeCount !== undefined && (
               <span

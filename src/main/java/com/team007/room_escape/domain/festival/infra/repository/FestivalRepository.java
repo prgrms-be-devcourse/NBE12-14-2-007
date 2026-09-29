@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -26,6 +27,8 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		ProviderType providerType, LocalDateTime yearStart, LocalDateTime yearEnd);
 
 	// TODO: PostgreSQL의 null 파라미터 타입 오류로 사용 중인 hasXxx 플래그를 QueryDSL 도입 시 제거
+	/** 목록 카드에 제보자 닉네임·등급을 보여줘서 회원을 함께 불러온다. */
+	@EntityGraph(attributePaths = "member")
 	@Query("""
         SELECT f
         FROM Festival f
@@ -69,6 +72,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	 * like 를 행사별로 먼저 한 번 집계한 뒤 붙인다. (행사마다 세거나 like 를 그대로 JOIN 하면 느리다)
 	 * 동점이면 곧 시작하는 행사 먼저(기본 목록과 같은 기준), 그래도 같으면 id 로 순서를 고정한다.
 	 */
+	@EntityGraph(attributePaths = "member")
 	@Query(
 		value = """
         SELECT f
@@ -156,6 +160,7 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 			ProviderType providerType
 	);
 
+	@EntityGraph(attributePaths = "member")
 	Optional<Festival> findByIdAndDeletedAtIsNull(Long festivalId);
 
 	boolean existsByIdAndDeletedAtIsNull(Long festivalId);

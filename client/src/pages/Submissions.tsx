@@ -25,6 +25,7 @@ import {
   Badge,
   Empty,
   ErrorState,
+  FESTIVAL_DEFAULT_IMAGE,
   Field,
   FormError,
   Loading,
@@ -92,7 +93,11 @@ export function SubmissionList({ compact = false }: { compact?: boolean }) {
                 key={s.festivalSubmissionId}
                 to={`/submissions/${s.festivalSubmissionId}`}
               >
-                <Photo src={null} alt={s.title} />
+                <Photo
+                  src={null}
+                  alt={s.title}
+                  fallbackSrc={FESTIVAL_DEFAULT_IMAGE}
+                />
                 <div className="submission-row-copy">
                   <div>
                     <Badge tone={s.status === "CLOSED" ? "gray" : "green"}>

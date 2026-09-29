@@ -50,10 +50,13 @@ public class FestivalResponse {
             FestivalStatus status,
 
             @Schema(description = "좋아요 수")
-            long likeCount
+            long likeCount,
+
+            @Schema(description = "회원 제보 행사 작성자 정보. 공공데이터 행사는 null", nullable = true)
+            MemberResponse.MemberInfo member
     ) {
 
-        public static ListResponse from(Festival festival, long likeCount) {
+        public static ListResponse from(Festival festival, long likeCount, MemberResponse.MemberInfo member) {
             return ListResponse.builder()
                     .festivalId(festival.getId())
                     .providerType(festival.getProviderType())
@@ -66,6 +69,7 @@ public class FestivalResponse {
                     .region(festival.getRegion())
                     .status(FestivalStatus.from(festival.getEndDe()))
                     .likeCount(likeCount)
+                    .member(member)
                     .build();
         }
     }
