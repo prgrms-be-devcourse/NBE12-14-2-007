@@ -12,7 +12,6 @@ import com.team007.room_escape.global.jwt.JwtProperties;
 import com.team007.room_escape.global.jwt.JwtProvider;
 import com.team007.room_escape.global.response.code.AuthExceptionCode;
 import com.team007.room_escape.global.response.code.MemberExceptionCode;
-import io.jsonwebtoken.Claims;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -74,21 +73,24 @@ public class AuthService {
 		return issueTokens(member);
 	}
 
-	@Transactional
+	/**
+	 * 등급·닉네임·프로필은 리프레시 토큰 claim이 아니라 DB에서 다시 읽는다.
+	 * claim을 그대로 쓰면 제재(WARNING)나 등급 변경이 리프레시 토큰 만료 전까지 반영되지 않는다.
+	 */
+	@Transactional(readOnly = true)
 	public String refresh(String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank()) {
 			throw new BusinessException(AuthExceptionCode.TOKEN_MISSING);
 		}
 
-		Claims claims = jwtProvider.parseRefresh(refreshToken);
-		UUID memberId = UUID.fromString(claims.getSubject());
-		String nickname = claims.get("nickname", String.class);
-		String role = claims.get("role", String.class);
-		String profileImg = claims.get("profileImg", String.class);
-
+		UUID memberId = UUID.fromString(jwtProvider.parseRefresh(refreshToken).getSubject());
 		refreshTokenService.verify(memberId, refreshToken);
 
-		return jwtProvider.createAccessToken(memberId, nickname, role, profileImg);
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.orElseThrow(() -> new BusinessException(AuthExceptionCode.TOKEN_INVALID));
+
+		return jwtProvider.createAccessToken(
+			member.getId(), member.getNickname(), member.authority(), member.getProfileImg());
 	}
 
 	@Transactional
