@@ -2426,6 +2426,11 @@ select {
   color: #5e6c51;
   margin-bottom: 10px;
 }
+.upload-hint {
+  font-size: 12px;
+  color: #8b9285;
+  margin-top: 8px;
+}
 .upload-area {
   background: #fafbf7;
   border: 1px dashed #d9e0ce;
@@ -3515,7 +3520,7 @@ button.post-thumbnail {
 }
 .article-image {
   width: 100%;
-  max-height: 410px;
+  aspect-ratio: 7 / 6;
   object-fit: cover;
   border-radius: 8px;
   margin: 0 0 29px;
@@ -5661,9 +5666,6 @@ button.post-thumbnail {
   }
   .article-meta .text-button > svg {
     width: 12px;
-  }
-  .article-image {
-    max-height: 290px;
   }
   .review-article .prose {
     font-size: 13px;
