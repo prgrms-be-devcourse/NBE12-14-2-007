@@ -2,12 +2,14 @@ package com.team007.room_escape.domain.post.infra.dto;
 
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.post.infra.entity.Post;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 // TODO 추후 Builder 방식으로 Refactor
 
+/** 이미지 필드(profileImg, thumbnail)는 DB의 key가 아니라 공개 URL로 내려준다. */
 public class PostResponse {
 
     public record CreateResponse(
@@ -32,7 +34,7 @@ public class PostResponse {
          *
          * id 도 null 로 준다. 값을 남기면 화면이 없는 프로필로 링크를 걸게 된다.
          */
-        public static MemberInfo from(Post post) {
+        public static MemberInfo from(Post post, ImageUrlResolver imageUrlResolver) {
             Member member = post.getMember();
 
             if (member == null || member.isDeleted()) {
@@ -42,7 +44,7 @@ public class PostResponse {
             return new MemberInfo(
                     member.getId(),
                     member.getNickname(),
-                    member.getProfileImg()
+                    imageUrlResolver.resolve(member.getProfileImg())
             );
         }
     }
@@ -58,15 +60,15 @@ public class PostResponse {
             LocalDateTime date,
             boolean likedByMe
     ) {
-        public static DetailResponse from(Post post, boolean likedByMe) {
+        public static DetailResponse from(Post post, boolean likedByMe, ImageUrlResolver imageUrlResolver) {
             return new DetailResponse(
                     post.getId(),
-                    MemberInfo.from(post),
+                    MemberInfo.from(post, imageUrlResolver),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
                     post.getContent(),
-                    post.getThumbnail(),
+                    imageUrlResolver.resolve(post.getThumbnail()),
                     post.getUpdatedAt(),
                     likedByMe
             );
@@ -83,14 +85,14 @@ public class PostResponse {
             LocalDateTime date,
             LocalDateTime deletedAt
     ) {
-        public static AdminListResponse from(Post post) {
+        public static AdminListResponse from(Post post, ImageUrlResolver imageUrlResolver) {
             return new AdminListResponse(
                     post.getId(),
-                    MemberInfo.from(post),
+                    MemberInfo.from(post, imageUrlResolver),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
-                    post.getThumbnail(),
+                    imageUrlResolver.resolve(post.getThumbnail()),
                     post.getUpdatedAt(),
                     post.getDeletedAt()
             );
@@ -107,14 +109,14 @@ public class PostResponse {
             LocalDateTime date,
             long likeCount
     ) {
-        public static ListResponse from(Post post, long likeCount) {
+        public static ListResponse from(Post post, long likeCount, ImageUrlResolver imageUrlResolver) {
             return new ListResponse(
                     post.getId(),
-                    MemberInfo.from(post),
+                    MemberInfo.from(post, imageUrlResolver),
                     post.getFestival().getId(),
                     post.getFestival().getTitle(),
                     post.getTitle(),
-                    post.getThumbnail(),
+                    imageUrlResolver.resolve(post.getThumbnail()),
                     post.getUpdatedAt(),
                     likeCount
             );

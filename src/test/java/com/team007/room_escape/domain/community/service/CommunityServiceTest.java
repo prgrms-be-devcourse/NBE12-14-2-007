@@ -16,6 +16,7 @@ import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommunityExceptionCode;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import com.team007.room_escape.global.util.RichTextSanitizer;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,7 @@ class CommunityServiceTest {
 	@Mock CommunityCommentRepository commentRepository;
 	@Mock MemberRepository memberRepository;
 	@Mock RichTextSanitizer richTextSanitizer;
+	@Mock ImageUrlResolver imageUrlResolver;
 	@InjectMocks CommunityService communityService;
 
 	@Test

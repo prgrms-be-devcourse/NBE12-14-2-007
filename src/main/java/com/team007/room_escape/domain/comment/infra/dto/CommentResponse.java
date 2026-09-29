@@ -2,6 +2,7 @@ package com.team007.room_escape.domain.comment.infra.dto;
 
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.member.infra.entity.Member;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ public class CommentResponse {
             UUID memberId,
             @Schema(description = "작성자 닉네임")
             String nickname,
-            @Schema(description = "작성자 프로필")
+            @Schema(description = "작성자 프로필 이미지 공개 URL")
             String profile_img,
             @Schema(description = "댓글 내용", example = "행사 정말 재미있었어요!")
             String content,
@@ -32,7 +33,7 @@ public class CommentResponse {
          *
          * memberId 도 null 로 준다. 값을 남기면 화면이 없는 프로필로 링크를 걸게 된다.
          */
-        public static CommentInfo from(Comment comment) {
+        public static CommentInfo from(Comment comment, ImageUrlResolver imageUrlResolver) {
             Member member = comment.getMember();
             boolean withdrawn = member == null || member.isDeleted();
 
@@ -41,7 +42,7 @@ public class CommentResponse {
                     comment.getPost().getId(),
                     withdrawn ? null : member.getId(),
                     withdrawn ? Member.WITHDRAWN_NICKNAME : member.getNickname(),
-                    withdrawn ? null : member.getProfileImg(),
+                    withdrawn ? null : imageUrlResolver.resolve(member.getProfileImg()),
                     comment.getContent(),
                     comment.getUpdatedAt()
             );

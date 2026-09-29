@@ -22,6 +22,7 @@ import com.team007.room_escape.domain.post.infra.dto.PostResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.domain.post.type.PostSearchType;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -57,6 +58,9 @@ class PostServiceTest {
 
 	@Mock
 	LikeRepository likeRepository;
+
+	@Mock
+	ImageUrlResolver imageUrlResolver;
 
 	@InjectMocks
 	PostService postService;
