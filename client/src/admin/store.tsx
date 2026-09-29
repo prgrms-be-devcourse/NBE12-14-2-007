@@ -86,7 +86,11 @@ export interface Ticket {
   content: string;
   status: "PENDING" | "ANSWERED";
   answer: string;
-  target?: { kind: "events" | "reviews"; id: string; title: string };
+  target?: {
+    kind: "events" | "reviews" | "comments" | "members";
+    id: string;
+    title: string;
+  };
 }
 export interface Activity {
   id: string;
@@ -279,21 +283,23 @@ function toEvent(item: AdminFestivalListItem): ContentItem {
   };
 }
 /** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
+const ticketTargets = {
+  FESTIVAL: { kind: "events", name: "행사" },
+  POST: { kind: "reviews", name: "후기" },
+  COMMENT: { kind: "comments", name: "댓글" },
+  MEMBER: { kind: "members", name: "회원" },
+} as const;
+
 function toTicket(item: AdminInquiryListItem): Ticket {
+  const targetInfo = item.targetType && ticketTargets[item.targetType];
   const target =
-    item.targetType === "FESTIVAL" && item.targetId
+    targetInfo && item.targetId
       ? {
-          kind: "events" as const,
+          kind: targetInfo.kind,
           id: item.targetId,
-          title: `대상 행사 #${item.targetId}`,
+          title: `대상 ${targetInfo.name} #${item.targetId}`,
         }
-      : item.targetType === "POST" && item.targetId
-        ? {
-            kind: "reviews" as const,
-            id: item.targetId,
-            title: `대상 후기 #${item.targetId}`,
-          }
-        : undefined;
+      : undefined;
 
   return {
     id: item.id,

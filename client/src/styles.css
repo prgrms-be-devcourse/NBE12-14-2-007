@@ -2991,6 +2991,20 @@ select {
 .report-kinds label.selected small {
   color: #67564a;
 }
+.member-report-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.member-report-name:hover strong,
+.member-report-name:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 @media (max-width: 480px) {
   .report-reasons {
     grid-template-columns: 1fr;

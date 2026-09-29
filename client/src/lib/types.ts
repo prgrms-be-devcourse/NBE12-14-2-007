@@ -254,6 +254,8 @@ export interface AdminInquiryListItem {
  * 목록에 없는 본문·첨부·답변이 여기에 있다.
  */
 export interface AdminInquiryDetail extends AdminInquiryListItem {
+  /** 댓글 신고일 때 그 댓글이 달린 후기 ID. 댓글이 삭제됐으면 null */
+  targetPostId: string | null;
   content: string;
   /** 첨부 이미지 공개 URL. 없으면 null */
   img: string | null;

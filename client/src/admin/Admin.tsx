@@ -702,9 +702,12 @@ export function AdminDashboard() {
 export function AdminMembers() {
   const { data, membersLoading, membersError, reloadMembers, stats } =
     useAdmin();
-  const [query, setQuery] = useState("");
+  const [params] = useSearchParams();
+  // 회원 신고 문의에서 넘어오면 그 회원을 찾아 바로 연다.
+  const requested = params.get("item");
+  const [query, setQuery] = useState(requested ?? "");
   const [role, setRole] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(requested);
   const items = data.members.filter(
     (item) =>
       includes(query, item.name, item.email, item.id) &&
@@ -1869,9 +1872,24 @@ function TicketDialog({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [editing, setEditing] = useState(false);
+  const targetKind = ticket.target?.kind;
   const target =
-    ticket.target &&
-    data[ticket.target.kind].find((item) => item.id === ticket.target!.id);
+    (targetKind === "events" || targetKind === "reviews") &&
+    data[targetKind].find((item) => item.id === ticket.target!.id);
+  const targetPostId = detail.data?.targetPostId;
+  // 관리자 후기 상세에는 댓글이 없어서, 댓글 신고는 공개 후기 화면을 연다.
+  const targetLink = !ticket.target
+    ? null
+    : targetKind === "events"
+      ? `/events/${ticket.target.id}`
+      : targetKind === "reviews"
+        ? `/admin/reviews?item=${ticket.target.id}`
+        : targetKind === "members"
+          ? `/admin/members?item=${ticket.target.id}`
+          : targetPostId
+            ? `/reviews/${targetPostId}`
+            : null;
+  const opensNewTab = targetKind === "events" || targetKind === "comments";
   // 상세를 받기 전에는 목록에서 알고 있는 값으로 그린다.
   const status = detail.data?.status ?? ticket.status;
   const answered = status === "ANSWERED";
@@ -1913,15 +1931,11 @@ function TicketDialog({
           )}
         </>
       )}
-      {ticket.target && (
+      {ticket.target && targetLink && (
         <Link
           className="adm-target-link"
-          to={
-            ticket.target.kind === "events"
-              ? `/events/${ticket.target.id}`
-              : `/admin/reviews?item=${ticket.target.id}`
-          }
-          target={ticket.target.kind === "events" ? "_blank" : undefined}
+          to={targetLink}
+          target={opensNewTab ? "_blank" : undefined}
         >
           <Eye size={18} />
           <span>
@@ -1933,6 +1947,12 @@ function TicketDialog({
           </span>
           <ExternalLink size={16} />
         </Link>
+      )}
+      {ticket.target && !targetLink && detail.data && (
+        <p className="adm-dialog-note">
+          신고된 댓글이 이미 삭제되어 원문 위치로 이동할 수 없습니다. 본문의
+          댓글 내용을 확인해 주세요.
+        </p>
       )}
       {answered && !editing ? (
         <div className="adm-saved-answer">

@@ -94,6 +94,9 @@ public class AdminInquiryResponse {
 		@Schema(description = "신고·제보 대상 ID. 일반 문의면 null", example = "123")
 		String targetId,
 
+		@Schema(description = "댓글 신고일 때 그 댓글이 달린 후기 ID. 그 외에는 null")
+		UUID targetPostId,
+
 		@Schema(description = "제목")
 		String title,
 
@@ -125,8 +128,14 @@ public class AdminInquiryResponse {
 		/**
 		 * @param imgUrl              첨부 이미지의 공개 URL. 없으면 null
 		 * @param writerProfileImgUrl 작성자 프로필 이미지의 공개 URL. 없으면 null
+		 * @param targetPostId        신고된 댓글이 달린 후기 ID. 댓글 신고가 아니거나 댓글이 삭제됐으면 null
 		 */
-		public static Detail from(Inquiry inquiry, String imgUrl, String writerProfileImgUrl) {
+		public static Detail from(
+			Inquiry inquiry,
+			String imgUrl,
+			String writerProfileImgUrl,
+			UUID targetPostId
+		) {
 			Member writer = inquiry.getMember();
 
 			return Detail.builder()
@@ -134,6 +143,7 @@ public class AdminInquiryResponse {
 				.category(inquiry.getCategory())
 				.targetType(inquiry.getTargetType())
 				.targetId(inquiry.getTargetId())
+				.targetPostId(targetPostId)
 				.title(inquiry.getTitle())
 				.content(inquiry.getContent())
 				.img(imgUrl)
