@@ -78,7 +78,7 @@ export function MyPage() {
                 },
                 {
                   key: "inquiries",
-                  label: "내 문의·신고",
+                  label: "내 문의·신고·제보",
                   Icon: MessageCircle,
                 },
               ].map(({ key, label, Icon }) => (
@@ -474,6 +474,12 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
     </Modal>
   );
 }
+const inquiryCategoryNames: Record<InquiryInput["category"], string> = {
+  QUESTION: "일반 문의",
+  REPORT: "신고",
+  TIP: "제보",
+};
+
 function Inquiries() {
   const { api } = useApp();
   const [params, setParams] = useSearchParams();
@@ -495,7 +501,7 @@ function Inquiries() {
     <>
       <div className="section-heading">
         <div>
-          <h2>내 문의·신고</h2>
+          <h2>내 문의·신고·제보</h2>
           <p className="muted">
             궁금한 점이나 확인이 필요한 정보를 알려주세요.
           </p>
@@ -537,8 +543,7 @@ function Inquiries() {
                 </Badge>
                 <h3>{q.title}</h3>
                 <p>
-                  {q.category === "REPORT" ? "신고" : "일반 문의"} ·{" "}
-                  {dateText(q.createdAt)}
+                  {inquiryCategoryNames[q.category]} · {dateText(q.createdAt)}
                 </p>
               </div>
               <ChevronRight size={17} />
@@ -736,6 +741,7 @@ function InquiryForm({
         >
           <option value="QUESTION">일반 문의</option>
           <option value="REPORT">잘못된 정보·게시물 신고</option>
+          <option value="TIP">행사 정보 제보</option>
         </select>
       </Field>
       <Field label="제목" required>

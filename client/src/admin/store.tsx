@@ -11,15 +11,18 @@ import { useApp } from "../lib/context";
 import { dateText, errorText } from "../lib/format";
 import type {
   AdminFestivalQuery,
+  AdminInquiryQuery,
   AdminInquiryListItem,
   AdminMemberInfo,
   AdminStats,
   AdminFestivalListItem,
+  InquiryCategory,
   Role,
 } from "../lib/types";
 
 /** 어드민 행사 목록 한 페이지 크기. */
 const EVENT_PAGE_SIZE = 20;
+const TICKET_PAGE_SIZE = 20;
 
 export const roleNames: Record<Role, string> = {
   ROLE_UNVERIFIED: "탈출 꿈나무",
@@ -76,7 +79,7 @@ export interface ContentItem {
 }
 export interface Ticket {
   id: string;
-  category: "QUESTION" | "REPORT";
+  category: InquiryCategory;
   title: string;
   author: string;
   date: string;
@@ -107,6 +110,16 @@ function sameQuery(a: AdminFestivalQuery, b: AdminFestivalQuery) {
     a.keyword === b.keyword &&
     a.providerType === b.providerType &&
     a.excludeClosed === b.excludeClosed &&
+    a.includeDeleted === b.includeDeleted &&
+    a.page === b.page &&
+    a.size === b.size
+  );
+}
+function sameInquiryQuery(a: AdminInquiryQuery, b: AdminInquiryQuery) {
+  return (
+    a.title === b.title &&
+    a.status === b.status &&
+    a.category === b.category &&
     a.includeDeleted === b.includeDeleted &&
     a.page === b.page &&
     a.size === b.size
@@ -201,7 +214,7 @@ function seed(): AdminState {
       {
         id: "A-2",
         at: "2026-09-19T14:20:00+09:00",
-        area: "문의·신고",
+        area: "문의·신고·제보",
         action: "답변 등록",
         target: "Q-4002",
         reason: "회원 등급 확인 경로 안내",
@@ -267,6 +280,21 @@ function toEvent(item: AdminFestivalListItem): ContentItem {
 }
 /** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
 function toTicket(item: AdminInquiryListItem): Ticket {
+  const target =
+    item.targetType === "FESTIVAL" && item.targetId
+      ? {
+          kind: "events" as const,
+          id: item.targetId,
+          title: `대상 행사 #${item.targetId}`,
+        }
+      : item.targetType === "POST" && item.targetId
+        ? {
+            kind: "reviews" as const,
+            id: item.targetId,
+            title: `대상 후기 #${item.targetId}`,
+          }
+        : undefined;
+
   return {
     id: item.id,
     category: item.category,
@@ -278,6 +306,7 @@ function toTicket(item: AdminInquiryListItem): Ticket {
     content: "",
     status: item.status,
     answer: "",
+    target,
   };
 }
 interface AdminContextValue {
@@ -338,6 +367,9 @@ interface AdminContextValue {
   reloadTickets: () => void;
   ticketsLoading: boolean;
   ticketsError: string;
+  ticketQuery: AdminInquiryQuery;
+  setTicketQuery: (next: AdminInquiryQuery) => void;
+  ticketsPage: PageMeta;
   reset: () => void;
 }
 const Context = createContext<AdminContextValue | null>(null);
@@ -371,6 +403,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [ticketsError, setTicketsError] = useState("");
   const [ticketsRevision, setTicketsRevision] = useState(0);
+  const [ticketsPage, setTicketsPage] = useState<PageMeta>(emptyPage);
+  const [ticketQuery, setTicketQueryState] = useState<AdminInquiryQuery>({
+    page: 0,
+    size: TICKET_PAGE_SIZE,
+  });
   // 토큰 복구가 끝나기 전에 부르면 첫 요청이 401로 한 번 헛돈다.
   const ready = !authLoading && signedInAdmin?.role === "ROLE_ADMIN";
   /**
@@ -383,6 +420,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const merged = { page: 0, size: EVENT_PAGE_SIZE, ...next };
       // 같은 조건이면 상태를 바꾸지 않는다. 안 그러면 effect가 다시 돌아 요청이 두 번 나간다.
       return sameQuery(current, merged) ? current : merged;
+    });
+  }, []);
+  const setTicketQuery = useCallback((next: AdminInquiryQuery) => {
+    setTicketQueryState((current) => {
+      const merged = { page: 0, size: TICKET_PAGE_SIZE, ...next };
+      return sameInquiryQuery(current, merged) ? current : merged;
     });
   }, []);
   useEffect(() => {
@@ -474,6 +517,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (!ready) {
       // 관리자가 아니면 목록을 부를 이유가 없다. 로딩 표시도 끝내야 한다.
       setTickets([]);
+      setTicketsPage(emptyPage);
       setTicketsLoading(authLoading);
       return;
     }
@@ -481,15 +525,20 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setTicketsLoading(true);
     setTicketsError("");
     api
-      // 검색·필터를 화면에서 하고 있어서 한 번에 받아 두고 거른다.
-      // 건수가 늘면 서버 검색 파라미터(title/status/category)로 옮겨야 한다.
-      // size는 서버 max-page-size(50)가 상한이다.
-      .adminInquiries({ size: 50 })
+      .adminInquiries(ticketQuery)
       .then((page) => {
-        if (active) setTickets(page.content.map(toTicket));
+        if (!active) return;
+        setTickets(page.content.map(toTicket));
+        setTicketsPage({
+          totalElements: page.totalElements,
+          totalPages: page.totalPages,
+          number: page.number,
+        });
       })
       .catch((error) => {
-        if (active) setTicketsError(errorText(error));
+        if (!active) return;
+        setTicketsError(errorText(error));
+        setTicketsPage(emptyPage);
       })
       .finally(() => {
         if (active) setTicketsLoading(false);
@@ -497,7 +546,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [api, ready, authLoading, ticketsRevision]);
+  }, [api, ready, authLoading, ticketsRevision, ticketQuery]);
   useEffect(() => {
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(data));
@@ -584,6 +633,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         },
         ticketsLoading,
         ticketsError,
+        ticketQuery,
+        setTicketQuery,
+        ticketsPage,
         reloadTickets() {
           setTicketsRevision((current) => current + 1);
         },
@@ -659,7 +711,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             ),
           );
           record({
-            area: "문의·신고",
+            area: "문의·신고·제보",
             action: "답변 등록",
             target: ticket.id,
             reason: ticket.title,

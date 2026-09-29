@@ -1,7 +1,10 @@
 package com.team007.room_escape.domain.inquiry.dto;
 
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
+import com.team007.room_escape.domain.inquiry.infra.entity.InquiryTargetType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,8 +18,15 @@ public class InquiryRequest {
 	public record Create(
 
 		@NotNull
-		@Schema(description = "문의 종류. QUESTION(일반 문의) 또는 REPORT(신고)", example = "QUESTION")
+		@Schema(description = "접수 종류. QUESTION(일반 문의), REPORT(신고), TIP(제보)", example = "QUESTION")
 		InquiryCategory category,
+
+		@Schema(description = "신고·제보 대상 종류. FESTIVAL, POST, COMMENT, MEMBER. 일반 문의는 생략", example = "FESTIVAL")
+		InquiryTargetType targetType,
+
+		@Size(max = 255)
+		@Schema(description = "신고·제보 대상 ID. 일반 문의는 생략", example = "123")
+		String targetId,
 
 		@NotBlank
 		@Size(max = 255)
@@ -35,6 +45,18 @@ public class InquiryRequest {
 		)
 		String img
 	) {
+		@JsonIgnore
+		@AssertTrue(message = "신고·제보 대상 종류와 대상 ID는 함께 입력해야 합니다.")
+		public boolean isTargetValid() {
+			boolean targetIdMissing = targetId == null || targetId.isBlank();
+			boolean noTarget = targetType == null && targetIdMissing;
+			boolean completeTarget = targetType != null && !targetIdMissing;
+
+			if (category == InquiryCategory.QUESTION) {
+				return noTarget;
+			}
+			return noTarget || completeTarget;
+		}
 	}
 
 	/**
@@ -44,7 +66,7 @@ public class InquiryRequest {
 	@Schema(name = "InquiryUpdateRequest", description = "문의 수정 요청")
 	public record Update(
 
-		@Schema(description = "문의 종류. 생략하면 변경하지 않는다", example = "REPORT")
+		@Schema(description = "접수 종류. 생략하면 변경하지 않는다", example = "REPORT")
 		InquiryCategory category,
 
 		@Size(max = 255)

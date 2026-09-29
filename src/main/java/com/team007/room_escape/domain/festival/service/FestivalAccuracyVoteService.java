@@ -9,11 +9,10 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracyVoteRepository;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
-import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,7 @@ public class FestivalAccuracyVoteService {
 
     private final FestivalAccuracyVoteRepository accuracyVoteRepository;
     private final FestivalRepository festivalRepository;
-    private final MemberRepository memberRepository;
+    private final MemberReader memberReader;
     private final MemberTrustGradeService memberTrustGradeService;
 
     @Transactional
@@ -34,7 +33,7 @@ public class FestivalAccuracyVoteService {
             Long festivalId,
             CreateOrUpdateFestivalAccuracyVoteRequest request
     ) {
-        Member member = findActiveMember(memberId);
+        Member member = memberReader.getActiveMember(memberId);
         Festival festival = findUserSubmittedFestival(festivalId);
 
         if (festival.getMember() != null
@@ -65,7 +64,7 @@ public class FestivalAccuracyVoteService {
             UUID memberId,
             Long festivalId
     ) {
-        Member member = findActiveMember(memberId);
+        Member member = memberReader.getActiveMember(memberId);
         Festival festival = findUserSubmittedFestival(festivalId);
 
         accuracyVoteRepository
@@ -100,13 +99,6 @@ public class FestivalAccuracyVoteService {
                 inaccurateCount,
                 myVote
         );
-    }
-
-    private Member findActiveMember(UUID memberId) {
-        return memberRepository.findByIdAndDeletedAtIsNull(memberId)
-                .orElseThrow(() -> new BusinessException(
-                        MemberExceptionCode.MEMBER_NOT_FOUND
-                ));
     }
 
     private Festival findUserSubmittedFestival(Long festivalId) {

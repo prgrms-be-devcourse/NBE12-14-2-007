@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -39,10 +39,13 @@ import {
   Badge,
   Empty,
   ErrorState,
+  Field,
   FormError,
   Loading,
   LoginRequired,
   Modal,
+  SubmitButton,
+  Upload,
 } from "../components/ui";
 import { FestivalPosts } from "./Reviews";
 import { RichTextContent } from "../components/RichText";
@@ -385,13 +388,7 @@ function EventDetail({ event }: { event: EventView }) {
               <FestivalPosts festivalId={event.festivalId} />
             )}
           </div>
-          <Link
-            className="report-link"
-            to={`/mypage?tab=inquiries&report=${encodeURIComponent(`행사 정보 문의: ${event.title}\n행사 주소: ${window.location.href}`)}`}
-          >
-            <Flag size={14} />
-            잘못된 정보가 있나요?
-          </Link>
+          {!event.submissionId && <FestivalReportButton event={event} />}
           {event.submissionId && (
             <button
               className="text-button muted delete-submission"
@@ -588,6 +585,215 @@ function FestivalLikeButton({ event }: { event: EventView }) {
       </button>
       <FormError message={error} />
     </section>
+  );
+}
+
+const inquiryKinds = [
+  {
+    value: "REPORT",
+    label: "신고",
+    description: "광고, 욕설 등 부적절한 콘텐츠를 알려주세요.",
+  },
+  {
+    value: "TIP",
+    label: "제보",
+    description: "잘못되거나 누락된 행사 정보를 알려주세요.",
+  },
+] as const;
+type FestivalInquiryKind = (typeof inquiryKinds)[number]["value"];
+
+const inquiryReasons = {
+  REPORT: [
+    { value: "INAPPROPRIATE", label: "부적절한 내용" },
+    { value: "SPAM", label: "광고·홍보성 콘텐츠" },
+    { value: "OTHER", label: "기타" },
+  ],
+  TIP: [
+    { value: "WRONG_INFO", label: "허위·잘못된 정보" },
+    { value: "CLOSED", label: "취소·종료된 행사" },
+    { value: "MISSING_INFO", label: "누락된 정보" },
+    { value: "OTHER", label: "기타" },
+  ],
+} as const;
+
+/**
+ * 행사 상세에서 신고 또는 제보를 선택해 문의 API로 접수한다.
+ * 대상 행사 ID를 별도 필드로 보내 관리자가 상세 화면에서 바로 이동할 수 있게 한다.
+ */
+function FestivalReportButton({ event }: { event: EventView }) {
+  const { member, authLoading } = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+  function start() {
+    if (!member) {
+      navigate(
+        `/login?next=${encodeURIComponent(location.pathname + location.search)}`,
+      );
+      return;
+    }
+    setOpen(true);
+  }
+  return (
+    <>
+      <button
+        type="button"
+        className="report-link"
+        disabled={authLoading}
+        onClick={start}
+      >
+        <Flag size={14} />이 행사 신고 및 제보
+      </button>
+      {open && (
+        <Modal title="행사 신고 및 제보" onClose={() => setOpen(false)}>
+          <FestivalReportForm event={event} onDone={() => setOpen(false)} />
+        </Modal>
+      )}
+    </>
+  );
+}
+
+function FestivalReportForm({
+  event,
+  onDone,
+}: {
+  event: EventView;
+  onDone: () => void;
+}) {
+  const { api, toast } = useApp();
+  const [kind, setKind] = useState<FestivalInquiryKind | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
+  const [detail, setDetail] = useState("");
+  const [img, setImg] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const detailRequired = reason === "OTHER";
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!kind) {
+      setError("신고와 제보 중 접수 유형을 선택해 주세요.");
+      return;
+    }
+    if (!reason) {
+      setError(`${kind === "REPORT" ? "신고" : "제보"} 사유를 선택해 주세요.`);
+      return;
+    }
+    if (detailRequired && !detail.trim()) {
+      setError("기타 사유는 내용을 적어 주세요.");
+      return;
+    }
+    const kindLabel = kind === "REPORT" ? "신고" : "제보";
+    const label = inquiryReasons[kind].find(
+      (item) => item.value === reason,
+    )!.label;
+    setBusy(true);
+    setError("");
+    try {
+      await api.createInquiry({
+        category: kind,
+        targetType: "FESTIVAL",
+        targetId: String(event.festivalId),
+        title: `[행사 ${kindLabel}] ${event.title} - ${label}`.slice(0, 255),
+        content: [
+          `${kindLabel} 사유: ${label}`,
+          `행사: ${event.title} (ID ${event.festivalId})`,
+          ...(detail.trim() ? ["", detail.trim()] : []),
+        ].join("\n"),
+        ...(img ? { img } : {}),
+      });
+      toast(
+        `${kindLabel}가 접수됐어요. 마이페이지에서 처리 결과를 볼 수 있어요.`,
+      );
+      onDone();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="report-form" onSubmit={submit}>
+      <p className="muted">
+        <strong>{event.title}</strong>에 대해 어떤 내용을 접수하시나요?
+      </p>
+      <fieldset className="report-reasons report-kinds">
+        <legend>
+          접수 유형<b className="required">*</b>
+        </legend>
+        {inquiryKinds.map((item) => (
+          <label
+            key={item.value}
+            className={kind === item.value ? "selected" : ""}
+          >
+            <input
+              type="radio"
+              name="inquiry-kind"
+              value={item.value}
+              checked={kind === item.value}
+              onChange={() => {
+                setKind(item.value);
+                setReason(null);
+                setError("");
+              }}
+            />
+            <span>
+              <strong>{item.label}</strong>
+              <small>{item.description}</small>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {kind && (
+        <fieldset className="report-reasons">
+          <legend>
+            {kind === "REPORT" ? "신고" : "제보"} 사유
+            <b className="required">*</b>
+          </legend>
+          {inquiryReasons[kind].map((r) => (
+            <label
+              key={r.value}
+              className={reason === r.value ? "selected" : ""}
+            >
+              <input
+                type="radio"
+                name="report-reason"
+                value={r.value}
+                checked={reason === r.value}
+                onChange={() => setReason(r.value)}
+              />
+              {r.label}
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <Field
+        label="상세 내용"
+        required={detailRequired}
+        hint={detailRequired ? undefined : "선택 항목이에요."}
+      >
+        <textarea
+          rows={4}
+          maxLength={2000}
+          value={detail}
+          onChange={(e) => setDetail(e.target.value)}
+          placeholder="확인한 내용을 적어 주시면 처리에 도움이 돼요."
+        />
+      </Field>
+      <Upload type="INQUIRY" onChange={setImg} useKey />
+      <FormError message={error} />
+      <div className="form-actions">
+        <button type="button" className="btn secondary" onClick={onDone}>
+          취소
+        </button>
+        <SubmitButton busy={busy}>
+          {kind
+            ? `${kind === "REPORT" ? "신고" : "제보"} 접수하기`
+            : "접수하기"}
+        </SubmitButton>
+      </div>
+    </form>
   );
 }
 

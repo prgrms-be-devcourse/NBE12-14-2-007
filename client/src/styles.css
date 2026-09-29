@@ -2927,7 +2927,74 @@ select {
   gap: 7px;
   font-size: 13px;
   color: #646b5b;
-  margin-top: 20px;
+  margin: 20px auto 0;
+  padding: 6px 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.report-link:hover {
+  color: var(--orange);
+  text-decoration: underline;
+}
+.report-form {
+  display: grid;
+  gap: 16px;
+}
+.report-form > p {
+  margin: 0;
+}
+.report-reasons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.report-reasons legend {
+  font-size: 13px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+.report-reasons label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.report-reasons label.selected {
+  border-color: var(--orange);
+  background: #fdf3ec;
+  color: var(--ink);
+  font-weight: 600;
+}
+.report-reasons input {
+  accent-color: var(--orange);
+  margin: 0;
+}
+.report-kinds label {
+  align-items: flex-start;
+}
+.report-kinds label > span {
+  display: grid;
+  gap: 3px;
+}
+.report-kinds small {
+  color: #6f7569;
+  line-height: 1.4;
+}
+.report-kinds label.selected small {
+  color: #67564a;
+}
+@media (max-width: 480px) {
+  .report-reasons {
+    grid-template-columns: 1fr;
+  }
 }
 .delete-submission {
   display: flex;

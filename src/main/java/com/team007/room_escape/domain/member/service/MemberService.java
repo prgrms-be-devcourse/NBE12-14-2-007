@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
 	private final MemberRepository memberRepository;
+	private final MemberReader memberReader;
 	private final ImageUrlResolver imageUrlResolver;
 	/** 프로필 이미지를 교체할 때 옛 파일을 지우려면 저장소를 직접 다뤄야 한다. */
 	private final R2StorageService r2StorageService;
@@ -43,8 +44,7 @@ public class MemberService {
 	 */
 	@Transactional(readOnly = true)
 	public MemberResponse.MyPageInfo getMyPage(UUID memberId) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+		Member member = memberReader.getActiveMember(memberId);
 
 		// profileImg는 R2 key로 저장되므로 응답에서는 공개 URL로 바꿔 내려준다.
 		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
@@ -58,12 +58,7 @@ public class MemberService {
 	 */
 	@Transactional
 	public MemberResponse.MyPageInfo updateMyPage(UUID memberId, MemberRequest.UpdateMyPage request) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if (member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		Member member = memberReader.getUnrestrictedMember(memberId);
 
 		validateNickname(member, request.nickname());
 
@@ -83,12 +78,7 @@ public class MemberService {
 	 */
 	@Transactional
 	public void sendPasswordChangeCode(UUID memberId) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if (member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		Member member = memberReader.getUnrestrictedMember(memberId);
 
 		String code = emailVerificationService.issueCode(memberId, Purpose.PASSWORD_CHANGE);
 
@@ -101,12 +91,7 @@ public class MemberService {
 	 */
 	@Transactional(readOnly = true)
 	public void verifyPasswordChangeCode(UUID memberId, MemberRequest.VerifyPassword request) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if (member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		memberReader.getUnrestrictedMember(memberId);
 
 		emailVerificationService.verifyCode(memberId, Purpose.PASSWORD_CHANGE, request.code());
 	}
@@ -117,12 +102,7 @@ public class MemberService {
 	 */
 	@Transactional
 	public void changePassword(UUID memberId, MemberRequest.ChangePassword request) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if (member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		Member member = memberReader.getUnrestrictedMember(memberId);
 
 		// 인증 상태를 소모하기 전에 확인한다.
 		// 인증 상태는 캐시에 있어 트랜잭션 롤백으로 되살아나지 않으므로,
@@ -153,8 +133,7 @@ public class MemberService {
 	 */
 	@Transactional
 	public void withdraw(UUID memberId, MemberRequest.Withdraw request) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-			.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
+		Member member = memberReader.getActiveMember(memberId);
 
 		// 관리자가 스스로 나가면 그 계정으로 하던 운영 업무를 이어받을 수 없다.
 		if (member.getRole().isAdmin()) {

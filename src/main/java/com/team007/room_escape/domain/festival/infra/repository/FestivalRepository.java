@@ -83,6 +83,8 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
 	Optional<Festival> findByIdAndDeletedAtIsNull(Long festivalId);
 
+	boolean existsByIdAndDeletedAtIsNull(Long festivalId);
+
 	/** 신규 등록용 중복 확인 */
 	boolean existsByBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
 			LocalDateTime beginDe,
