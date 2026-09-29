@@ -353,7 +353,8 @@ public class FestivalService {
 	/** 공공 API의 HMPG_URL은 스킴(https://) 없이 오는 경우가 많아, 없으면 붙여서 정상적인 링크로 만든다.
 	 *  중간에 불필요한 문자가 섞여 온 경우(예: ": https://...")도 http로 시작하는 지점부터 잘라낸다. */
 	private String normalizeHomepageUrl(String value) {
-		if (value == null || value.isBlank() || value.equals("-")) {
+		if (value == null || value.isBlank()
+				|| value.equals("-") || value.equalsIgnoreCase("undefined")) {
 			return null;
 		}
 		String trimmed = value.trim();
