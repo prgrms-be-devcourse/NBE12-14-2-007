@@ -339,7 +339,7 @@ public class FestivalService {
 			.partcptExpnInfo(row.partcptExpnInfo())
 			.telnoInfo(row.telnoInfo())
 			.hostInstNm(row.hostInstNm())
-			.hmpgUrl(row.hmpgUrl())
+			.hmpgUrl(normalizeHomepageUrl(row.hmpgUrl()))
 			.imgUrl(festivalImageProcessor.process(row.imageUrl()))
 			.beginDe(beginDe)
 			.endDe(endDe)
@@ -348,6 +348,24 @@ public class FestivalService {
 			/** API 응답에 시/군 단위 지역 필드가 없어서, 일단 도 단위로만 저장 (경기도 전역 API) **/
 			.region(FestivalRegion.GYEONGGI)
 			.build();
+	}
+
+	/** 공공 API의 HMPG_URL은 스킴(https://) 없이 오는 경우가 많아, 없으면 붙여서 정상적인 링크로 만든다.
+	 *  중간에 불필요한 문자가 섞여 온 경우(예: ": https://...")도 http로 시작하는 지점부터 잘라낸다. */
+	private String normalizeHomepageUrl(String value) {
+		if (value == null || value.isBlank()
+				|| value.equals("-") || value.equalsIgnoreCase("undefined")) {
+			return null;
+		}
+		String trimmed = value.trim();
+		int httpIndex = trimmed.toLowerCase().indexOf("http://");
+		if (httpIndex < 0) {
+			httpIndex = trimmed.toLowerCase().indexOf("https://");
+		}
+		if (httpIndex >= 0) {
+			return trimmed.substring(httpIndex);
+		}
+		return "https://" + trimmed;
 	}
 
 	/** 날짜 + 문자열 변환 + null 방어 **/
