@@ -21,7 +21,7 @@ public class InquiryRequest {
 		@Schema(description = "접수 종류. QUESTION(일반 문의), REPORT(신고), TIP(제보)", example = "QUESTION")
 		InquiryCategory category,
 
-		@Schema(description = "신고·제보 대상 종류. FESTIVAL, POST, COMMENT, MEMBER. 일반 문의는 생략", example = "FESTIVAL")
+		@Schema(description = "신고·제보 대상 종류. FESTIVAL, POST, COMMENT, MEMBER, COMMUNITY_POST, COMMUNITY_COMMENT. 일반 문의는 생략", example = "FESTIVAL")
 		InquiryTargetType targetType,
 
 		@Size(max = 255)

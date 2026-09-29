@@ -8,6 +8,7 @@ import {
 import {
   ArrowLeft,
   Eye,
+  Flag,
   MessageCircle,
   Pencil,
   Plus,
@@ -15,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { ReportButton } from "../components/ReportButton";
 import { isRichTextEmpty, RichTextContent } from "../components/RichText";
 import {
   Empty,
@@ -321,18 +323,33 @@ export function CommunityDetailPage() {
               <MessageCircle size={15} /> 댓글 {data.commentCount}
             </span>
           </div>
-          {(mine || isAdmin) && (
-            <div className="community-owner-actions">
-              {mine && (
-                <Link className="text-button" to={`/community/${postId}/edit`}>
-                  <Pencil size={15} /> 수정
-                </Link>
-              )}
+          <div className="community-owner-actions">
+            {!mine && (
+              <ReportButton
+                className="text-button"
+                target={{
+                  type: "COMMUNITY_POST",
+                  id: data.id,
+                  name: data.title,
+                  details: [
+                    `글 주소: ${window.location.origin}/community/${data.id}`,
+                  ],
+                }}
+              >
+                <Flag size={15} /> 신고
+              </ReportButton>
+            )}
+            {mine && (
+              <Link className="text-button" to={`/community/${postId}/edit`}>
+                <Pencil size={15} /> 수정
+              </Link>
+            )}
+            {(mine || isAdmin) && (
               <button className="text-button danger" onClick={removePost}>
                 <Trash2 size={15} /> 삭제
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </header>
         <RichTextContent
           content={data.content}
@@ -412,8 +429,25 @@ export function CommunityDetailPage() {
                 ) : (
                   <p>{item.content}</p>
                 )}
-                {canDeleteComment && editingId !== item.id && (
+                {editingId !== item.id && (
                   <div className="community-comment-actions">
+                    {!commentMine && (
+                      <ReportButton
+                        className="community-report"
+                        ariaLabel={`${item.member.nickname} 님의 댓글 신고`}
+                        target={{
+                          type: "COMMUNITY_COMMENT",
+                          id: String(item.id),
+                          name: `${item.member.nickname} 님의 댓글 "${item.content.slice(0, 30)}${item.content.length > 30 ? "…" : ""}"`,
+                          details: [
+                            `글 주소: ${window.location.origin}/community/${item.postId}`,
+                            `댓글 내용: ${item.content}`,
+                          ],
+                        }}
+                      >
+                        신고
+                      </ReportButton>
+                    )}
                     {commentMine && (
                       <button
                         onClick={() => {
@@ -424,7 +458,11 @@ export function CommunityDetailPage() {
                         수정
                       </button>
                     )}
-                    <button onClick={() => removeComment(item.id)}>삭제</button>
+                    {canDeleteComment && (
+                      <button onClick={() => removeComment(item.id)}>
+                        삭제
+                      </button>
+                    )}
                   </div>
                 )}
               </article>

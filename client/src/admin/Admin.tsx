@@ -1933,6 +1933,7 @@ function TicketDialog({
     data[targetKind].find((item) => item.id === ticket.target!.id);
   const targetPostId = detail.data?.targetPostId;
   // 관리자 후기 상세에는 댓글이 없어서, 댓글 신고는 공개 후기 화면을 연다.
+  // 커뮤니티는 관리자 화면이 없어 글·댓글 모두 공개 커뮤니티 화면을 연다.
   const targetLink = !ticket.target
     ? null
     : targetKind === "events"
@@ -1941,10 +1942,18 @@ function TicketDialog({
         ? `/admin/reviews?item=${ticket.target.id}`
         : targetKind === "members"
           ? `/admin/members?item=${ticket.target.id}`
-          : targetPostId
-            ? `/reviews/${targetPostId}`
-            : null;
-  const opensNewTab = targetKind === "events" || targetKind === "comments";
+          : targetKind === "communityPosts"
+            ? `/community/${ticket.target.id}`
+            : !targetPostId
+              ? null
+              : targetKind === "communityComments"
+                ? `/community/${targetPostId}`
+                : `/reviews/${targetPostId}`;
+  const opensNewTab =
+    targetKind === "events" ||
+    targetKind === "comments" ||
+    targetKind === "communityPosts" ||
+    targetKind === "communityComments";
   // 상세를 받기 전에는 목록에서 알고 있는 값으로 그린다.
   const status = detail.data?.status ?? ticket.status;
   const answered = status === "ANSWERED";
