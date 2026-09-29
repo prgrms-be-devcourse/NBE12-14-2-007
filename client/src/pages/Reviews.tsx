@@ -684,7 +684,7 @@ function ReviewForm({
           />
         </Field>
         <span className="upload-label">기억에 남은 사진</span>
-        <Upload type="POST" value={thumbnail} onChange={setThumbnail} />
+        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
       </div>
       <FormError message={error} />
       <div className="form-actions">
