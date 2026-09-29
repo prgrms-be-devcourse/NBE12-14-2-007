@@ -41,7 +41,7 @@ public class CommentService {
 			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
 		}
 
-		Post post = postRepository.findById(postId)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		Comment comment = Comment.builder()

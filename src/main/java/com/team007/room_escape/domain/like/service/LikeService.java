@@ -42,7 +42,7 @@ public class LikeService {
 			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
 		}
 
-		Post post = postRepository.findById(postId)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		if(likeRepository.existsByPostIdAndMemberId(postId, memberId)) {
@@ -123,6 +123,16 @@ public class LikeService {
 		Long likeCount = likeRepository.countByFestivalId(festivalId);
 
 		return new LikeResponse(likeCount);
+	}
+
+	@Transactional(readOnly = true)
+	public Long getFestivalLikeCount(Long festivalId) {
+
+		if(!festivalRepository.existsById(festivalId)) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
+		}
+
+		return likeRepository.countByFestivalId(festivalId);
 	}
 
 	@Transactional
