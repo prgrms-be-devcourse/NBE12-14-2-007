@@ -9,6 +9,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -133,11 +135,25 @@ public class R2StorageService {
 		}
 	}
 
-	/** 본인이 올린 파일일 때만 지운다. 주인을 알 수 없는 옛 파일은 남겨둔다. */
+	/**
+	 * 본인이 올린 파일일 때만 지운다. 주인을 알 수 없는 옛 파일은 남겨둔다.
+	 * 트랜잭션 안에서 부르면 커밋된 뒤에 지운다. 먼저 지웠다가 롤백되면 DB는 옛 key를
+	 * 그대로 가리키는데 파일은 사라져서 이미지가 깨진다.
+	 */
 	public void deleteOwnedBy(String key, UUID memberId) {
-		if (isOwnedBy(key, memberId)) {
-			delete(key);
+		if (!isOwnedBy(key, memberId)) {
+			return;
 		}
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			delete(key);
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				delete(key);
+			}
+		});
 	}
 
 	/** 삭제 실패는 로그만 남긴다. 파일이 남는 것보다 비즈니스 흐름이 끊기는 게 더 나쁘다. */
