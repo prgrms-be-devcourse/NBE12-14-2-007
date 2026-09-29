@@ -125,6 +125,9 @@ export function refreshAccessToken() {
 // TODO 어드민 화면 디버깅용. 원인 찾으면 지울 것.
 const isAdminPath = (path: string) =>
   path.startsWith("/admin/") || path === "/festivals/sync";
+const DEFAULT_TIMEOUT_MS = 15000;
+// 동기화는 기존 이미지를 실제로 다운로드·리사이즈·R2 업로드까지 하느라 기본 타임아웃을 넘길 수 있다.
+const SYNC_TIMEOUT_MS = 60000;
 async function transport<T>(
   path: string,
   method = "GET",
@@ -134,7 +137,8 @@ async function transport<T>(
   const requestSession = sessionVersion;
   const form = body instanceof FormData;
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const timeoutMs = path === "/festivals/sync" ? SYNC_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   const logAdmin = isAdminPath(path);
   if (logAdmin)
     console.log(
