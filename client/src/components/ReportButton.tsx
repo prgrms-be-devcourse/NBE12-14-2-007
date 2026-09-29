@@ -33,6 +33,8 @@ const targetNames: Record<InquiryTargetType, string> = {
   POST: "후기",
   COMMENT: "댓글",
   MEMBER: "회원",
+  COMMUNITY_POST: "커뮤니티 글",
+  COMMUNITY_COMMENT: "커뮤니티 댓글",
 };
 
 /** "기타"를 고르면 상세 내용을 필수로 받는다. 제보는 행사에만 받는다. */
@@ -57,6 +59,12 @@ const reasons: Record<
       "다른 사람을 사칭해요",
       "기타",
     ],
+  },
+  COMMUNITY_POST: {
+    REPORT: ["욕설·비방", "광고·홍보성 콘텐츠", "음란·불쾌한 내용", "기타"],
+  },
+  COMMUNITY_COMMENT: {
+    REPORT: ["욕설·비방", "광고·홍보성 콘텐츠", "도배", "기타"],
   },
 };
 

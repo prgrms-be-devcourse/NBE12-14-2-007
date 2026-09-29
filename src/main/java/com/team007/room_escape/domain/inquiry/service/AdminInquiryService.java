@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.team007.room_escape.domain.comment.infra.repository.CommentRepository;
+import com.team007.room_escape.domain.community.infra.repository.CommunityCommentRepository;
 import com.team007.room_escape.domain.inquiry.dto.AdminInquiryRequest;
 import com.team007.room_escape.domain.inquiry.dto.AdminInquiryResponse;
 import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
@@ -35,6 +36,7 @@ public class AdminInquiryService {
 
 	private final InquiryRepository inquiryRepository;
 	private final CommentRepository commentRepository;
+	private final CommunityCommentRepository communityCommentRepository;
 	private final ImageUrlResolver imageUrlResolver;
 
 	/** 관리자 문의 검색. 조건을 비우면 전체를 조회한다. */
@@ -105,17 +107,24 @@ public class AdminInquiryService {
 	}
 
 	/**
-	 * 댓글에는 따로 볼 화면이 없어서, 관리자가 신고된 댓글을 확인하려면 댓글이 달린 후기로 가야 한다.
+	 * 댓글에는 따로 볼 화면이 없어서, 관리자가 신고된 댓글을 확인하려면 댓글이 달린 글로 가야 한다.
+	 * 후기 댓글이면 후기 ID, 커뮤니티 댓글이면 커뮤니티 글 ID를 돌려준다.
 	 * 목록은 한 번에 여러 건이라 상세에서만 조회한다.
 	 */
 	private UUID findCommentPostId(Inquiry inquiry) {
-		if (inquiry.getTargetType() != InquiryTargetType.COMMENT) {
+		InquiryTargetType type = inquiry.getTargetType();
+		if (type != InquiryTargetType.COMMENT && type != InquiryTargetType.COMMUNITY_COMMENT) {
 			return null;
 		}
 		try {
-			return commentRepository.findById(Long.valueOf(inquiry.getTargetId()))
-				.map(comment -> comment.getPost().getId())
-				.orElse(null);
+			Long commentId = Long.valueOf(inquiry.getTargetId());
+			return type == InquiryTargetType.COMMENT
+				? commentRepository.findById(commentId)
+					.map(comment -> comment.getPost().getId())
+					.orElse(null)
+				: communityCommentRepository.findById(commentId)
+					.map(comment -> comment.getPost().getId())
+					.orElse(null);
 		} catch (NumberFormatException e) {
 			return null;
 		}

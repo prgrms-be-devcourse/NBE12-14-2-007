@@ -2163,6 +2163,9 @@ select {
 .community-comment-actions button:last-child {
   color: #b24d44;
 }
+.community-comment-actions button.community-report {
+  color: #657064;
+}
 .community-content {
   min-height: 260px;
   padding: 40px 6px 60px;
