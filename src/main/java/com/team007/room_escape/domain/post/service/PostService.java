@@ -6,7 +6,7 @@ import com.team007.room_escape.domain.like.infra.dto.PostLikeCount;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.like.type.LikeSort;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.post.infra.dto.PostRequest;
 import com.team007.room_escape.domain.post.infra.dto.PostResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
@@ -15,7 +15,6 @@ import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
-import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.response.code.PostExceptionCode;
 import com.team007.room_escape.global.util.RichTextSanitizer;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class PostService {
 
 	private final PostRepository postRepository;
 	private final FestivalRepository festivalRepository;
-	private final MemberRepository memberRepository;
+	private final MemberReader memberReader;
 	private final RichTextSanitizer richTextSanitizer;
 	private final LikeRepository likeRepository;
 
@@ -46,12 +45,7 @@ public class PostService {
 			PostRequest request,
 			UUID memberId
 	) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if(member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		Member member = memberReader.getUnrestrictedMember(memberId);
 
 		Festival festival = festivalRepository.findById(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
@@ -147,12 +141,7 @@ public class PostService {
 			PostRequest request,
 			UUID memberId
 	) {
-		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-				.orElseThrow(() -> new BusinessException(MemberExceptionCode.MEMBER_NOT_FOUND));
-
-		if(member.isRestricted()) {
-			throw new BusinessException(MemberExceptionCode.MEMBER_RESTRICTED);
-		}
+		memberReader.getUnrestrictedMember(memberId);
 
 		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));

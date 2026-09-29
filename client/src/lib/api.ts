@@ -844,7 +844,7 @@ export function createApi(mode: Mode) {
       );
     },
     /**
-     * [ADMIN] 문의·신고 목록. 관리자 화면 전용이며 ROLE_ADMIN이 아니면 403이 온다.
+     * [ADMIN] 문의·신고·제보 목록. 관리자 화면 전용이며 ROLE_ADMIN이 아니면 403이 온다.
      *
      * 예시 데이터 모드에서도 실제 서버를 부른다. 관리자 화면은 로그인한
      * 관리자만 들어오므로 예시로 흉내 낼 이유가 없다.
@@ -944,6 +944,7 @@ export function createApi(mode: Mode) {
         memberWarning,
         inquiryPending,
         inquiryReport,
+        inquiryTip,
         festivalTotal,
         festivalOpen,
         postTotal,
@@ -958,6 +959,11 @@ export function createApi(mode: Mode) {
           status: "PENDING",
           category: "REPORT",
         }).then(total),
+        this.adminInquiries({
+          size: 1,
+          status: "PENDING",
+          category: "TIP",
+        }).then(total),
         this.adminFestivals({ size: 1 }).then(total),
         this.adminFestivals({ size: 1, excludeClosed: true }).then(total),
         this.adminPosts({ size: 1 }).then(total),
@@ -968,6 +974,7 @@ export function createApi(mode: Mode) {
         memberWarning,
         inquiryPending,
         inquiryReport,
+        inquiryTip,
         festivalTotal,
         festivalOpen,
         postTotal,

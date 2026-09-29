@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Inquiry", description = "문의·신고 API")
+@Tag(name = "Inquiry", description = "문의·신고·제보 API")
 @RestController
 @RequestMapping("/api/v1/inquiries")
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ public class InquiryController {
 
 	@Operation(
 		summary = "문의 등록",
-		description = "문의 또는 신고를 등록한다. 등급 제한 없이 로그인한 회원이면 누구나 쓸 수 있다. "
+		description = "문의, 신고 또는 제보를 등록한다. 등급 제한 없이 로그인한 회원이면 누구나 쓸 수 있다. "
 			+ "첨부 이미지는 업로드 API가 돌려준 key를 넣는다."
 	)
 	@PostMapping

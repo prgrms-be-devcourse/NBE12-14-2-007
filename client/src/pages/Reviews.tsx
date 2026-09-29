@@ -19,6 +19,7 @@ import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
 import { isRichTextEmpty, RichTextContent } from "../components/RichText";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { ReportableName, ReportButton } from "../components/ReportButton";
 import { useApp, useLoad } from "../lib/context";
 import { readDemo } from "../lib/demo";
 import { dateText, dateTimeText, errorText } from "../lib/format";
@@ -222,7 +223,10 @@ function ReviewDetail({ id }: { id: string }) {
         <div className="article-meta">
           <span className="avatar">{post.member.nickname[0]}</span>
           <div>
-            <strong>{post.member.nickname}</strong>
+            <ReportableName
+              memberId={post.member.id}
+              nickname={post.member.nickname}
+            />
             <span>{dateText(post.date)}</span>
           </div>
           <div className="article-actions">
@@ -262,13 +266,21 @@ function ReviewDetail({ id }: { id: string }) {
             {liked ? "도움이 됐어요" : "도움돼요"}
             {likes.data !== null && <strong>{likes.data}</strong>}
           </button>
-          <Link
-            className="text-button muted"
-            to={`/mypage?tab=inquiries&report=${encodeURIComponent(`후기 신고: ${post.title}\n후기 주소: ${window.location.origin}/reviews/${post.id}`)}`}
-          >
-            <Flag size={14} />
-            신고하기
-          </Link>
+          {!own && (
+            <ReportButton
+              target={{
+                type: "POST",
+                id: post.id,
+                name: post.title,
+                details: [
+                  `후기 주소: ${window.location.origin}/reviews/${post.id}`,
+                ],
+              }}
+            >
+              <Flag size={14} />
+              신고하기
+            </ReportButton>
+          )}
         </div>
         {likes.error && (
           <ErrorState message={likes.error} retry={likes.reload} />
@@ -444,9 +456,28 @@ function CommentRow({
       <span className="avatar small">{comment.nickname[0]}</span>
       <div>
         <div className="comment-meta">
-          <strong>{comment.nickname}</strong>
+          <ReportableName
+            memberId={comment.memberId}
+            nickname={comment.nickname}
+          />
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
           <span />
+          {!own && (
+            <ReportButton
+              ariaLabel={`${comment.nickname} 님의 댓글 신고`}
+              target={{
+                type: "COMMENT",
+                id: String(comment.id),
+                name: `${comment.nickname} 님의 댓글 "${comment.content.slice(0, 30)}${comment.content.length > 30 ? "…" : ""}"`,
+                details: [
+                  `후기 주소: ${window.location.origin}/reviews/${comment.postId}`,
+                  `댓글 내용: ${comment.content}`,
+                ],
+              }}
+            >
+              신고
+            </ReportButton>
+          )}
           {own && (
             <button
               className="text-button"

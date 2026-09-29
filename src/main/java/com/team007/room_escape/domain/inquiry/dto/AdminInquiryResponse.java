@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
+import com.team007.room_escape.domain.inquiry.infra.entity.InquiryTargetType;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 
@@ -28,8 +29,14 @@ public class AdminInquiryResponse {
 		@Schema(description = "문의 번호")
 		UUID id,
 
-		@Schema(description = "문의 종류", example = "REPORT")
+		@Schema(description = "접수 종류", example = "REPORT")
 		InquiryCategory category,
+
+		@Schema(description = "신고·제보 대상 종류. 일반 문의면 null", example = "FESTIVAL")
+		InquiryTargetType targetType,
+
+		@Schema(description = "신고·제보 대상 ID. 일반 문의면 null", example = "123")
+		String targetId,
 
 		@Schema(description = "제목")
 		String title,
@@ -56,6 +63,8 @@ public class AdminInquiryResponse {
 			return ListItem.builder()
 				.id(inquiry.getId())
 				.category(inquiry.getCategory())
+				.targetType(inquiry.getTargetType())
+				.targetId(inquiry.getTargetId())
 				.title(inquiry.getTitle())
 				.writer(writer == null ? null : MemberResponse.AdminInfo.from(writer, writerProfileImgUrl))
 				.status(inquiry.getStatus())
@@ -76,8 +85,17 @@ public class AdminInquiryResponse {
 		@Schema(description = "문의 번호")
 		UUID id,
 
-		@Schema(description = "문의 종류", example = "REPORT")
+		@Schema(description = "접수 종류", example = "REPORT")
 		InquiryCategory category,
+
+		@Schema(description = "신고·제보 대상 종류. 일반 문의면 null", example = "FESTIVAL")
+		InquiryTargetType targetType,
+
+		@Schema(description = "신고·제보 대상 ID. 일반 문의면 null", example = "123")
+		String targetId,
+
+		@Schema(description = "댓글 신고일 때 그 댓글이 달린 후기 ID. 그 외에는 null")
+		UUID targetPostId,
 
 		@Schema(description = "제목")
 		String title,
@@ -110,13 +128,22 @@ public class AdminInquiryResponse {
 		/**
 		 * @param imgUrl              첨부 이미지의 공개 URL. 없으면 null
 		 * @param writerProfileImgUrl 작성자 프로필 이미지의 공개 URL. 없으면 null
+		 * @param targetPostId        신고된 댓글이 달린 후기 ID. 댓글 신고가 아니거나 댓글이 삭제됐으면 null
 		 */
-		public static Detail from(Inquiry inquiry, String imgUrl, String writerProfileImgUrl) {
+		public static Detail from(
+			Inquiry inquiry,
+			String imgUrl,
+			String writerProfileImgUrl,
+			UUID targetPostId
+		) {
 			Member writer = inquiry.getMember();
 
 			return Detail.builder()
 				.id(inquiry.getId())
 				.category(inquiry.getCategory())
+				.targetType(inquiry.getTargetType())
+				.targetId(inquiry.getTargetId())
+				.targetPostId(targetPostId)
 				.title(inquiry.getTitle())
 				.content(inquiry.getContent())
 				.img(imgUrl)

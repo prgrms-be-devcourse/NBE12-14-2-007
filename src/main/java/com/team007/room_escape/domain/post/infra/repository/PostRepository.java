@@ -33,6 +33,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     )
     Page<Post> findAllByFestivalId(@Param("festivalId") Long festivalId, Pageable page);
     Optional<Post> findByIdAndDeletedAtIsNull(UUID id);
+    boolean existsByIdAndDeletedAtIsNull(UUID id);
     @Query(
             value = """
         SELECT p

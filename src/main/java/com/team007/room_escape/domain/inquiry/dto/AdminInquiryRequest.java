@@ -24,7 +24,7 @@ public class AdminInquiryRequest {
 		@Schema(description = "답변 상태. PENDING(답변 대기) 또는 ANSWERED(답변 완료)", example = "PENDING")
 		InquiryStatus status,
 
-		@Schema(description = "문의 종류. QUESTION(일반 문의) 또는 REPORT(신고)", example = "REPORT")
+		@Schema(description = "접수 종류. QUESTION(일반 문의), REPORT(신고), TIP(제보)", example = "REPORT")
 		InquiryCategory category,
 
 		@Schema(

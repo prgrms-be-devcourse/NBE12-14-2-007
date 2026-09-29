@@ -30,7 +30,7 @@ import { RichTextContent } from "../components/RichText";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { useApp, useLoad } from "../lib/context";
 import { errorText, period, regions, safeUrl } from "../lib/format";
-import type { AdminFestivalDetail, Role } from "../lib/types";
+import type { AdminFestivalDetail, InquiryCategory, Role } from "../lib/types";
 import { AdminGuard } from "./AdminAuth";
 import {
   AdminProvider,
@@ -50,7 +50,7 @@ const navigation = [
   { to: "/admin/members", label: "회원 관리", icon: UsersRound },
   { to: "/admin/events", label: "행사 관리", icon: CalendarDays },
   { to: "/admin/reviews", label: "후기 관리", icon: MessageSquare },
-  { to: "/admin/inquiries", label: "문의·신고", icon: Flag },
+  { to: "/admin/inquiries", label: "문의·신고·제보", icon: Flag },
   { to: "/admin/activity", label: "운영 기록", icon: Activity },
 ];
 const tone = (status: string) =>
@@ -61,6 +61,13 @@ const tone = (status: string) =>
       : "gray";
 const includes = (query: string, ...values: string[]) =>
   values.join(" ").toLowerCase().includes(query.trim().toLowerCase());
+const ticketCategoryNames = {
+  QUESTION: "일반 문의",
+  REPORT: "신고",
+  TIP: "제보",
+} as const;
+const ticketCategoryTone = (category: Ticket["category"]) =>
+  category === "REPORT" ? "orange" : category === "TIP" ? "blue" : "gray";
 const stamp = (date: string) =>
   new Date(date).toLocaleString("ko-KR", {
     month: "2-digit",
@@ -482,10 +489,11 @@ export function AdminDashboard() {
       color: "blue",
     },
     {
-      label: "미처리 문의·신고",
+      label: "미처리 문의·신고·제보",
       value: stats?.inquiryPending,
       unit: "건",
-      detail: stats && `신고 ${stats.inquiryReport}건 우선 확인`,
+      detail:
+        stats && `신고 ${stats.inquiryReport}건 · 제보 ${stats.inquiryTip}건`,
       icon: Flag,
       to: "/admin/inquiries?status=PENDING",
       color: "orange",
@@ -517,10 +525,10 @@ export function AdminDashboard() {
           <p>
             {stats ? (
               <>
-                확인이 필요한 문의·신고{" "}
+                확인이 필요한 문의·신고·제보{" "}
                 <strong>{stats.inquiryPending}건</strong>이 있습니다.
-                {stats.inquiryReport > 0 &&
-                  ` 그중 신고가 ${stats.inquiryReport}건입니다.`}
+                {stats.inquiryReport + stats.inquiryTip > 0 &&
+                  ` 그중 신고 ${stats.inquiryReport}건, 제보 ${stats.inquiryTip}건입니다.`}
               </>
             ) : (
               "처리할 업무를 불러오는 중입니다."
@@ -568,7 +576,7 @@ export function AdminDashboard() {
       <div className="adm-dashboard-grid">
         <section className="adm-panel">
           <PanelTitle
-            title="우선 확인할 문의·신고"
+            title="우선 확인할 문의·신고·제보"
             description="답변을 기다리는 이용자의 목소리입니다."
             to="/admin/inquiries?status=PENDING"
           />
@@ -577,18 +585,19 @@ export function AdminDashboard() {
               {pending.map((ticket) => (
                 <Link key={ticket.id} to={`/admin/inquiries?item=${ticket.id}`}>
                   <span
-                    className={`adm-ticket-icon ${ticket.category === "REPORT" ? "report" : ""}`}
+                    className={`adm-ticket-icon ${ticket.category.toLowerCase()}`}
                   >
                     {ticket.category === "REPORT" ? (
                       <Flag size={18} />
+                    ) : ticket.category === "TIP" ? (
+                      <ClipboardCheck size={18} />
                     ) : (
                       <MessageSquare size={18} />
                     )}
                   </span>
                   <div>
                     <span className="adm-item-meta">
-                      {ticket.category === "REPORT" ? "신고 접수" : "이용 문의"}{" "}
-                      · {ticket.id}
+                      {ticketCategoryNames[ticket.category]} · {ticket.id}
                     </span>
                     <h3>{ticket.title}</h3>
                     <p>
@@ -693,9 +702,12 @@ export function AdminDashboard() {
 export function AdminMembers() {
   const { data, membersLoading, membersError, reloadMembers, stats } =
     useAdmin();
-  const [query, setQuery] = useState("");
+  const [params] = useSearchParams();
+  // 회원 신고 문의에서 넘어오면 그 회원을 찾아 바로 연다.
+  const requested = params.get("item");
+  const [query, setQuery] = useState(requested ?? "");
   const [role, setRole] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(requested);
   const items = data.members.filter(
     (item) =>
       includes(query, item.name, item.email, item.id) &&
@@ -1694,19 +1706,32 @@ function ContentDialog({
 }
 
 export function AdminTickets() {
-  const { data, ticketsLoading, ticketsError, reloadTickets } = useAdmin();
+  const {
+    data,
+    ticketsLoading,
+    ticketsError,
+    reloadTickets,
+    ticketQuery,
+    setTicketQuery,
+    ticketsPage,
+  } = useAdmin();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
   const [params, setParams] = useSearchParams();
   const status = params.get("status") || "";
+  const category = params.get("category") || "";
   const records = data.tickets;
-  const items = records.filter(
-    (t) =>
-      includes(query, t.title, t.author, t.id) &&
-      (!status || t.status === status) &&
-      (!category || t.category === category),
-  );
+  const items = records;
   const selected = records.find((t) => t.id === params.get("item"));
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setTicketQuery({
+        title: query.trim() || undefined,
+        status: status ? (status as "PENDING" | "ANSWERED") : undefined,
+        category: category ? (category as InquiryCategory) : undefined,
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [query, status, category, setTicketQuery]);
   function setParam(key: string, value: string) {
     setParams((current) => {
       const next = new URLSearchParams(current);
@@ -1718,48 +1743,42 @@ export function AdminTickets() {
     <>
       <Heading
         eyebrow="SUPPORT & SAFETY"
-        title="문의·신고"
-        description="이용 문의에 답변하고 신고 내용을 검토합니다."
+        title="문의·신고·제보"
+        description="이용 문의에 답변하고 신고 및 행사 정보 제보를 검토합니다."
       />
       <section className="adm-panel">
+        <Tabs
+          value={category}
+          onChange={(value) => setParam("category", value)}
+          options={[
+            { value: "", label: "전체 유형" },
+            { value: "QUESTION", label: "일반 문의" },
+            { value: "REPORT", label: "신고" },
+            { value: "TIP", label: "제보" },
+          ]}
+        />
         <Tabs
           value={status}
           onChange={(value) => setParam("status", value)}
           options={[
-            { value: "", label: "전체", count: records.length },
-            {
-              value: "PENDING",
-              label: "답변 대기",
-              count: records.filter((t) => t.status === "PENDING").length,
-            },
-            {
-              value: "ANSWERED",
-              label: "답변 완료",
-              count: records.filter((t) => t.status === "ANSWERED").length,
-            },
+            { value: "", label: "전체 상태" },
+            { value: "PENDING", label: "답변 대기" },
+            { value: "ANSWERED", label: "답변 완료" },
           ]}
         />
         <Toolbar
           query={query}
           setQuery={setQuery}
-          placeholder="제목, 작성자, 접수 ID 검색"
-        >
-          <select
-            aria-label="접수 유형"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="">문의·신고 전체</option>
-            <option value="QUESTION">일반 문의</option>
-            <option value="REPORT">신고</option>
-          </select>
-        </Toolbar>
+          placeholder="접수 제목 검색"
+        />
         <div className="adm-result-count">
           {ticketsLoading ? (
             "불러오는 중…"
           ) : (
             <>
               검색 결과 <strong>{items.length}</strong>건
+              {ticketsPage.totalElements !== items.length &&
+                ` / 전체 ${ticketsPage.totalElements}건`}
             </>
           )}
         </div>
@@ -1776,7 +1795,7 @@ export function AdminTickets() {
           </p>
         )}
         <Table
-          label="문의·신고 목록"
+          label="문의·신고·제보 목록"
           headers={[
             "유형",
             "접수 내용",
@@ -1790,8 +1809,8 @@ export function AdminTickets() {
           {items.map((ticket) => (
             <tr key={ticket.id}>
               <td>
-                <Badge tone={ticket.category === "REPORT" ? "orange" : "gray"}>
-                  {ticket.category === "REPORT" ? "신고" : "문의"}
+                <Badge tone={ticketCategoryTone(ticket.category)}>
+                  {ticketCategoryNames[ticket.category]}
                 </Badge>
               </td>
               <td>
@@ -1822,6 +1841,11 @@ export function AdminTickets() {
             </tr>
           ))}
         </Table>
+        <Pagination
+          page={ticketsPage.number}
+          totalPages={ticketsPage.totalPages}
+          onChange={(page) => setTicketQuery({ ...ticketQuery, page })}
+        />
       </section>
       {selected && (
         <TicketDialog
@@ -1848,15 +1872,30 @@ function TicketDialog({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [editing, setEditing] = useState(false);
+  const targetKind = ticket.target?.kind;
   const target =
-    ticket.target &&
-    data[ticket.target.kind].find((item) => item.id === ticket.target!.id);
+    (targetKind === "events" || targetKind === "reviews") &&
+    data[targetKind].find((item) => item.id === ticket.target!.id);
+  const targetPostId = detail.data?.targetPostId;
+  // 관리자 후기 상세에는 댓글이 없어서, 댓글 신고는 공개 후기 화면을 연다.
+  const targetLink = !ticket.target
+    ? null
+    : targetKind === "events"
+      ? `/events/${ticket.target.id}`
+      : targetKind === "reviews"
+        ? `/admin/reviews?item=${ticket.target.id}`
+        : targetKind === "members"
+          ? `/admin/members?item=${ticket.target.id}`
+          : targetPostId
+            ? `/reviews/${targetPostId}`
+            : null;
+  const opensNewTab = targetKind === "events" || targetKind === "comments";
   // 상세를 받기 전에는 목록에서 알고 있는 값으로 그린다.
   const status = detail.data?.status ?? ticket.status;
   const answered = status === "ANSWERED";
   return (
     <Modal
-      title={ticket.category === "REPORT" ? "신고 상세" : "문의 상세"}
+      title={`${ticketCategoryNames[ticket.category]} 상세`}
       onClose={onClose}
     >
       <div className="adm-dialog-title">
@@ -1892,20 +1931,28 @@ function TicketDialog({
           )}
         </>
       )}
-      {ticket.target && (
+      {ticket.target && targetLink && (
         <Link
           className="adm-target-link"
-          to={`/admin/${ticket.target.kind}?item=${ticket.target.id}`}
+          to={targetLink}
+          target={opensNewTab ? "_blank" : undefined}
         >
           <Eye size={18} />
           <span>
             <small>
-              신고된 콘텐츠 {target && `· ${statusNames[target.status]}`}
+              {ticket.category === "REPORT" ? "신고된 콘텐츠" : "제보 대상"}
+              {target && ` · ${statusNames[target.status]}`}
             </small>
             <strong>{ticket.target.title}</strong>
           </span>
           <ExternalLink size={16} />
         </Link>
+      )}
+      {ticket.target && !targetLink && detail.data && (
+        <p className="adm-dialog-note">
+          신고된 댓글이 이미 삭제되어 원문 위치로 이동할 수 없습니다. 본문의
+          댓글 내용을 확인해 주세요.
+        </p>
       )}
       {answered && !editing ? (
         <div className="adm-saved-answer">
@@ -1955,7 +2002,7 @@ function TicketDialog({
               placeholder="확인한 내용과 처리 결과를 안내해 주세요."
             />
           </Field>
-          {ticket.category === "REPORT" && (
+          {ticket.category !== "QUESTION" && (
             <p className="adm-dialog-note">
               콘텐츠 조치가 필요하면 위 링크에서 먼저 검토하세요. 답변
               등록만으로 콘텐츠가 숨겨지지는 않습니다.
@@ -2015,7 +2062,7 @@ export function AdminActivity() {
             onChange={(e) => setArea(e.target.value)}
           >
             <option value="">모든 영역</option>
-            {["회원", "행사", "후기", "문의·신고"].map((value) => (
+            {["회원", "행사", "후기", "문의·신고·제보"].map((value) => (
               <option key={value}>{value}</option>
             ))}
           </select>

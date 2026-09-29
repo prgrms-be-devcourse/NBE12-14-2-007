@@ -46,6 +46,7 @@ import {
 } from "../components/ui";
 import { FestivalPosts } from "./Reviews";
 import { RichTextContent } from "../components/RichText";
+import { ReportableName, ReportButton } from "../components/ReportButton";
 
 export function EventDetailPage() {
   const { eventId, submissionId } = useParams();
@@ -385,13 +386,18 @@ function EventDetail({ event }: { event: EventView }) {
               <FestivalPosts festivalId={event.festivalId} />
             )}
           </div>
-          <Link
-            className="report-link"
-            to={`/mypage?tab=inquiries&report=${encodeURIComponent(`행사 정보 문의: ${event.title}\n행사 주소: ${window.location.href}`)}`}
-          >
-            <Flag size={14} />
-            잘못된 정보가 있나요?
-          </Link>
+          {!event.submissionId && (
+            <ReportButton
+              className="report-link"
+              target={{
+                type: "FESTIVAL",
+                id: String(event.festivalId),
+                name: event.title,
+              }}
+            >
+              <Flag size={14} />이 행사 신고 및 제보
+            </ReportButton>
+          )}
           {event.submissionId && (
             <button
               className="text-button muted delete-submission"
@@ -466,7 +472,7 @@ function SubmitterProfile({ member }: { member: FestivalMember }) {
       <div className="submitter-profile-copy">
         <small>이 행사를 알려준 이웃</small>
         <div>
-          <strong>{member.nickname}</strong>
+          <ReportableName memberId={member.id} nickname={member.nickname} />
           <TrustGradeBadge member={member} />
         </div>
       </div>

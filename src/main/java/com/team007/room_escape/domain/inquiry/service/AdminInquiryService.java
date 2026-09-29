@@ -9,9 +9,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.team007.room_escape.domain.comment.infra.repository.CommentRepository;
 import com.team007.room_escape.domain.inquiry.dto.AdminInquiryRequest;
 import com.team007.room_escape.domain.inquiry.dto.AdminInquiryResponse;
 import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
+import com.team007.room_escape.domain.inquiry.infra.entity.InquiryTargetType;
 import com.team007.room_escape.domain.inquiry.infra.repository.InquiryRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
@@ -32,6 +34,7 @@ public class AdminInquiryService {
 	private static final Set<String> SORTABLE = Set.of("createdAt", "status", "category");
 
 	private final InquiryRepository inquiryRepository;
+	private final CommentRepository commentRepository;
 	private final ImageUrlResolver imageUrlResolver;
 
 	/** 관리자 문의 검색. 조건을 비우면 전체를 조회한다. */
@@ -96,8 +99,26 @@ public class AdminInquiryService {
 			imageUrlResolver.resolve(inquiry.getImg()),
 			inquiry.getMember() == null
 				? null
-				: imageUrlResolver.resolve(inquiry.getMember().getProfileImg())
+				: imageUrlResolver.resolve(inquiry.getMember().getProfileImg()),
+			findCommentPostId(inquiry)
 		);
+	}
+
+	/**
+	 * 댓글에는 따로 볼 화면이 없어서, 관리자가 신고된 댓글을 확인하려면 댓글이 달린 후기로 가야 한다.
+	 * 목록은 한 번에 여러 건이라 상세에서만 조회한다.
+	 */
+	private UUID findCommentPostId(Inquiry inquiry) {
+		if (inquiry.getTargetType() != InquiryTargetType.COMMENT) {
+			return null;
+		}
+		try {
+			return commentRepository.findById(Long.valueOf(inquiry.getTargetId()))
+				.map(comment -> comment.getPost().getId())
+				.orElse(null);
+		} catch (NumberFormatException e) {
+			return null;
+		}
 	}
 
 	private void validateSort(Sort sort) {

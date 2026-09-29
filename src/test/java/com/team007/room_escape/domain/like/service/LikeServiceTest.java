@@ -11,7 +11,7 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalReposito
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.global.exception.BusinessException;
@@ -31,7 +31,7 @@ class LikeServiceTest {
 	@Mock LikeRepository likeRepository;
 	@Mock PostRepository postRepository;
 	@Mock FestivalRepository festivalRepository;
-	@Mock MemberRepository memberRepository;
+	@Mock MemberReader memberReader;
 	@Mock MemberTrustGradeService memberTrustGradeService;
 
 	@InjectMocks LikeService likeService;
@@ -48,7 +48,7 @@ class LikeServiceTest {
 			.build();
 
 		when(festivalRepository.findById(1L)).thenReturn(Optional.of(festival));
-		when(memberRepository.findByIdAndDeletedAtIsNull(memberId)).thenReturn(Optional.of(member));
+		when(memberReader.getUnrestrictedMember(memberId)).thenReturn(member);
 
 		assertThatThrownBy(() -> likeService.createFestivalLike(1L, memberId))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->

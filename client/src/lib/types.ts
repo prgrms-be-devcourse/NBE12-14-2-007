@@ -107,12 +107,7 @@ export interface FestivalAccuracyVote {
   myVote: "ACCURATE" | "INACCURATE" | null;
 }
 export type WeatherCondition =
-  | "SUNNY"
-  | "CLOUDY"
-  | "RAIN"
-  | "RAIN_SNOW"
-  | "SNOW"
-  | "UNKNOWN";
+  "SUNNY" | "CLOUDY" | "RAIN" | "RAIN_SNOW" | "SNOW" | "UNKNOWN";
 export interface WeatherView {
   condition: WeatherCondition;
   precipitationProbability: number | null;
@@ -203,6 +198,10 @@ export interface Comment {
   content: string;
   date: string;
 }
+
+export type InquiryCategory = "QUESTION" | "REPORT" | "TIP";
+export type InquiryTargetType = "FESTIVAL" | "POST" | "COMMENT" | "MEMBER";
+
 export type CommunityCategory = "FREE" | "EVENT" | "RESTAURANT";
 export interface CommunityMember {
   id: string | null;
@@ -236,15 +235,23 @@ export interface CommunityComment {
   createdAt: string;
   updatedAt: string;
 }
+
 export interface InquiryInput {
-  category: "QUESTION" | "REPORT";
+  category: InquiryCategory;
+  targetType?: InquiryTargetType;
+  targetId?: string;
   title: string;
   content: string;
   img?: string;
 }
-export interface Inquiry extends Omit<InquiryInput, "img"> {
+export interface Inquiry extends Omit<
+  InquiryInput,
+  "img" | "targetType" | "targetId"
+> {
   id: string;
   img: string | null;
+  targetType: InquiryTargetType | null;
+  targetId: string | null;
   status: "PENDING" | "ANSWERED";
   answer: string | null;
   createdAt: string;
@@ -268,7 +275,9 @@ export interface AdminMemberInfo {
  */
 export interface AdminInquiryListItem {
   id: string;
-  category: "QUESTION" | "REPORT";
+  category: InquiryCategory;
+  targetType: InquiryTargetType | null;
+  targetId: string | null;
   title: string;
   /** 작성자 회원이 남아있지 않으면 null */
   writer: AdminMemberInfo | null;
@@ -282,6 +291,8 @@ export interface AdminInquiryListItem {
  * 목록에 없는 본문·첨부·답변이 여기에 있다.
  */
 export interface AdminInquiryDetail extends AdminInquiryListItem {
+  /** 댓글 신고일 때 그 댓글이 달린 후기 ID. 댓글이 삭제됐으면 null */
+  targetPostId: string | null;
   content: string;
   /** 첨부 이미지 공개 URL. 없으면 null */
   img: string | null;
@@ -309,6 +320,7 @@ export interface AdminStats {
   memberWarning: number;
   inquiryPending: number;
   inquiryReport: number;
+  inquiryTip: number;
   festivalTotal: number;
   festivalOpen: number;
   postTotal: number;
@@ -411,7 +423,7 @@ export interface AdminMemberQuery {
 export interface AdminInquiryQuery {
   title?: string;
   status?: "PENDING" | "ANSWERED";
-  category?: "QUESTION" | "REPORT";
+  category?: InquiryCategory;
   includeDeleted?: boolean;
   page?: number;
   size?: number;

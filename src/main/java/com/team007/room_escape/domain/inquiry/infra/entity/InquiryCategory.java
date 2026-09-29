@@ -12,5 +12,8 @@ public enum InquiryCategory {
 	QUESTION,
 
 	/** 부적절한 행사·후기·사용자 신고 */
-	REPORT
+	REPORT,
+
+	/** 잘못되거나 누락된 행사 정보 제보 */
+	TIP
 }
