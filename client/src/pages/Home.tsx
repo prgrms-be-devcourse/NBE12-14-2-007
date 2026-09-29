@@ -138,6 +138,7 @@ export function Home() {
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
                 />
               </label>
               {weather.data && weather.data.condition !== "UNKNOWN" && (

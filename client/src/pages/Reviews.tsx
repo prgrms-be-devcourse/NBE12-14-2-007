@@ -697,6 +697,7 @@ function ReviewForm({
         </Field>
         <span className="upload-label">기억에 남은 사진</span>
         <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
+        <p className="upload-hint">사진은 7:6 비율로 표시돼요.</p>
       </div>
       <FormError message={error} />
       <div className="form-actions">
