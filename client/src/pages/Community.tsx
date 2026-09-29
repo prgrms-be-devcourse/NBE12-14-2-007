@@ -39,6 +39,7 @@ const categoryLabels: Record<CommunityCategory, string> = {
   EVENT: "행사 추천",
   RESTAURANT: "맛집 추천",
 };
+const COMMUNITY_COMMENT_PAGE_SIZE = 20;
 
 function Author({
   nickname,
@@ -228,8 +229,11 @@ export function CommunityDetailPage() {
     try {
       await api.createCommunityComment(postId, comment.trim());
       setComment("");
-      setCommentPage(0);
-      comments.reload();
+      const lastPage = Math.floor(
+        (post.data?.commentCount ?? 0) / COMMUNITY_COMMENT_PAGE_SIZE,
+      );
+      if (lastPage === commentPage) comments.reload();
+      else setCommentPage(lastPage);
       post.setData((current) =>
         current
           ? { ...current, commentCount: current.commentCount + 1 }
@@ -257,7 +261,13 @@ export function CommunityDetailPage() {
     if (!window.confirm("댓글을 삭제할까요?")) return;
     try {
       await api.deleteCommunityComment(commentId);
-      comments.reload();
+      const remainingCount = Math.max(0, (post.data?.commentCount ?? 1) - 1);
+      const lastPage = Math.max(
+        0,
+        Math.ceil(remainingCount / COMMUNITY_COMMENT_PAGE_SIZE) - 1,
+      );
+      if (commentPage > lastPage) setCommentPage(lastPage);
+      else comments.reload();
       post.setData((current) =>
         current
           ? { ...current, commentCount: Math.max(0, current.commentCount - 1) }

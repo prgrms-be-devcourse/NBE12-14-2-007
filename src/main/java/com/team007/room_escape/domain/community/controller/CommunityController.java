@@ -96,7 +96,7 @@ public class CommunityController {
 	@GetMapping("/posts/{postId}/comments")
 	public ResponseEntity<ApiResponse<Page<CommunityResponse.CommentInfo>>> getComments(
 		@PathVariable UUID postId,
-		@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+		@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC)
 		Pageable pageable
 	) {
 		return ResponseEntity.ok(ApiResponse.success(

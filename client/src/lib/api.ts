@@ -766,7 +766,7 @@ export function createApi(mode: Mode) {
       const params = new URLSearchParams({
         page: String(page),
         size: "20",
-        sort: "createdAt,desc",
+        sort: "createdAt,asc",
       });
       return transport<Page<CommunityComment>>(
         `/community/posts/${encodeURIComponent(postId)}/comments?${params}`,
