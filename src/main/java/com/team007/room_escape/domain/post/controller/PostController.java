@@ -84,9 +84,15 @@ public class PostController {
 
 	@Operation(summary = "후기 단건 조회", description = "후기 상세 정보를 조회합니다.")
 	@GetMapping("/posts/{id}")
-	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(@PathVariable UUID id) {
+	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(
+			@PathVariable UUID id,
+			@AuthenticationPrincipal CustomUserDetails user
+	) {
 
-		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(id);
+		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(
+				id,
+				user == null ? null : user.getId()
+		);
 
 		return ResponseEntity.ok(ApiResponse.success(postDetailDto));
 	}

@@ -55,9 +55,10 @@ public class PostResponse {
             String title,
             String content,
             String thumbnail,
-            LocalDateTime date
+            LocalDateTime date,
+            boolean likedByMe
     ) {
-        public static DetailResponse from(Post post) {
+        public static DetailResponse from(Post post, boolean likedByMe) {
             return new DetailResponse(
                     post.getId(),
                     MemberInfo.from(post),
@@ -66,7 +67,8 @@ public class PostResponse {
                     post.getTitle(),
                     post.getContent(),
                     post.getThumbnail(),
-                    post.getUpdatedAt()
+                    post.getUpdatedAt(),
+                    likedByMe
             );
         }
     }

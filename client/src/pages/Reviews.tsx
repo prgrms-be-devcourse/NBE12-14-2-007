@@ -180,9 +180,13 @@ function ReviewDetail({ id }: { id: string }) {
     reload,
   } = useLoad(() => api.post(id), [api, id]);
   const likes = useLoad(() => api.likeCount(id), [api, id]);
-  const [liked, setLiked] = useState(
-    mode === "preview" && readDemo().liked.includes(id),
-  );
+  // 누르기 전에는 서버가 알려준 상태를 쓰고, 누른 뒤에는 그 결과를 쓴다.
+  const [likedOverride, setLiked] = useState<boolean | null>(null);
+  const liked =
+    likedOverride ??
+    (mode === "preview"
+      ? readDemo().liked.includes(id)
+      : Boolean(post?.likedByMe));
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [actionError, setActionError] = useState("");
