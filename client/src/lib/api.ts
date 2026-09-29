@@ -13,6 +13,11 @@ import type {
   AdminPostSummary,
   Page,
   Comment,
+  CommunityCategory,
+  CommunityComment,
+  CommunityPostDetail,
+  CommunityPostInput,
+  CommunityPostSummary,
   Inquiry,
   InquiryInput,
   AdminInquiryListItem,
@@ -390,9 +395,18 @@ export function createApi(mode: Mode) {
     async weather(region: string, date: string): Promise<WeatherView> {
       if (demo) {
         // 미리보기 모드는 실제 서버가 없어서, 지역+날짜로 결정되는 값을 흉내낸다.
-        const conditions: WeatherCondition[] = ["SUNNY", "CLOUDY", "RAIN", "SNOW"];
+        const conditions: WeatherCondition[] = [
+          "SUNNY",
+          "CLOUDY",
+          "RAIN",
+          "SNOW",
+        ];
         const index = (region.length + date.length) % conditions.length;
-        return { condition: conditions[index], precipitationProbability: null, date };
+        return {
+          condition: conditions[index],
+          precipitationProbability: null,
+          date,
+        };
       }
       const params = new URLSearchParams({ region, date });
       return transport<WeatherView>(`/weather?${params}`);
@@ -718,6 +732,70 @@ export function createApi(mode: Mode) {
       updateDemo((d) => {
         d.comments = d.comments.filter((c) => c.id !== commentId);
       });
+    },
+    async communityPosts(
+      page = 0,
+      category?: CommunityCategory,
+      keyword?: string,
+    ) {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "10",
+        sort: "createdAt,desc",
+      });
+      if (category) params.set("category", category);
+      if (keyword?.trim()) params.set("keyword", keyword.trim());
+      return transport<Page<CommunityPostSummary>>(
+        `/community/posts?${params}`,
+      );
+    },
+    async communityPost(postId: string) {
+      return transport<CommunityPostDetail>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+      );
+    },
+    async createCommunityPost(input: CommunityPostInput) {
+      return transport<CommunityPostDetail>("/community/posts", "POST", input);
+    },
+    async updateCommunityPost(postId: string, input: CommunityPostInput) {
+      return transport<CommunityPostDetail>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+        "PATCH",
+        input,
+      );
+    },
+    async deleteCommunityPost(postId: string) {
+      return transport<void>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+        "DELETE",
+      );
+    },
+    async communityComments(postId: string, page = 0) {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "20",
+        sort: "createdAt,asc",
+      });
+      return transport<Page<CommunityComment>>(
+        `/community/posts/${encodeURIComponent(postId)}/comments?${params}`,
+      );
+    },
+    async createCommunityComment(postId: string, content: string) {
+      return transport<CommunityComment>(
+        `/community/posts/${encodeURIComponent(postId)}/comments`,
+        "POST",
+        { content },
+      );
+    },
+    async updateCommunityComment(commentId: number, content: string) {
+      return transport<CommunityComment>(
+        `/community/comments/${commentId}`,
+        "PATCH",
+        { content },
+      );
+    },
+    async deleteCommunityComment(commentId: number) {
+      return transport<void>(`/community/comments/${commentId}`, "DELETE");
     },
     async likeCount(postId: string) {
       return demo
