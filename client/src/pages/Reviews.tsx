@@ -90,9 +90,7 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
               update({ sort: e.target.value });
             }}
           >
-            <option value="likes,desc" disabled={mode === "api"}>
-              좋아요순{mode === "api" ? " (준비 중)" : ""}
-            </option>
+            <option value="likeCount,desc">좋아요순</option>
             <option value="createdAt,desc">최신순</option>
             <option value="createdAt,asc">오래된순</option>
           </select>
@@ -105,11 +103,6 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
           </Link>
         </div>
       </div>
-      {mode === "api" && (
-        <p className="quiet-note review-sort-note">
-          좋아요순 정렬은 준비 중이에요. 현재는 작성일 기준으로 볼 수 있어요.
-        </p>
-      )}
       {loading ? (
         <Loading />
       ) : error ? (

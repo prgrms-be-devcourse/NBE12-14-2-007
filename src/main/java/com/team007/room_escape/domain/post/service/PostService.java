@@ -2,6 +2,9 @@ package com.team007.room_escape.domain.post.service;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
+import com.team007.room_escape.domain.like.infra.dto.PostLikeCount;
+import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
+import com.team007.room_escape.domain.like.type.LikeSort;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.post.infra.dto.PostRequest;
@@ -20,7 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +36,7 @@ public class PostService {
 	private final FestivalRepository festivalRepository;
 	private final MemberReader memberReader;
 	private final RichTextSanitizer richTextSanitizer;
+	private final LikeRepository likeRepository;
 
 
 	@Transactional
@@ -63,12 +70,19 @@ public class PostService {
 			String keyword,
 			Pageable page
 	) {
-		if(type == null || keyword == null || keyword.isBlank()) {
-			return postRepository.findAllNotDeleted(page)
-					.map(PostResponse.ListResponse::from);
+		boolean hasKeyword = type != null && keyword != null && !keyword.isBlank();
+
+		if(LikeSort.isRequested(page)) {
+			return toListResponses(postRepository.findAllOrderByLikeCount(
+					false, null,
+					hasKeyword, hasKeyword ? type.name() : null, hasKeyword ? keyword : null,
+					LikeSort.withoutSort(page)
+			));
 		}
-		return postRepository.searchPosts(type, keyword, page)
-				.map(PostResponse.ListResponse::from);
+		if(!hasKeyword) {
+			return toListResponses(postRepository.findAllNotDeleted(page));
+		}
+		return toListResponses(postRepository.searchPosts(type, keyword, page));
 	}
 
 	@Transactional(readOnly = true)
@@ -88,8 +102,28 @@ public class PostService {
 
 	@Transactional(readOnly = true)
 	public Page<PostResponse.ListResponse> getPostsByFestival(Long festivalId, Pageable page) {
-		return postRepository.findAllByFestivalId(festivalId, page)
-				.map(PostResponse.ListResponse::from);
+		if(LikeSort.isRequested(page)) {
+			return toListResponses(postRepository.findAllOrderByLikeCount(
+					true, festivalId,
+					false, null, null,
+					LikeSort.withoutSort(page)
+			));
+		}
+		return toListResponses(postRepository.findAllByFestivalId(festivalId, page));
+	}
+
+	/** 페이지에 담긴 후기들의 좋아요 수를 한 번에 세서 응답에 붙인다. (후기마다 세면 N+1) */
+	private Page<PostResponse.ListResponse> toListResponses(Page<Post> posts) {
+		if(posts.isEmpty()) {
+			return posts.map(post -> PostResponse.ListResponse.from(post, 0L));
+		}
+
+		List<UUID> postIds = posts.getContent().stream().map(Post::getId).toList();
+		Map<UUID, Long> likeCounts = likeRepository.countByPostIds(postIds).stream()
+				.collect(Collectors.toMap(PostLikeCount::postId, PostLikeCount::likeCount));
+
+		return posts.map(post ->
+				PostResponse.ListResponse.from(post, likeCounts.getOrDefault(post.getId(), 0L)));
 	}
 
 	@Transactional(readOnly = true)

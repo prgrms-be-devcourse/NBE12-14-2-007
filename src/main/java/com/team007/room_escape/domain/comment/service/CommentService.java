@@ -35,7 +35,7 @@ public class CommentService {
 	) {
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
-		Post post = postRepository.findById(postId)
+		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		Comment comment = Comment.builder()

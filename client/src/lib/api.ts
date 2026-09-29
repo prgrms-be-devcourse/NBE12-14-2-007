@@ -13,6 +13,11 @@ import type {
   AdminPostSummary,
   Page,
   Comment,
+  CommunityCategory,
+  CommunityComment,
+  CommunityPostDetail,
+  CommunityPostInput,
+  CommunityPostSummary,
   Inquiry,
   InquiryInput,
   AdminInquiryListItem,
@@ -254,6 +259,7 @@ function toEventView(item: FestivalSearchItem): EventView {
     hostInstNm: null,
     writngDe: null,
     status: item.status,
+    likeCount: item.likeCount,
   };
 }
 
@@ -333,6 +339,7 @@ export function createApi(mode: Mode) {
       const keyword = input.keyword?.trim().toLowerCase() || "";
 
       if (demo) {
+        const demoLikes = readDemo().likes;
         const items = demoEvents
           .filter(
             (event) =>
@@ -348,10 +355,17 @@ export function createApi(mode: Mode) {
                   event.endDe.slice(0, 10) >= input.date)) &&
               (!input.excludeClosed || event.status !== "CLOSED"),
           )
+          .map((event) => ({
+            ...event,
+            likeCount: demoLikes[`festival:${event.festivalId}`] || 0,
+          }))
           .sort((a, b) =>
             input.sort === "name"
               ? a.title.localeCompare(b.title, "ko")
-              : a.beginDe.localeCompare(b.beginDe),
+              : input.sort === "likes"
+                ? b.likeCount - a.likeCount ||
+                  a.beginDe.localeCompare(b.beginDe)
+                : a.beginDe.localeCompare(b.beginDe),
           );
 
         return pageOf(items, page, 9);
@@ -368,6 +382,7 @@ export function createApi(mode: Mode) {
       if (input.date) params.set("date", input.date);
       if (input.excludeClosed) params.set("excludeClosed", "true");
       if (input.sort === "name") params.set("sort", "title,asc");
+      if (input.sort === "likes") params.set("sort", "likeCount,desc");
 
       const result = await transport<Page<FestivalSearchItem>>(
         `/festivals?${params.toString()}`,
@@ -553,13 +568,11 @@ export function createApi(mode: Mode) {
     async posts(
       festivalId?: number,
       page = 0,
-      sort: ReviewSort = demo ? "likes,desc" : "createdAt,desc",
+      sort: ReviewSort = demo ? "likeCount,desc" : "createdAt,desc",
       search: PostSearch = {},
     ): Promise<Page<PostSummary>> {
       const keyword = search.keyword?.trim();
       if (!demo) {
-        if (sort === "likes,desc")
-          throw new ApiError("좋아요순 정렬을 준비하고 있어요.");
         const params = new URLSearchParams({
           page: String(page),
           size: "6",
@@ -719,6 +732,70 @@ export function createApi(mode: Mode) {
       updateDemo((d) => {
         d.comments = d.comments.filter((c) => c.id !== commentId);
       });
+    },
+    async communityPosts(
+      page = 0,
+      category?: CommunityCategory,
+      keyword?: string,
+    ) {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "10",
+        sort: "createdAt,desc",
+      });
+      if (category) params.set("category", category);
+      if (keyword?.trim()) params.set("keyword", keyword.trim());
+      return transport<Page<CommunityPostSummary>>(
+        `/community/posts?${params}`,
+      );
+    },
+    async communityPost(postId: string) {
+      return transport<CommunityPostDetail>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+      );
+    },
+    async createCommunityPost(input: CommunityPostInput) {
+      return transport<CommunityPostDetail>("/community/posts", "POST", input);
+    },
+    async updateCommunityPost(postId: string, input: CommunityPostInput) {
+      return transport<CommunityPostDetail>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+        "PATCH",
+        input,
+      );
+    },
+    async deleteCommunityPost(postId: string) {
+      return transport<void>(
+        `/community/posts/${encodeURIComponent(postId)}`,
+        "DELETE",
+      );
+    },
+    async communityComments(postId: string, page = 0) {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: "20",
+        sort: "createdAt,asc",
+      });
+      return transport<Page<CommunityComment>>(
+        `/community/posts/${encodeURIComponent(postId)}/comments?${params}`,
+      );
+    },
+    async createCommunityComment(postId: string, content: string) {
+      return transport<CommunityComment>(
+        `/community/posts/${encodeURIComponent(postId)}/comments`,
+        "POST",
+        { content },
+      );
+    },
+    async updateCommunityComment(commentId: number, content: string) {
+      return transport<CommunityComment>(
+        `/community/comments/${commentId}`,
+        "PATCH",
+        { content },
+      );
+    },
+    async deleteCommunityComment(commentId: number) {
+      return transport<void>(`/community/comments/${commentId}`, "DELETE");
     },
     async likeCount(postId: string) {
       return demo
