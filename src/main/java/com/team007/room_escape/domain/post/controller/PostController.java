@@ -89,10 +89,7 @@ public class PostController {
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
-		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(
-				id,
-				user == null ? null : user.getId()
-		);
+		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(id, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(postDetailDto));
 	}

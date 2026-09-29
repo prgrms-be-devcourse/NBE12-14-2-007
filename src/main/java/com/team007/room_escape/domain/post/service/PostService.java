@@ -133,8 +133,7 @@ public class PostService {
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		// 화면이 좋아요 버튼 상태를 복원할 수 있도록 내가 눌렀는지 함께 내려준다.
-		boolean likedByMe = memberId != null
-				&& likeRepository.existsByPostIdAndMemberId(id, memberId);
+		boolean likedByMe = likeRepository.existsByPostIdAndMemberId(id, memberId);
 
 		return PostResponse.DetailResponse.from(post, likedByMe);
 	}
