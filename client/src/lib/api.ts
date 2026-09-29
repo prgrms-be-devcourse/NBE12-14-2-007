@@ -265,6 +265,7 @@ function toEventView(item: FestivalSearchItem): EventView {
     writngDe: null,
     status: item.status,
     likeCount: item.likeCount,
+    submitter: item.member,
   };
 }
 

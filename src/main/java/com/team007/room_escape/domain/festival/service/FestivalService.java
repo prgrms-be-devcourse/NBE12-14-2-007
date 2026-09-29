@@ -185,15 +185,28 @@ public class FestivalService {
 	/** 페이지에 담긴 행사들의 좋아요 수를 한 번에 세서 응답에 붙인다. (행사마다 세면 N+1) */
 	private Page<FestivalResponse.ListResponse> toListResponses(Page<Festival> festivals) {
 		if (festivals.isEmpty()) {
-			return festivals.map(festival -> FestivalResponse.ListResponse.from(festival, 0L));
+			return festivals.map(festival -> FestivalResponse.ListResponse.from(festival, 0L, null));
 		}
 
 		List<Long> festivalIds = festivals.getContent().stream().map(Festival::getId).toList();
 		Map<Long, Long> likeCounts = likeRepository.countByFestivalIds(festivalIds).stream()
 				.collect(Collectors.toMap(FestivalLikeCount::festivalId, FestivalLikeCount::likeCount));
 
-		return festivals.map(festival ->
-				FestivalResponse.ListResponse.from(festival, likeCounts.getOrDefault(festival.getId(), 0L)));
+		return festivals.map(festival -> FestivalResponse.ListResponse.from(
+				festival,
+				likeCounts.getOrDefault(festival.getId(), 0L),
+				toSubmitter(festival)
+		));
+	}
+
+	/** 회원 제보 행사의 제보자 정보. 공공데이터 행사는 제보자가 없어 null이다. */
+	private MemberResponse.MemberInfo toSubmitter(Festival festival) {
+		return festival.getMember() == null
+			? null
+			: MemberResponse.MemberInfo.from(
+				festival.getMember(),
+				imageUrlResolver.resolve(festival.getMember().getProfileImg())
+			);
 	}
 
 	/** 행사 상세와 정확도 평가·좋아요 정보를 한 번에 조회한다. */
@@ -227,12 +240,7 @@ public class FestivalService {
 		long likeCount = likeRepository.countByFestivalId(festivalId);
 		boolean likedByMe = memberId != null
 			&& likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId);
-		MemberResponse.MemberInfo submitter = festival.getMember() == null
-			? null
-			: MemberResponse.MemberInfo.from(
-				festival.getMember(),
-				imageUrlResolver.resolve(festival.getMember().getProfileImg())
-			);
+		MemberResponse.MemberInfo submitter = toSubmitter(festival);
 
 		return FestivalResponse.DetailResponse.from(
 			festival,

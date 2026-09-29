@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -27,7 +27,6 @@ import {
   imageUrl,
   period,
   regions,
-  roleNames,
   safeUrl,
 } from "../lib/format";
 import type {
@@ -41,12 +40,14 @@ import {
   ErrorState,
   FormError,
   Loading,
+  FESTIVAL_DEFAULT_IMAGE,
   LoginRequired,
   Modal,
 } from "../components/ui";
 import { FestivalPosts } from "./Reviews";
 import { RichTextContent } from "../components/RichText";
 import { ReportableName, ReportButton } from "../components/ReportButton";
+import { TrustGradeBadge } from "../components/TrustGradeBadge";
 
 export function EventDetailPage() {
   const { eventId, submissionId } = useParams();
@@ -123,12 +124,16 @@ function EventDetail({ event }: { event: EventView }) {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
-  const heroUrl = imageUrl(event.imgUrl, 1200);
+  const heroUrl = imageUrl(event.imgUrl, 1200) ?? FESTIVAL_DEFAULT_IMAGE;
   const inaccurateVoteCount = event.accuracyVote?.inaccurateCount ?? 0;
-  const [heroVisible, setHeroVisible] = useState(Boolean(heroUrl));
+  const [heroVisible, setHeroVisible] = useState(true);
   // 리사이즈 프록시가 원본을 처음 받아 축소하는 동안(캐시 없을 때) 몇 초 걸릴 수 있어서,
   // 그 사이 빈 화면 대신 스켈레톤을 보여준다.
   const [heroLoaded, setHeroLoaded] = useState(false);
+  useEffect(() => {
+    setHeroVisible(true);
+    setHeroLoaded(false);
+  }, [heroUrl]);
   const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
   async function share() {
     try {
@@ -178,7 +183,7 @@ function EventDetail({ event }: { event: EventView }) {
           </div>
         </div>
       )}
-      {heroUrl && heroVisible && (
+      {heroVisible && (
         <div className={`detail-hero ${heroLoaded ? "" : "loading"}`}>
           {!heroLoaded && (
             <div className="detail-hero-skeleton" aria-hidden="true" />
@@ -481,55 +486,6 @@ function SubmitterProfile({ member }: { member: FestivalMember }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function TrustGradeBadge({ member }: { member: FestivalMember }) {
-  const grade =
-    member.role === "ROLE_WARNING"
-      ? "warning"
-      : member.role === "ROLE_RECOGNIZED"
-        ? "maker"
-        : member.role === "ROLE_TRUSTED"
-          ? "master"
-          : "basic";
-  const symbol = grade === "maker" ? "m" : grade === "master" ? "M" : null;
-  const description =
-    member.role === "ROLE_WARNING"
-      ? "운영 정책에 따라 현재 활동이 제한된 계정입니다."
-      : member.role === "ROLE_RECOGNIZED"
-        ? "좋아요 또는 정확해요를 10개 이상 받은 제보자예요."
-        : member.role === "ROLE_TRUSTED"
-          ? "좋아요와 정확해요를 모두 10개 이상 받은 제보자예요."
-          : member.role === "ROLE_ADMIN"
-            ? "방구석탈출 운영·관리 계정이에요."
-            : "이제 막 탈출 정보를 나누기 시작한 제보자예요.";
-  const tooltipId = `trust-grade-${member.id}`;
-
-  return (
-    <span
-      className="trust-grade-wrap"
-      tabIndex={0}
-      aria-describedby={tooltipId}
-    >
-      <Badge tone={`trust-grade-badge ${grade}`}>
-        {grade === "warning" ? (
-          <AlertTriangle
-            className="trust-grade-warning-icon"
-            size={12}
-            aria-hidden="true"
-          />
-        ) : symbol ? (
-          <span className="trust-grade-symbol" aria-hidden="true">
-            {symbol}
-          </span>
-        ) : null}
-        <span>{roleNames[member.role]}</span>
-      </Badge>
-      <span className="trust-grade-tooltip" id={tooltipId} role="tooltip">
-        {description}
-      </span>
-    </span>
   );
 }
 
