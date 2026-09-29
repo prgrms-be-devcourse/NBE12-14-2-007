@@ -63,8 +63,10 @@ public class CommunityService {
 
 	@Transactional
 	public CommunityResponse.PostDetail getPost(UUID postId) {
+		if (postRepository.increaseViewCount(postId) == 0) {
+			throw new BusinessException(CommunityExceptionCode.POST_NOT_FOUND);
+		}
 		CommunityPost post = getPostEntity(postId);
-		post.increaseViewCount();
 		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId), imageUrlResolver);
 	}
 

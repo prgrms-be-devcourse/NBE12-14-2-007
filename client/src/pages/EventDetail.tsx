@@ -132,7 +132,11 @@ function EventDetail({ event }: { event: EventView }) {
   const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
   async function share() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const publicEventUrl = new URL(
+        `/events/${event.festivalId}`,
+        window.location.origin,
+      ).toString();
+      await navigator.clipboard.writeText(publicEventUrl);
       setCopied(true);
       toast("행사 링크를 복사했어요.");
       setTimeout(() => setCopied(false), 2500);
