@@ -47,7 +47,7 @@ public class PostService {
 	) {
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
-		Festival festival = festivalRepository.findById(festivalId)
+		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 		String sanitizedContent = sanitizeRequiredContent(request.content());
 
