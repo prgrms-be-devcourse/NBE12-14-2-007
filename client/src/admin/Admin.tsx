@@ -36,6 +36,7 @@ import {
 import { RichTextContent } from "../components/RichText";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { useApp, useLoad } from "../lib/context";
+import { ApiError } from "../lib/api";
 import { errorText, period, regions, safeUrl } from "../lib/format";
 import type { AdminFestivalDetail, InquiryCategory, Role } from "../lib/types";
 import { AdminGuard } from "./AdminAuth";
@@ -1915,6 +1916,226 @@ export function AdminTickets() {
     </>
   );
 }
+/**
+ * 문의 팝업 안에서 신고·제보 대상을 바로 처리한다.
+ * 답변만 적고 행사·후기·댓글 화면으로 다시 들어가지 않게 하려는 것이다.
+ */
+function InquiryTargetActions({
+  kind,
+  id,
+  targetPostId,
+}: {
+  kind: NonNullable<Ticket["target"]>["kind"];
+  id: string;
+  targetPostId: string | null;
+}) {
+  const { api, toast } = useApp();
+  const { deleteEvent, restoreEvent } = useAdmin();
+  const [confirming, setConfirming] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState("");
+  const [actionError, setActionError] = useState("");
+  const festival = useLoad(async () => {
+    if (kind !== "events") return null;
+    try {
+      return await api.adminFestival(id);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
+  }, [kind, id]);
+  const post = useLoad(async () => {
+    if (kind !== "reviews" && kind !== "communityPosts") return null;
+    try {
+      return kind === "reviews"
+        ? await api.adminPost(id)
+        : await api.communityPost(id);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
+  }, [kind, id]);
+
+  if (
+    kind !== "events" &&
+    kind !== "reviews" &&
+    kind !== "comments" &&
+    kind !== "communityPosts" &&
+    kind !== "communityComments"
+  ) {
+    return null;
+  }
+
+  const subject =
+    kind === "events"
+      ? "행사"
+      : kind === "reviews"
+        ? "후기"
+        : kind === "communityPosts"
+          ? "커뮤니티 글"
+          : "댓글";
+  const preview =
+    kind === "events"
+      ? festival.data?.title
+      : kind === "reviews" || kind === "communityPosts"
+        ? post.data && "title" in post.data
+          ? post.data.title
+          : null
+        : targetPostId
+          ? `원문 글 #${targetPostId}`
+          : null;
+  const missing =
+    done === "" &&
+    ((kind === "events" && !festival.loading && !festival.error && !festival.data) ||
+      ((kind === "reviews" || kind === "communityPosts") &&
+        !post.loading &&
+        !post.error &&
+        !post.data));
+
+  async function run(action: () => Promise<void>, message: string) {
+    setBusy(true);
+    setActionError("");
+    try {
+      await action();
+      setDone(message);
+      setConfirming(false);
+      setEditing(false);
+      toast(message);
+    } catch (error) {
+      setActionError(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="adm-target-actions" aria-label="대상 처리">
+      <h4>대상 처리 · {subject}</h4>
+      {(kind === "events" && festival.loading) ||
+      ((kind === "reviews" || kind === "communityPosts") && post.loading) ? (
+        <p className="adm-dialog-copy">대상 내용을 불러오는 중…</p>
+      ) : festival.error || post.error ? (
+        <p className="adm-dialog-note" role="alert">
+          {festival.error || post.error}
+        </p>
+      ) : (
+        <>
+          {preview && <p className="adm-dialog-copy">{preview}</p>}
+          {done && <p className="adm-dialog-note">{done}</p>}
+          {missing && !done && (
+            <p className="adm-dialog-note">
+              이미 삭제된 {subject}입니다.
+              {kind === "events" &&
+                " 공공 행사면 아래에서 복구할 수 있습니다. 회원 제보는 작성자가 지운 경우 복구되지 않습니다."}
+            </p>
+          )}
+          {editing && festival.data && (
+            <EventEditForm
+              festivalId={id}
+              detail={festival.data}
+              onDone={() => {
+                setEditing(false);
+                festival.reload();
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          )}
+          {!editing && confirming && (
+            <>
+              <p className="adm-dialog-note" role="alert">
+                이 {subject}을(를) 삭제하면 서비스 화면에서 보이지 않습니다.
+                답변은 아래 칸에 따로 남기면 됩니다.
+              </p>
+              <div className="adm-dialog-actions">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={() => setConfirming(false)}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="btn danger"
+                  disabled={busy}
+                  onClick={() => {
+                    if (kind === "events") {
+                      void run(() => deleteEvent(id), "행사를 삭제했습니다.");
+                    } else if (kind === "reviews") {
+                      void run(
+                        () => api.deletePost(id),
+                        "후기를 삭제했습니다.",
+                      );
+                    } else if (kind === "communityPosts") {
+                      void run(
+                        () => api.deleteCommunityPost(id),
+                        "커뮤니티 글을 삭제했습니다.",
+                      );
+                    } else if (kind === "communityComments") {
+                      void run(
+                        () => api.deleteCommunityComment(Number(id)),
+                        "커뮤니티 댓글을 삭제했습니다.",
+                      );
+                    } else {
+                      void run(
+                        () => api.deleteComment(Number(id)),
+                        "댓글을 삭제했습니다.",
+                      );
+                    }
+                  }}
+                >
+                  {busy ? "삭제 중…" : "삭제합니다"}
+                </button>
+              </div>
+            </>
+          )}
+          {!editing && !confirming && !done && (
+            <div className="adm-dialog-actions">
+              {kind === "events" && missing ? (
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(() => restoreEvent(id), "행사를 복구했습니다.")
+                  }
+                >
+                  {busy ? "복구 중…" : "행사 복구"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    disabled={missing}
+                    onClick={() => setConfirming(true)}
+                  >
+                    {subject} 삭제
+                  </button>
+                  {kind === "events" && festival.data && (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={() => setEditing(true)}
+                    >
+                      정보 수정
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          {actionError && (
+            <p className="adm-dialog-note" role="alert">
+              {actionError}
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 function TicketDialog({
   ticket,
   onClose,
@@ -2021,6 +2242,13 @@ function TicketDialog({
           댓글 내용을 확인해 주세요.
         </p>
       )}
+      {ticket.target && (
+        <InquiryTargetActions
+          kind={ticket.target.kind}
+          id={ticket.target.id}
+          targetPostId={targetPostId ?? null}
+        />
+      )}
       {answered && !editing ? (
         <div className="adm-saved-answer">
           <span>
@@ -2069,10 +2297,10 @@ function TicketDialog({
               placeholder="확인한 내용과 처리 결과를 안내해 주세요."
             />
           </Field>
-          {ticket.category !== "QUESTION" && (
+          {ticket.category !== "QUESTION" && ticket.target && (
             <p className="adm-dialog-note">
-              콘텐츠 조치가 필요하면 위 링크에서 먼저 검토하세요. 답변
-              등록만으로 콘텐츠가 숨겨지지는 않습니다.
+              대상 삭제나 수정은 위쪽 대상 처리에서 하고, 답변은 작성자에게
+              보이는 안내입니다. 답변만 등록해도 대상이 숨겨지지는 않습니다.
             </p>
           )}
           {saveError && (
