@@ -1390,9 +1390,9 @@ select {
   white-space: nowrap;
   align-items: center;
   gap: 6px;
-  margin-left: 2px;
-  padding-left: 14px;
-  border-left: 1px solid var(--line);
+  margin-right: 2px;
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
 }
 .compact-checkbox > input {
   margin: 0;
