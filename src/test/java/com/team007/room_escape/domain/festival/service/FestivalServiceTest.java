@@ -697,6 +697,36 @@ class FestivalServiceTest {
 	}
 
 	@Test
+	@DisplayName("정렬을 지정하지 않으면 오늘 기준 가까운 시작일순 전용 쿼리를 쓴다")
+	void usesNearestStartQueryWhenUnsorted() {
+		LocalDate date = LocalDate.of(CURRENT_YEAR, 9, 20);
+		FestivalSearchRequest request = searchRequest(date);
+		Pageable unsorted = PageRequest.of(0, 9);
+
+		Festival festival = Festival.builder().id(10L).providerType(ProviderType.PUBLIC).title("곧 시작").build();
+
+		when(festivalRepository.searchFestivalsOrderByNearestStart(
+				true, "경기",
+				true, FestivalRegion.GYEONGGI,
+				true, ProviderType.PUBLIC,
+				true, "행사",
+				true, date.atStartOfDay(), date.plusDays(1).atStartOfDay(),
+				false,
+				LocalDate.now().atStartOfDay(),
+				unsorted
+		)).thenReturn(new PageImpl<>(List.of(festival), unsorted, 1));
+
+		Page<FestivalResponse.ListResponse> result = festivalService.searchFestivals(request, unsorted);
+
+		assertThat(result.getContent())
+				.extracting(FestivalResponse.ListResponse::festivalId)
+				.containsExactly(10L);
+		verify(festivalRepository, never()).searchFestivals(
+				anyBoolean(), any(), anyBoolean(), any(), anyBoolean(), any(),
+				anyBoolean(), any(), anyBoolean(), any(), any(), anyBoolean(), any());
+	}
+
+	@Test
 	@DisplayName("좋아요순이면 정렬을 뗀 페이지로 좋아요순 전용 쿼리를 쓰고, 목록에 좋아요 수를 붙인다")
 	void usesLikeSortQueryAndAttachesLikeCounts() {
 		LocalDate date = LocalDate.of(CURRENT_YEAR, 9, 20);

@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,14 +36,16 @@ public class FestivalController {
                 검색어와 지역, 데이터 출처, 행사 카테고리, 날짜를 이용해
                 공공행사와 사용자 등록 행사를 통합 검색합니다.
                 모든 검색 조건은 선택사항입니다.
-                sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다""")
+                기본 정렬은 오늘 기준으로 가장 가깝게 시작하는 행사 순입니다.
+                sort=likeCount,desc 로 좋아요순, sort=createdAt,desc 로 최근 등록순,
+                sort=title,asc 로 이름순 정렬할 수 있습니다""")
 	@GetMapping
 	public ResponseEntity<ApiResponse<Page<FestivalResponse.ListResponse>>>
 	searchFestivals(
 			@ParameterObject
 			@ModelAttribute FestivalSearchRequest request,
 			@ParameterObject
-			@PageableDefault(size = 9, sort = "beginDe", direction = Sort.Direction.ASC)
+			@PageableDefault(size = 9)
 			Pageable pageable
 	) {
 		Page<FestivalResponse.ListResponse> response =
