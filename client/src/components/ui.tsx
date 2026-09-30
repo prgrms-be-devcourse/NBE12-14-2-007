@@ -197,14 +197,12 @@ export function EventCard({
   const path = event.submissionId
     ? `/submissions/${event.submissionId}`
     : `/events/${event.festivalId}`;
-  const unverified =
-    (event.accuracyVote?.inaccurateCount ?? 0) >= INACCURATE_THUMBNAIL_THRESHOLD;
   return (
     <Link to={path} className={`event-card ${list ? "list-card" : ""}`}>
       <div className="event-photo">
         <Photo
-          src={unverified ? FESTIVAL_UNVERIFIED_IMAGE : event.imgUrl}
-          alt={unverified ? "검증되지 않은 행사입니다." : event.title}
+          src={event.imgUrl}
+          alt={event.title}
           fallbackSrc={FESTIVAL_DEFAULT_IMAGE}
         />
         <span className="image-label">{event.category}</span>

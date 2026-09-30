@@ -41,7 +41,6 @@ import {
   FormError,
   Loading,
   FESTIVAL_DEFAULT_IMAGE,
-  FESTIVAL_UNVERIFIED_IMAGE,
   INACCURATE_THUMBNAIL_THRESHOLD,
   LoginRequired,
   Modal,
@@ -128,9 +127,7 @@ function EventDetail({ event }: { event: EventView }) {
   const externalUrl = safeUrl(event.referenceUrl);
   const inaccurateVoteCount = event.accuracyVote?.inaccurateCount ?? 0;
   const unverified = inaccurateVoteCount >= INACCURATE_THUMBNAIL_THRESHOLD;
-  const heroUrl = unverified
-    ? FESTIVAL_UNVERIFIED_IMAGE
-    : (imageUrl(event.imgUrl) ?? FESTIVAL_DEFAULT_IMAGE);
+  const heroUrl = imageUrl(event.imgUrl) ?? FESTIVAL_DEFAULT_IMAGE;
   const heroRef = useRef<HTMLImageElement>(null);
   const [heroVisible, setHeroVisible] = useState(true);
   // 리사이즈 프록시가 원본을 처음 받아 축소하는 동안(캐시 없을 때) 몇 초 걸릴 수 있어서,
@@ -199,7 +196,7 @@ function EventDetail({ event }: { event: EventView }) {
           <img
             ref={heroRef}
             src={heroUrl}
-            alt={unverified ? "검증되지 않은 행사입니다." : event.title}
+            alt={event.title}
             onLoad={() => setHeroLoaded(true)}
             onError={() => setHeroVisible(false)}
           />

@@ -115,19 +115,12 @@ export function safeUrl(value?: string | null): string | undefined {
     return undefined;
   }
 }
-// 화면은 이미 줄여서 R2에 올린 주소만 바로 받는다.
-// 공공 API 원본처럼 R2가 아닌 주소는 weserv.nl로 보내지 않는다. 그 사진은 호출하는 쪽에서 기본 이미지를 쓴다.
-function imageBase() {
-  const base = import.meta.env.VITE_IMAGE_BASE_URL;
-  if (!base) return "";
-  return base.endsWith("/") ? base.slice(0, -1) : base;
-}
+// 서버가 준 주소는 그대로 보여 준다. 리사이즈 프록시로 다시 보내지 않는다.
+// 주소가 없거나 http(s)가 아니면 호출하는 쪽에서 기본 이미지를 쓴다.
 export function imageUrl(value?: string | null) {
   if (!value) return undefined;
   if (value.startsWith("/images/") || value.startsWith("blob:")) return value;
-  const r2Base = imageBase();
-  if (r2Base && value.startsWith(r2Base)) return value;
-  return undefined;
+  return safeUrl(value);
 }
 export function errorText(error: unknown) {
   return error instanceof Error
