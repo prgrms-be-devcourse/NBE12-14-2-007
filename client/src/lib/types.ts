@@ -72,6 +72,8 @@ export interface FestivalSearchItem {
   region: string;
   status: "OPEN" | "CLOSED";
   likeCount: number;
+  accurateCount: number;
+  inaccurateCount: number;
   /** 회원 제보 행사의 제보자. 공공데이터 행사는 null */
   member: FestivalMember | null;
 }
