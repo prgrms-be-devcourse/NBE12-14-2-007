@@ -153,6 +153,11 @@ export function AdminReviews() {
                   <tr key={post.id}>
                     <td>
                       <div className="adm-content-cell">
+                        <div className="adm-thumbnail">
+                          {post.thumbnail && (
+                            <img src={post.thumbnail} alt="" />
+                          )}
+                        </div>
                         <div>
                           <strong>
                             {post.title}
