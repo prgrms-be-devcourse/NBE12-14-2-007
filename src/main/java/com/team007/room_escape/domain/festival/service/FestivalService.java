@@ -5,6 +5,7 @@ import com.team007.room_escape.domain.festival.dto.FestivalSearchRequest;
 import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClient;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
+import com.team007.room_escape.domain.festival.infra.dto.FestivalVoteCount;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
@@ -18,7 +19,6 @@ import com.team007.room_escape.domain.festival.infra.repository.PublicFestivalSo
 import com.team007.room_escape.domain.like.infra.dto.FestivalLikeCount;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.like.type.LikeSort;
-import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.config.R2Properties;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -182,31 +182,44 @@ public class FestivalService {
 		));
 	}
 
-	/** 페이지에 담긴 행사들의 좋아요 수를 한 번에 세서 응답에 붙인다. (행사마다 세면 N+1) */
+	/** 페이지에 담긴 행사들의 좋아요·투표 수를 한 번에 세서 응답에 붙인다. (행사마다 세면 N+1) */
 	private Page<FestivalResponse.ListResponse> toListResponses(Page<Festival> festivals) {
 		if (festivals.isEmpty()) {
-			return festivals.map(festival -> FestivalResponse.ListResponse.from(festival, 0L, null));
+			return festivals.map(festival -> FestivalResponse.Converter.toList(
+				festival, 0L, 0L, 0L, imageUrlResolver));
 		}
 
 		List<Long> festivalIds = festivals.getContent().stream().map(Festival::getId).toList();
-		Map<Long, Long> likeCounts = likeRepository.countByFestivalIds(festivalIds).stream()
-				.collect(Collectors.toMap(FestivalLikeCount::festivalId, FestivalLikeCount::likeCount));
+		Map<Long, ListCounts> counts = listCounts(festivalIds);
 
-		return festivals.map(festival -> FestivalResponse.ListResponse.from(
+		return festivals.map(festival -> {
+			ListCounts count = counts.get(festival.getId());
+			return FestivalResponse.Converter.toList(
 				festival,
-				likeCounts.getOrDefault(festival.getId(), 0L),
-				toSubmitter(festival)
-		));
+				count.likeCount(),
+				count.accurateCount(),
+				count.inaccurateCount(),
+				imageUrlResolver
+			);
+		});
 	}
 
-	/** 회원 제보 행사의 제보자 정보. 공공데이터 행사는 제보자가 없어 null이다. */
-	private MemberResponse.MemberInfo toSubmitter(Festival festival) {
-		return festival.getMember() == null
-			? null
-			: MemberResponse.MemberInfo.from(
-				festival.getMember(),
-				imageUrlResolver.resolve(festival.getMember().getProfileImg())
-			);
+	/** 좋아요와 정확도 투표를 행사 번호 하나로 모은다. 없는 값은 0이다. */
+	private Map<Long, ListCounts> listCounts(List<Long> festivalIds) {
+		Map<Long, Long> likeCounts = likeRepository.countByFestivalIds(festivalIds).stream()
+			.collect(Collectors.toMap(FestivalLikeCount::festivalId, FestivalLikeCount::likeCount));
+		Map<Long, ListCounts> voteCounts = accuracyVoteRepository.countByFestivalIds(festivalIds).stream()
+			.collect(Collectors.toMap(
+				FestivalVoteCount::festivalId,
+				ListCounts::fromVote,
+				ListCounts::mergeVotes
+			));
+
+		return festivalIds.stream().collect(Collectors.toMap(
+			id -> id,
+			id -> voteCounts.getOrDefault(id, ListCounts.EMPTY)
+				.withLike(likeCounts.getOrDefault(id, 0L))
+		));
 	}
 
 	/** 행사 상세와 정확도 평가·좋아요 정보를 한 번에 조회한다. */
@@ -240,16 +253,14 @@ public class FestivalService {
 		long likeCount = likeRepository.countByFestivalId(festivalId);
 		boolean likedByMe = memberId != null
 			&& likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId);
-		MemberResponse.MemberInfo submitter = toSubmitter(festival);
-
-		return FestivalResponse.DetailResponse.from(
+		return FestivalResponse.Converter.toDetail(
 			festival,
 			accurateCount,
 			inaccurateCount,
 			myVote,
 			likeCount,
 			likedByMe,
-			submitter
+			imageUrlResolver
 		);
 	}
 
@@ -409,5 +420,29 @@ public class FestivalService {
 		}
 
 		return value.trim().toLowerCase(Locale.ROOT);
+	}
+
+	/** 목록 한 줄에 붙일 좋아요·정확해요·부정확해요 개수. */
+	private record ListCounts(long likeCount, long accurateCount, long inaccurateCount) {
+
+		private static final ListCounts EMPTY = new ListCounts(0, 0, 0);
+
+		private static ListCounts fromVote(FestivalVoteCount row) {
+			return row.voteType() == FestivalAccuracyVoteType.ACCURATE
+				? new ListCounts(0, row.count(), 0)
+				: new ListCounts(0, 0, row.count());
+		}
+
+		private static ListCounts mergeVotes(ListCounts left, ListCounts right) {
+			return new ListCounts(
+				0,
+				left.accurateCount() + right.accurateCount(),
+				left.inaccurateCount() + right.inaccurateCount()
+			);
+		}
+
+		private ListCounts withLike(long likeCount) {
+			return new ListCounts(likeCount, accurateCount, inaccurateCount);
+		}
 	}
 }

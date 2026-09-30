@@ -3,9 +3,11 @@ import { Link, useLocation } from "react-router-dom";
 import {
   ArrowRight,
   CalendarDays,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  AlertTriangle,
   Cloud,
   CloudRain,
   CloudSnow,
@@ -137,6 +139,9 @@ export function Badge({
 }
 /** 행사 이미지가 없거나 불러오지 못했을 때 보여주는 기본 이미지 */
 export const FESTIVAL_DEFAULT_IMAGE = "/images/festival-default.jpg";
+/** 부정확해요가 이 개수 이상이면 목록 썸네일을 검증 안 됨 이미지로 바꾼다. */
+export const INACCURATE_THUMBNAIL_THRESHOLD = 5;
+export const FESTIVAL_UNVERIFIED_IMAGE = "/images/festival-unverified.jpg";
 
 export function Photo({
   src,
@@ -192,12 +197,14 @@ export function EventCard({
   const path = event.submissionId
     ? `/submissions/${event.submissionId}`
     : `/events/${event.festivalId}`;
+  const unverified =
+    (event.accuracyVote?.inaccurateCount ?? 0) >= INACCURATE_THUMBNAIL_THRESHOLD;
   return (
     <Link to={path} className={`event-card ${list ? "list-card" : ""}`}>
       <div className="event-photo">
         <Photo
-          src={event.imgUrl}
-          alt={event.title}
+          src={unverified ? FESTIVAL_UNVERIFIED_IMAGE : event.imgUrl}
+          alt={unverified ? "검증되지 않은 행사입니다." : event.title}
           fallbackSrc={FESTIVAL_DEFAULT_IMAGE}
         />
         <span className="image-label">{event.category}</span>
@@ -228,6 +235,24 @@ export function EventCard({
           {period(event.beginDe, event.endDe)}
         </p>
         <div className="card-bottom">
+          {event.source === "MEMBER" && event.accuracyVote && (
+            <span className="card-votes">
+              <span
+                className="vote-accurate"
+                aria-label={`정확해요 ${event.accuracyVote.accurateCount}개`}
+              >
+                <CheckCircle2 size={13} />
+                {event.accuracyVote.accurateCount}
+              </span>
+              <span
+                className="vote-inaccurate"
+                aria-label={`부정확해요 ${event.accuracyVote.inaccurateCount}개`}
+              >
+                <AlertTriangle size={13} />
+                {event.accuracyVote.inaccurateCount}
+              </span>
+            </span>
+          )}
           <span className="post-like-count">
             {event.likeCount !== undefined && (
               <span

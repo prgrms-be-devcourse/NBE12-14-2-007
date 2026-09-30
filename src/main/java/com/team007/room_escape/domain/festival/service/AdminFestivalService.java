@@ -149,6 +149,6 @@ public class AdminFestivalService {
 			request.hostInstNm()
 		);
 
-		return FestivalResponse.DetailResponse.from(festival);
+		return FestivalResponse.Converter.toDetail(festival, 0, 0, null, 0, false, null);
 	}
 }

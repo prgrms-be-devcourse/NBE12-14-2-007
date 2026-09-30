@@ -100,6 +100,7 @@ class FestivalServiceTest {
 	@BeforeEach
 	void stubImageProcessor() {
 		lenient().when(festivalImageProcessor.process(any())).thenAnswer(inv -> inv.getArgument(0));
+		lenient().when(accuracyVoteRepository.countByFestivalIds(any())).thenReturn(List.of());
 	}
 
 	/**

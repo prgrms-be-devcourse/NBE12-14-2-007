@@ -41,6 +41,8 @@ import {
   FormError,
   Loading,
   FESTIVAL_DEFAULT_IMAGE,
+  FESTIVAL_UNVERIFIED_IMAGE,
+  INACCURATE_THUMBNAIL_THRESHOLD,
   LoginRequired,
   Modal,
 } from "../components/ui";
@@ -124,15 +126,21 @@ function EventDetail({ event }: { event: EventView }) {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
-  const heroUrl = imageUrl(event.imgUrl, 1200) ?? FESTIVAL_DEFAULT_IMAGE;
   const inaccurateVoteCount = event.accuracyVote?.inaccurateCount ?? 0;
+  const unverified = inaccurateVoteCount >= INACCURATE_THUMBNAIL_THRESHOLD;
+  const heroUrl = unverified
+    ? FESTIVAL_UNVERIFIED_IMAGE
+    : (imageUrl(event.imgUrl, 1200) ?? FESTIVAL_DEFAULT_IMAGE);
+  const heroRef = useRef<HTMLImageElement>(null);
   const [heroVisible, setHeroVisible] = useState(true);
   // 리사이즈 프록시가 원본을 처음 받아 축소하는 동안(캐시 없을 때) 몇 초 걸릴 수 있어서,
   // 그 사이 빈 화면 대신 스켈레톤을 보여준다.
   const [heroLoaded, setHeroLoaded] = useState(false);
   useEffect(() => {
     setHeroVisible(true);
-    setHeroLoaded(false);
+    const image = heroRef.current;
+    // 목록에서 이미 받은 정적 이미지는 상세에 붙이자마자 로드가 끝나 있어 onLoad가 다시 오지 않는다.
+    setHeroLoaded(Boolean(image?.complete && image.naturalWidth > 0));
   }, [heroUrl]);
   const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
   async function share() {
@@ -171,7 +179,7 @@ function EventDetail({ event }: { event: EventView }) {
           )}
         </div>
       </div>
-      {inaccurateVoteCount >= 10 && (
+      {unverified && (
         <div className="detail-accuracy-warning" role="alert">
           <AlertTriangle size={20} aria-hidden="true" />
           <div>
@@ -189,8 +197,9 @@ function EventDetail({ event }: { event: EventView }) {
             <div className="detail-hero-skeleton" aria-hidden="true" />
           )}
           <img
+            ref={heroRef}
             src={heroUrl}
-            alt={event.title}
+            alt={unverified ? "검증되지 않은 행사입니다." : event.title}
             onLoad={() => setHeroLoaded(true)}
             onError={() => setHeroVisible(false)}
           />

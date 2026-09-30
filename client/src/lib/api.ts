@@ -48,7 +48,7 @@ import {
   updateDemo,
   type ReviewSort,
 } from "./demo";
-import { parseDateTime, safeUrl } from "./format";
+import { parseDateTime } from "./format";
 import { matchesRegion } from "./regions";
 
 // 선택 항목을 비운 등록·수정 요청은 DB에 빈 문자열 대신 null로 저장합니다.
@@ -122,9 +122,6 @@ export function isTokenExpired(claims: AccessTokenClaims) {
 export function refreshAccessToken() {
   return refresh();
 }
-// TODO 어드민 화면 디버깅용. 원인 찾으면 지울 것.
-const isAdminPath = (path: string) =>
-  path.startsWith("/admin/") || path === "/festivals/sync";
 const DEFAULT_TIMEOUT_MS = 15000;
 // 동기화는 기존 이미지를 실제로 다운로드·리사이즈·R2 업로드까지 하느라 기본 타임아웃을 넘길 수 있다.
 const SYNC_TIMEOUT_MS = 60000;
@@ -140,12 +137,6 @@ async function transport<T>(
   const timeoutMs =
     path === "/festivals/sync" ? SYNC_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  const logAdmin = isAdminPath(path);
-  if (logAdmin)
-    console.log(
-      `[admin] → ${method} ${path}${retry ? "" : " (재시도)"}`,
-      body ?? "",
-    );
   let response: Response;
   try {
     response = await fetch(`/api/v1${path}`, {
@@ -160,8 +151,7 @@ async function transport<T>(
       },
       body: body === undefined ? undefined : form ? body : JSON.stringify(body),
     });
-  } catch (error) {
-    if (logAdmin) console.error(`[admin] ✕ ${method} ${path} 연결 실패`, error);
+  } catch {
     throw new ApiError(
       "서버에 연결하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.",
     );
@@ -171,8 +161,6 @@ async function transport<T>(
   if (requestSession !== sessionVersion) {
     throw new ApiError("세션이 변경되어 이전 요청을 취소했어요.");
   }
-  if (logAdmin && (response.status === 401 || response.status === 204))
-    console.log(`[admin] ← ${response.status} ${method} ${path}`);
   if (response.status === 401 && retry && !path.startsWith("/auth/")) {
     try {
       await refresh();
@@ -191,10 +179,6 @@ async function transport<T>(
   }
   if (response.status === 204) return undefined as T;
   const result = await response.json().catch(() => null);
-  if (logAdmin) {
-    const log = response.ok && result?.success ? console.log : console.error;
-    log(`[admin] ← ${response.status} ${method} ${path}`, result);
-  }
   if (!response.ok || !result?.success) {
     throw new ApiError(
       result?.message ||
@@ -207,6 +191,7 @@ async function transport<T>(
       result?.code,
     );
   }
+  console.log(`[${method}] ${path}`, result.data);
   return result.data as T;
 }
 async function refresh() {
@@ -266,6 +251,11 @@ function toEventView(item: FestivalSearchItem): EventView {
     status: item.status,
     likeCount: item.likeCount,
     submitter: item.member,
+    accuracyVote: {
+      accurateCount: item.accurateCount,
+      inaccurateCount: item.inaccurateCount,
+      myVote: null,
+    },
   };
 }
 
@@ -463,17 +453,7 @@ export function createApi(mode: Mode) {
       const result = await transport<FestivalDetailItem>(
         `/festivals/${encodeURIComponent(String(festivalId))}`,
       );
-      const mapped = toDetailEvent(result);
-      // TODO 참고링크 누락 원인 확인용. 끝나면 지울 것.
-      console.log(`[행사 ${festivalId}] 서버 응답`, result);
-      console.log(`[행사 ${festivalId}] 링크 관련`, {
-        url: result.url,
-        hmpgUrl: result.hmpgUrl,
-        referenceUrl: result.referenceUrl,
-        "화면에 쓰는 값": mapped.referenceUrl,
-        "safeUrl 통과": safeUrl(mapped.referenceUrl),
-      });
-      return mapped;
+      return toDetailEvent(result);
     },
     async likeFestival(festivalId: number, remove = false) {
       if (!demo)
