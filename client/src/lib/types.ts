@@ -58,7 +58,7 @@ export interface FestivalSearchInput {
   date?: string;
   excludeClosed?: boolean;
   page?: number;
-  sort?: "soon" | "name" | "likes";
+  sort?: "soon" | "name" | "likes" | "recent";
 }
 export interface FestivalSearchItem {
   festivalId: number;

@@ -228,6 +228,15 @@ function pageOf<T>(items: T[], page: number, size: number): Page<T> {
   };
 }
 
+/** 서버 기본 정렬과 같다: 오늘 이후 시작 행사는 가까운 순, 이미 시작한 행사는 최근 시작순으로 뒤에 둔다. */
+function compareNearestStart(a: string, b: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const aUpcoming = a.slice(0, 10) >= today;
+  const bUpcoming = b.slice(0, 10) >= today;
+  if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+  return aUpcoming ? a.localeCompare(b) : b.localeCompare(a);
+}
+
 function toEventView(item: FestivalSearchItem): EventView {
   return {
     festivalId: item.festivalId,
@@ -361,7 +370,10 @@ export function createApi(mode: Mode) {
               : input.sort === "likes"
                 ? b.likeCount - a.likeCount ||
                   a.beginDe.localeCompare(b.beginDe)
-                : a.beginDe.localeCompare(b.beginDe),
+                : input.sort === "recent"
+                  ? // 예시 데이터엔 등록일이 없어 나중에 추가된(id가 큰) 행사를 최근 등록으로 본다
+                    Number(b.festivalId) - Number(a.festivalId)
+                  : compareNearestStart(a.beginDe, b.beginDe),
           );
 
         return pageOf(items, page, 9);
@@ -379,6 +391,7 @@ export function createApi(mode: Mode) {
       if (input.excludeClosed) params.set("excludeClosed", "true");
       if (input.sort === "name") params.set("sort", "title,asc");
       if (input.sort === "likes") params.set("sort", "likeCount,desc");
+      if (input.sort === "recent") params.set("sort", "createdAt,desc");
 
       const result = await transport<Page<FestivalSearchItem>>(
         `/festivals?${params.toString()}`,

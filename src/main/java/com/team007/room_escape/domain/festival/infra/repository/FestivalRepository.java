@@ -68,6 +68,79 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	);
 
 	/**
+	 * 기본 정렬(오늘 기준 가까운 시작일순) 행사 검색. 검색 조건은 searchFestivals 와 같다.
+	 * 오늘 이후 시작하는 행사를 가까운 순으로 먼저, 이미 시작한 행사는 최근에 시작한 순으로 그 뒤에 둔다.
+	 * 시작일이 없는 행사는 맨 뒤, 같은 시작일이면 id 로 순서를 고정한다.
+	 */
+	@EntityGraph(attributePaths = "member")
+	@Query(
+		value = """
+        SELECT f
+        FROM Festival f
+        WHERE f.deletedAt IS NULL
+          AND (:hasKeyword = false
+                OR LOWER(COALESCE(f.title, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.instNm, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.regionDetail, ''))
+                    LIKE CONCAT('%', :keyword, '%'))
+          AND (:hasRegion = false OR f.region = :region)
+          AND (:hasProviderType = false OR f.providerType = :providerType)
+          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+        ORDER BY
+          CASE
+            WHEN f.beginDe IS NULL THEN 2
+            WHEN f.beginDe >= :today THEN 0
+            ELSE 1
+          END ASC,
+          CASE WHEN f.beginDe >= :today THEN f.beginDe END ASC,
+          f.beginDe DESC,
+          f.id DESC
+        """,
+		countQuery = """
+        SELECT COUNT(f)
+        FROM Festival f
+        WHERE f.deletedAt IS NULL
+          AND (:hasKeyword = false
+                OR LOWER(COALESCE(f.title, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.instNm, ''))
+                    LIKE CONCAT('%', :keyword, '%')
+                OR LOWER(COALESCE(f.regionDetail, ''))
+                    LIKE CONCAT('%', :keyword, '%'))
+          AND (:hasRegion = false OR f.region = :region)
+          AND (:hasProviderType = false OR f.providerType = :providerType)
+          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+        """)
+	Page<Festival> searchFestivalsOrderByNearestStart(
+			@Param("hasKeyword") boolean hasKeyword,
+			@Param("keyword") String keyword,
+
+			@Param("hasRegion") boolean hasRegion,
+			@Param("region") FestivalRegion region,
+
+			@Param("hasProviderType") boolean hasProviderType,
+			@Param("providerType") ProviderType providerType,
+
+			@Param("hasCategory") boolean hasCategory,
+			@Param("category") String category,
+
+			@Param("hasDate") boolean hasDate,
+			@Param("dateStart") LocalDateTime dateStart,
+			@Param("dateEnd") LocalDateTime dateEnd,
+			@Param("excludeClosed") boolean excludeClosed,
+
+			@Param("today") LocalDateTime today,
+
+			Pageable pageable
+	);
+
+	/**
 	 * 좋아요순 행사 검색. 검색 조건은 searchFestivals 와 같다.
 	 * like 를 행사별로 먼저 한 번 집계한 뒤 붙인다. (행사마다 세거나 like 를 그대로 JOIN 하면 느리다)
 	 * 동점이면 곧 시작하는 행사 먼저(기본 목록과 같은 기준), 그래도 같으면 id 로 순서를 고정한다.
