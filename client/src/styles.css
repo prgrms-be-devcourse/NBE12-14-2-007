@@ -949,6 +949,22 @@ select {
 .card-bottom > .post-like-count {
   margin-left: auto;
 }
+.card-votes {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-votes > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.card-votes > .vote-accurate {
+  color: #2f7d4a;
+}
+.card-votes > .vote-inaccurate {
+  color: #c4453c;
+}
 .event-submitter {
   display: flex;
   align-items: center;

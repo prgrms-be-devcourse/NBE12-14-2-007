@@ -6,6 +6,8 @@ import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
+import com.team007.room_escape.domain.member.infra.entity.Member;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,26 +54,15 @@ public class FestivalResponse {
             @Schema(description = "좋아요 수")
             long likeCount,
 
+            @Schema(description = "정확해요 개수. 공공데이터 행사는 0", example = "3")
+            long accurateCount,
+
+            @Schema(description = "부정확해요 개수. 공공데이터 행사는 0", example = "1")
+            long inaccurateCount,
+
             @Schema(description = "회원 제보 행사 작성자 정보. 공공데이터 행사는 null", nullable = true)
             MemberResponse.MemberInfo member
     ) {
-
-        public static ListResponse from(Festival festival, long likeCount, MemberResponse.MemberInfo member) {
-            return ListResponse.builder()
-                    .festivalId(festival.getId())
-                    .providerType(festival.getProviderType())
-                    .title(festival.getTitle())
-                    .category(festival.getCategory())
-                    .instNm(festival.getInstNm())
-                    .imgUrl(festival.getImgUrl())
-                    .beginDe(festival.getBeginDe())
-                    .endDe(festival.getEndDe())
-                    .region(festival.getRegion())
-                    .status(FestivalStatus.from(festival.getEndDe()))
-                    .likeCount(likeCount)
-                    .member(member)
-                    .build();
-        }
     }
 
     @Builder
@@ -153,12 +144,9 @@ public class FestivalResponse {
             MemberResponse.MemberInfo member
     ) {
 
-        public static DetailResponse from(Festival festival) {
-            return from(festival, 0, 0, null, 0, false, null);
-        }
-
-        public static DetailResponse from(
+        private static DetailResponse build(
                 Festival festival,
+                String imgUrl,
                 long accurateCount,
                 long inaccurateCount,
                 FestivalAccuracyVoteType myVote,
@@ -174,7 +162,7 @@ public class FestivalResponse {
                     .festivalContent(festival.getContent())
                     .instNm(festival.getInstNm())
                     .hostInstNm(festival.getHostInstNm())
-                    .imgUrl(festival.getImgUrl())
+                    .imgUrl(imgUrl)
                     .url(festival.getUrl())
                     .hmpgUrl(festival.getHmpgUrl())
                     .referenceUrl(festival.getHmpgUrl() != null && !festival.getHmpgUrl().isBlank()
@@ -219,6 +207,75 @@ public class FestivalResponse {
 
         public static SyncedFestival from(Festival festival) {
             return new SyncedFestival(festival.getId(), festival.getTitle());
+        }
+    }
+
+    /**
+     * 행사 엔티티를 목록·상세 응답으로 바꾼다.
+     * 제보자 정보와 이미지 주소 변환은 여기서만 한다.
+     */
+    public static final class Converter {
+
+        private Converter() {
+        }
+
+        public static ListResponse toList(
+                Festival festival,
+                long likeCount,
+                long accurateCount,
+                long inaccurateCount,
+                ImageUrlResolver imageUrlResolver
+        ) {
+            return ListResponse.builder()
+                    .festivalId(festival.getId())
+                    .providerType(festival.getProviderType())
+                    .title(festival.getTitle())
+                    .category(festival.getCategory())
+                    .instNm(festival.getInstNm())
+                    .imgUrl(image(festival.getImgUrl(), imageUrlResolver))
+                    .beginDe(festival.getBeginDe())
+                    .endDe(festival.getEndDe())
+                    .region(festival.getRegion())
+                    .status(FestivalStatus.from(festival.getEndDe()))
+                    .likeCount(likeCount)
+                    .accurateCount(accurateCount)
+                    .inaccurateCount(inaccurateCount)
+                    .member(toMember(festival, imageUrlResolver))
+                    .build();
+        }
+
+        public static DetailResponse toDetail(
+                Festival festival,
+                long accurateCount,
+                long inaccurateCount,
+                FestivalAccuracyVoteType myVote,
+                long likeCount,
+                boolean likedByMe,
+                ImageUrlResolver imageUrlResolver
+        ) {
+            return DetailResponse.build(
+                    festival,
+                    image(festival.getImgUrl(), imageUrlResolver),
+                    accurateCount,
+                    inaccurateCount,
+                    myVote,
+                    likeCount,
+                    likedByMe,
+                    toMember(festival, imageUrlResolver)
+            );
+        }
+
+        /** 회원 제보 행사의 제보자. 공공데이터 행사는 제보자가 없어 null이다. */
+        public static MemberResponse.MemberInfo toMember(Festival festival, ImageUrlResolver imageUrlResolver) {
+            Member member = festival.getMember();
+            if (member == null || imageUrlResolver == null) {
+                return null;
+            }
+            return MemberResponse.MemberInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
+        }
+
+        private static String image(String value, ImageUrlResolver imageUrlResolver) {
+            return imageUrlResolver == null ? value : imageUrlResolver.resolve(value);
         }
     }
 }
