@@ -139,8 +139,8 @@ export function Badge({
 }
 /** 행사 이미지가 없거나 불러오지 못했을 때 보여주는 기본 이미지 */
 export const FESTIVAL_DEFAULT_IMAGE = "/images/festival-default.jpg";
-/** 부정확해요가 이 개수 이상이면 목록 썸네일을 검증 안 됨 이미지로 바꾼다. */
-export const INACCURATE_THUMBNAIL_THRESHOLD = 5;
+/** 부정확해요가 10개 이상이면 목록·상세 썸네일을 검증 안 됨 이미지로 바꾼다. */
+export const INACCURATE_THUMBNAIL_THRESHOLD = 10;
 export const FESTIVAL_UNVERIFIED_IMAGE = "/images/festival-unverified.jpg";
 
 export function Photo({
