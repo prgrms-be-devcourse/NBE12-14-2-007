@@ -160,6 +160,32 @@ public class FestivalService {
 			));
 		}
 
+		/** 정렬을 지정하지 않으면 오늘 기준으로 가장 가깝게 시작하는 행사부터 보여준다. */
+		if (pageable.getSort().isUnsorted()) {
+			return toListResponses(festivalRepository.searchFestivalsOrderByNearestStart(
+					keyword != null,
+					keyword,
+
+					request.region() != null,
+					request.region(),
+
+					request.providerType() != null,
+					request.providerType(),
+
+					category != null,
+					category,
+
+					request.date() != null,
+					dateStart,
+					dateEnd,
+					Boolean.TRUE.equals(request.excludeClosed()),
+
+					LocalDate.now().atStartOfDay(),
+
+					pageable
+			));
+		}
+
 		return toListResponses(festivalRepository.searchFestivals(
 				keyword != null,
 				keyword,

@@ -67,7 +67,10 @@ export function Explore() {
         date: date || undefined,
         excludeClosed,
         page,
-        sort: sort === "name" || sort === "likes" ? sort : "soon",
+        sort:
+          sort === "name" || sort === "likes" || sort === "recent"
+            ? sort
+            : "soon",
       }),
     [
       api,
@@ -183,15 +186,6 @@ export function Explore() {
           {mode === "preview" && <span className="muted">· 예시 데이터</span>}
         </p>
         <div className="result-options">
-          <select
-            aria-label="데이터 출처"
-            value={providerType}
-            onChange={(event) => setFilter("providerType", event.target.value)}
-          >
-            <option value="">모든 출처</option>
-            <option value="PUBLIC">공공데이터</option>
-            <option value="MEMBER">회원 제보</option>
-          </select>
           <label className="checkbox-label compact-checkbox">
             <span>종료 행사 제외</span>
             <input
@@ -206,11 +200,21 @@ export function Explore() {
             />
           </label>
           <select
+            aria-label="데이터 출처"
+            value={providerType}
+            onChange={(event) => setFilter("providerType", event.target.value)}
+          >
+            <option value="">모든 출처</option>
+            <option value="PUBLIC">공공데이터</option>
+            <option value="MEMBER">회원 제보</option>
+          </select>
+          <select
             aria-label="행사 정렬"
             value={sort}
             onChange={(event) => setFilter("sort", event.target.value)}
           >
             <option value="soon">시작일순</option>
+            <option value="recent">최근 등록순</option>
             <option value="likes">좋아요순</option>
             <option value="name">이름순</option>
           </select>
