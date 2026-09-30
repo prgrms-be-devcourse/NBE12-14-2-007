@@ -1393,6 +1393,85 @@ img.adm-avatar {
     padding: 16px;
   }
 }
+
+.adm-review-comments {
+  margin-top: 18px;
+  border-top: 1px solid #e4e9de;
+  padding-top: 14px;
+}
+.adm-review-comments h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.adm-dialog-title .adm-review-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 10px 0;
+  border-top: 1px solid #e4e9de;
+  border-bottom: 1px solid #e4e9de;
+  font-size: 13px;
+  font-weight: 700;
+  color: #243024;
+}
+.adm-dialog-title .adm-review-date {
+  flex: none;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6c7862;
+}
+.adm-review-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.adm-review-comment-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #eef1e8;
+  padding: 8px 0;
+}
+.adm-review-comment-body {
+  min-width: 0;
+}
+.adm-review-comment-list p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+.adm-review-comment-meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: #65745b;
+  font-size: 12px;
+}
+.adm-review-comment-meta strong {
+  color: #243024;
+  font-size: 13px;
+}
+.adm-review-comment-delete,
+.adm-review-comment-confirm button {
+  flex: none;
+  border: 1px solid #c4453c;
+  color: #c4453c;
+  background: transparent;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.adm-review-comment-confirm {
+  display: flex;
+  gap: 6px;
+}
+
 /* 관리자 로그인 */
 .adm-login {
   min-height: 100vh;
