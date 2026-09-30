@@ -115,26 +115,19 @@ export function safeUrl(value?: string | null): string | undefined {
     return undefined;
   }
 }
-// 공공 API가 주는 이미지는 원본(수 MB짜리 포스터)이라, 카드 썸네일 하나 보여주자고
-// 그 용량을 그대로 다운로드하면 느려진다. 무료 공개 리사이징 프록시(weserv.nl)를 거쳐
-// 화면에 필요한 폭으로 줄인 버전을 받는다. 로컬 정적 이미지(/images/...)는 이미 우리가
-// 크기를 관리하니 그대로 둔다.
-function resized(url: string, width: number) {
-  // url은 이미 URL.href를 거쳐 한글/공백이 퍼센트인코딩된 상태라, 여기서 또
-  // encodeURIComponent를 씌우면 %가 %25로 이중 인코딩된다. 그대로 붙인다.
-  const bare = url.replace(/^https?:\/\//, "");
-  return `https://images.weserv.nl/?url=${bare}&w=${width}&q=80`;
+// 화면은 이미 줄여서 R2에 올린 주소만 바로 받는다.
+// 공공 API 원본처럼 R2가 아닌 주소는 weserv.nl로 보내지 않는다. 그 사진은 호출하는 쪽에서 기본 이미지를 쓴다.
+function imageBase() {
+  const base = import.meta.env.VITE_IMAGE_BASE_URL;
+  if (!base) return "";
+  return base.endsWith("/") ? base.slice(0, -1) : base;
 }
-export function imageUrl(value?: string | null, width = 480) {
+export function imageUrl(value?: string | null) {
   if (!value) return undefined;
   if (value.startsWith("/images/") || value.startsWith("blob:")) return value;
-  // 백엔드가 이미 리사이즈해서 R2에 올린 이미지는 weserv.nl을 한 번 더 거칠 필요가 없다.
-  // 레거시 이미지(아직 이관 안 된 공공 API 원본 URL)는 아래 weserv.nl 경로로 계속 처리된다.
-  const r2Base = import.meta.env.VITE_IMAGE_BASE_URL;
+  const r2Base = imageBase();
   if (r2Base && value.startsWith(r2Base)) return value;
-  // 백엔드가 이미지 필드를 모두 완성된 URL로 내려주므로 key를 URL로 조립하지 않는다.
-  const resolved = safeUrl(value);
-  return resolved ? resized(resolved, width) : undefined;
+  return undefined;
 }
 export function errorText(error: unknown) {
   return error instanceof Error

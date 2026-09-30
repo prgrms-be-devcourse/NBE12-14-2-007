@@ -130,7 +130,7 @@ function EventDetail({ event }: { event: EventView }) {
   const unverified = inaccurateVoteCount >= INACCURATE_THUMBNAIL_THRESHOLD;
   const heroUrl = unverified
     ? FESTIVAL_UNVERIFIED_IMAGE
-    : (imageUrl(event.imgUrl, 1200) ?? FESTIVAL_DEFAULT_IMAGE);
+    : (imageUrl(event.imgUrl) ?? FESTIVAL_DEFAULT_IMAGE);
   const heroRef = useRef<HTMLImageElement>(null);
   const [heroVisible, setHeroVisible] = useState(true);
   // 리사이즈 프록시가 원본을 처음 받아 축소하는 동안(캐시 없을 때) 몇 초 걸릴 수 있어서,
@@ -469,7 +469,7 @@ function EventDetail({ event }: { event: EventView }) {
 }
 
 function SubmitterProfile({ member }: { member: FestivalMember }) {
-  const avatarUrl = imageUrl(member.profileImg, 120);
+  const avatarUrl = imageUrl(member.profileImg);
   const [avatarVisible, setAvatarVisible] = useState(Boolean(avatarUrl));
 
   return (
