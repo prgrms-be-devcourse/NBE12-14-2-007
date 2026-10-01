@@ -164,6 +164,7 @@ public class FestivalSubmissionService {
                 ));
 
         submission.delete();
+        submission.getFestival().delete();
     }
 
     private void validateNotDuplicate(
@@ -173,26 +174,17 @@ public class FestivalSubmissionService {
             FestivalRegion region,
             String referenceUrl
     ) {
-        boolean duplicated;
-
-        if (currentFestivalId == null) {
-            duplicated =
-                    festivalRepository.existsByBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
-                            beginDe,
-                            endDe,
-                            region,
-                            referenceUrl
-                    );
-        } else {
-            duplicated =
-                    festivalRepository.existsByIdNotAndBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
-                            currentFestivalId,
-                            beginDe,
-                            endDe,
-                            region,
-                            referenceUrl
-                    );
-        }
+        // 화면에서 입력하는 날짜 기준으로 비교한다. 기존 데이터의 시각이 달라도 차단한다.
+        // 같은 조건의 동시 요청도 검사와 저장을 순서대로 처리하도록 트랜잭션 잠금을 건다.
+        long lockKey = java.util.Objects.hash(beginDe.toLocalDate(), endDe.toLocalDate(), region.name(), referenceUrl);
+        festivalRepository.lockSubmissionDuplicateKey(lockKey);
+        boolean duplicated = festivalRepository.existsSubmissionDuplicate(
+                currentFestivalId,
+                beginDe.toLocalDate().atStartOfDay(),
+                beginDe.toLocalDate().plusDays(1).atStartOfDay(),
+                endDe.toLocalDate().atStartOfDay(),
+                endDe.toLocalDate().plusDays(1).atStartOfDay(),
+                region.name(), referenceUrl);
 
         if (duplicated) {
             throw new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
