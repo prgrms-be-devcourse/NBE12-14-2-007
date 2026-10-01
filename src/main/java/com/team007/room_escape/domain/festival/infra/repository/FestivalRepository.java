@@ -19,6 +19,30 @@ import java.util.Optional;
 
 public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
+    // PostgreSQL 트랜잭션 종료 시 자동 해제. 같은 중복 조건의 등록/수정을 직렬화한다.
+    @Query(value = "SELECT count(*) FROM pg_advisory_xact_lock(:key)", nativeQuery = true)
+    long lockSubmissionDuplicateKey(@Param("key") long key);
+
+    @Query(value = """
+        SELECT EXISTS (
+        SELECT 1 FROM festival f
+        WHERE f.deleted_at IS NULL
+          AND (CAST(:currentId AS bigint) IS NULL OR f.id <> :currentId)
+          AND f.begin_de >= :beginStart AND f.begin_de < :beginEnd
+          AND f.end_de >= :endStart AND f.end_de < :endEnd
+          AND f.region = :region
+          AND rtrim(trim(f.url), '/') = :url
+        )
+        """, nativeQuery = true)
+    boolean existsSubmissionDuplicate(
+            @Param("currentId") Long currentId,
+            @Param("beginStart") LocalDateTime beginStart,
+            @Param("beginEnd") LocalDateTime beginEnd,
+            @Param("endStart") LocalDateTime endStart,
+            @Param("endEnd") LocalDateTime endEnd,
+            @Param("region") String region,
+            @Param("url") String url);
+
 /** 저장 건수 조회 메서드 **/
 	long countByProviderType(ProviderType providerType);
 
