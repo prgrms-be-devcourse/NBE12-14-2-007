@@ -7,7 +7,6 @@ import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.like.infra.dto.FestivalLikeCount;
-import com.team007.room_escape.domain.like.infra.dto.PostLikeCount;
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
@@ -32,8 +31,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 /**
- * 좋아요순 정렬 쿼리를 실제 PostgreSQL 에서 검증한다.
- * 집계 서브쿼리 JOIN, 동점 처리, 페이징은 DB 가 해야 의미가 있어서 목(mock)으로는 확인할 수 없다.
+ * 좋아요순 정렬 쿼리와 후기 좋아요 수(post.like_count) 갱신을 실제 PostgreSQL 에서 검증한다.
+ * 정렬, 동점 처리, 페이징, UPDATE 쿼리는 DB 가 해야 의미가 있어서 목(mock)으로는 확인할 수 없다.
  *
  * 로컬 DB(.env)에 붙고, 테스트마다 트랜잭션이 롤백돼 데이터가 남지 않는다.
  * 로컬 DB에 다른 데이터가 있어도 섞이지 않게, 테스트마다 고유 토큰을 제목에 넣고 그 토큰으로 검색한다.
@@ -139,6 +138,29 @@ class LikeSortRepositoryTest {
 		}
 
 		@Test
+		@DisplayName("검색어 없는 전체 목록은 좋아요 많은 후기가 앞에 오고, 삭제된 후기는 전체 개수에서 빠진다")
+		void listsAllPostsWithoutKeyword() {
+			// 로컬 DB에 다른 후기가 있어도 되도록, 좋아요 수를 크게 줘서 맨 앞에 오게 하고 개수는 증감으로 본다
+			Post top = post("top");
+			Post deleted = post("deleted");
+			em.flush();
+			// 좋아요 행 없이 정렬만 확인하려고 수만 올린다
+			em.createNativeQuery("UPDATE post SET like_count = 1000000000 WHERE id = :id")
+					.setParameter("id", top.getId())
+					.executeUpdate();
+			long before = postRepository.findAllOrderByLikeCount(PageRequest.of(0, 1)).getTotalElements();
+
+			deleted.delete();
+			flushAndClear();
+			Page<Post> page = postRepository.findAllOrderByLikeCount(PageRequest.of(0, 1));
+
+			assertThat(titles(page)).containsExactly(title("top"));
+			assertThat(page.getTotalElements()).isEqualTo(before - 1);
+			assertThat(page.getTotalElements())
+					.isEqualTo(postRepository.findAllNotDeleted(PageRequest.of(0, 1)).getTotalElements());
+		}
+
+		@Test
 		@DisplayName("페이지를 넘겨도 중복·누락 없이 전체 순서가 이어진다")
 		void keepsOrderAcrossPageBoundaries() {
 			// 동점(2개)이 페이지 경계에 걸치도록 구성
@@ -175,29 +197,15 @@ class LikeSortRepositoryTest {
 			likePost(others, 3);
 			flushAndClear();
 
-			Page<Post> page = postRepository.findAllOrderByLikeCount(
-					true, festival.getId(), false, null, null, PageRequest.of(0, 10));
+			Page<Post> page = postRepository.findAllByFestivalIdOrderByLikeCount(
+					festival.getId(), PageRequest.of(0, 10));
 
 			assertThat(titles(page)).containsExactly(title("mine"));
 			assertThat(page.getTotalElements()).isEqualTo(1);
 		}
 
-		@Test
-		@DisplayName("행사에 누른 좋아요는 후기 좋아요 수에 섞이지 않는다")
-		void ignoresFestivalLikes() {
-			Post post = post("post");
-			likePost(post, 1);
-			likeFestival(festival, 4);
-			flushAndClear();
-
-			Map<UUID, Long> counts = likeRepository.countByPostIds(List.of(post.getId())).stream()
-					.collect(Collectors.toMap(PostLikeCount::postId, PostLikeCount::likeCount));
-
-			assertThat(counts).containsExactly(Map.entry(post.getId(), 1L));
-		}
-
 		private Page<Post> searchByToken(PageRequest pageable) {
-			return postRepository.findAllOrderByLikeCount(false, null, true, "TITLE", token, pageable);
+			return postRepository.searchPostsOrderByLikeCount("TITLE", token, pageable);
 		}
 
 		private Post post(String name) {
@@ -207,6 +215,62 @@ class LikeSortRepositoryTest {
 					.title(title(name))
 					.content("content")
 					.build());
+		}
+	}
+
+	@Nested
+	@DisplayName("후기 좋아요 수 (post.like_count)")
+	class PostLikeCountUpdate {
+
+		private Post post;
+
+		@BeforeEach
+		void setUp() {
+			Festival festival = festival("좋아요 수 행사", BASE_TIME, FestivalRegion.values()[0]);
+			post = persist(Post.builder()
+					.member(likers.getFirst()).festival(festival)
+					.title(title("post")).content("c").build());
+			em.flush();
+		}
+
+		@Test
+		@DisplayName("증가·감소가 DB에 바로 반영되고 0 아래로는 내려가지 않는다")
+		void increasesAndDecreasesWithoutGoingNegative() {
+			postRepository.increaseLikeCount(post.getId());
+			postRepository.increaseLikeCount(post.getId());
+			postRepository.decreaseLikeCount(post.getId());
+
+			assertThat(postRepository.findLikeCountById(post.getId())).contains(1L);
+
+			postRepository.decreaseLikeCount(post.getId());
+			int updated = postRepository.decreaseLikeCount(post.getId());
+
+			assertThat(updated).isZero();
+			assertThat(postRepository.findLikeCountById(post.getId())).contains(0L);
+		}
+
+		@Test
+		@DisplayName("후기를 수정·삭제해 저장해도 그 사이 늘어난 좋아요 수를 덮어쓰지 않는다")
+		void entitySaveDoesNotOverwriteLikeCount() {
+			// post 엔티티는 like_count = 0 으로 읽힌 상태에서, 다른 요청이 좋아요를 누른 상황
+			postRepository.increaseLikeCount(post.getId());
+			postRepository.increaseLikeCount(post.getId());
+
+			post.update("수정한 제목", "c", null);
+			post.delete();
+			em.flush();
+
+			assertThat(postRepository.findLikeCountById(post.getId())).contains(2L);
+		}
+
+		@Test
+		@DisplayName("행사에 누른 좋아요는 후기 좋아요 수에 섞이지 않는다")
+		void ignoresFestivalLikes() {
+			likePost(post, 1);
+			likeFestival(post.getFestival(), 4);
+			flushAndClear();
+
+			assertThat(postRepository.findLikeCountById(post.getId())).contains(1L);
 		}
 	}
 
@@ -297,9 +361,11 @@ class LikeSortRepositoryTest {
 				.build());
 	}
 
+	/** LikeService 와 같은 순서로 좋아요를 저장하고 post.like_count 를 올린다. */
 	private void likePost(Post post, int count) {
 		for (int i = 0; i < count; i++) {
 			persist(Like.builder().post(post).member(likers.get(i)).build());
+			postRepository.increaseLikeCount(post.getId());
 		}
 	}
 

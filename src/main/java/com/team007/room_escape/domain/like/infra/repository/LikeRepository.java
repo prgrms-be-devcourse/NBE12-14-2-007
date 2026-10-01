@@ -1,7 +1,6 @@
 package com.team007.room_escape.domain.like.infra.repository;
 
 import com.team007.room_escape.domain.like.infra.dto.FestivalLikeCount;
-import com.team007.room_escape.domain.like.infra.dto.PostLikeCount;
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,19 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface LikeRepository extends JpaRepository<Like, Long> {
-    /** 후기 */
-    Long countByPostId(UUID postId);
+    /** 후기. 좋아요 수는 post.like_count 에 있다. (PostRepository.findLikeCountById) */
     boolean existsByPostIdAndMemberId(UUID postId, UUID memberId);
     Optional<Like> findByPostIdAndMemberId(UUID postId, UUID memberId);
-
-    /** 목록 한 페이지에 담긴 후기들의 좋아요 수를 한 번에 센다. 좋아요가 없는 후기는 결과에 없다. */
-    @Query("""
-        SELECT new com.team007.room_escape.domain.like.infra.dto.PostLikeCount(l.post.id, COUNT(l))
-        FROM Like l
-        WHERE l.post.id IN :postIds
-        GROUP BY l.post.id
-        """)
-    List<PostLikeCount> countByPostIds(@Param("postIds") Collection<UUID> postIds);
 
     /** 행사 */
     Long countByFestivalId(Long festivalId);

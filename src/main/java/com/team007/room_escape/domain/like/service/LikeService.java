@@ -49,21 +49,17 @@ public class LikeService {
 				.build();
 
 		likeRepository.save(like);
+		postRepository.increaseLikeCount(postId);
 
-		Long likeCount = likeRepository.countByPostId(postId);
-
-		return new LikeResponse(likeCount);
+		return new LikeResponse(getPostLikeCount(postId));
 	}
 
 
 	@Transactional(readOnly = true)
 	public Long getPostLikeCount(UUID postId) {
 
-		if(!postRepository.existsById(postId)) {
-			throw new BusinessException(PostExceptionCode.POST_NOT_FOUND);
-		}
-
-		return likeRepository.countByPostId(postId);
+		return postRepository.findLikeCountById(postId)
+				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 	}
 
 	@Transactional
@@ -77,10 +73,9 @@ public class LikeService {
 				.orElseThrow(() -> new BusinessException(LikeExceptionCode.LIKE_NOT_FOUND));
 
 		likeRepository.delete(like);
+		postRepository.decreaseLikeCount(postId);
 
-		Long likeCount = likeRepository.countByPostId(postId);
-
-		return new LikeResponse(likeCount);
+		return new LikeResponse(getPostLikeCount(postId));
 	}
 
 	/** 행사 */
