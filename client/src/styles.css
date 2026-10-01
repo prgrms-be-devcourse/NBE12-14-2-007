@@ -6193,3 +6193,119 @@ textarea::placeholder {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* 후기 작성: 다녀온 행사 고르기 */
+.festival-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.festival-picker-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.festival-picker-input > svg {
+  position: absolute;
+  left: 13px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.field .festival-picker-input input {
+  padding-left: 38px;
+  padding-right: 38px;
+}
+.festival-picker-clear {
+  position: absolute;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sage);
+  color: var(--muted);
+  cursor: pointer;
+}
+.festival-picker-message {
+  margin: 0;
+  padding: 12px 2px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.festival-picker-results {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.festival-picker-results button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+.festival-picker-results button:hover,
+.festival-picker-results button:focus-visible {
+  background: var(--sage);
+  outline: none;
+}
+.festival-picker-selected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #deb18d;
+  border-radius: 8px;
+  background: var(--cream);
+}
+.festival-picker-thumb,
+.festival-picker-thumb.photo-fallback {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  min-height: 0;
+  gap: 0;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.festival-picker-thumb.photo-fallback > span {
+  display: none;
+}
+.festival-picker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.festival-picker-info strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.festival-picker-info small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.festival-picker-thumb.photo-fallback svg {
+  width: 22px;
+  height: 22px;
+}
