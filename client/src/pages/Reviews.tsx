@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   Link,
   useLocation,
@@ -18,13 +18,14 @@ import {
 import { ApiError } from "../lib/api";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
+import { FestivalPicker } from "../components/FestivalPicker";
 import { isRichTextEmpty, RichTextContent } from "../components/RichText";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { ReportableName, ReportButton } from "../components/ReportButton";
 import { useApp, useLoad } from "../lib/context";
 import { readDemo } from "../lib/demo";
 import { dateText, dateTimeText, errorText } from "../lib/format";
-import type { Comment, PostDetail } from "../lib/types";
+import type { Comment, EventView, PostDetail } from "../lib/types";
 import {
   Badge,
   Empty,
@@ -96,11 +97,15 @@ export function FestivalPosts({ festivalId }: { festivalId?: number }) {
             <option value="createdAt,asc">오래된순</option>
           </select>
           <Link
-            to={festivalId ? `/reviews/new?festival=${festivalId}` : "/explore"}
+            to={
+              festivalId
+                ? `/reviews/new?festival=${festivalId}`
+                : "/reviews/new"
+            }
             className="btn primary small"
           >
             <Pencil size={15} />
-            {festivalId ? "후기 쓰기" : "후기 쓸 행사 찾기"}
+            후기 쓰기
           </Link>
         </div>
       </div>
@@ -587,21 +592,12 @@ export function ReviewFormPage() {
         <LoginRequired />
       ) : postId ? (
         <LoadReviewEdit id={postId} />
-      ) : Number.isInteger(festivalId) && festivalId > 0 ? (
-        <ReviewForm festivalId={festivalId} />
       ) : (
-        <Empty
-          title="후기를 남길 행사를 찾아주세요"
-          description="행사 상세의 후기 탭에서 다녀온 이야기를 남길 수 있어요."
-          action={
-            <div className="action-row">
-              <Link className="btn primary" to="/explore">
-                지역 문화행사 보기
-              </Link>
-              <Link className="btn secondary" to="/explore?providerType=MEMBER">
-                제보된 행사 보기
-              </Link>
-            </div>
+        <ReviewForm
+          initialFestivalId={
+            Number.isInteger(festivalId) && festivalId > 0
+              ? festivalId
+              : undefined
           }
         />
       )}
@@ -621,18 +617,35 @@ function LoadReviewEdit({ id }: { id: string }) {
   ) : data?.member.id !== member?.id ? (
     <Empty title="내가 작성한 후기만 수정할 수 있어요" />
   ) : data ? (
-    <ReviewForm festivalId={data.festivalId} existing={data} />
+    <ReviewForm existing={data} />
   ) : null;
 }
 function ReviewForm({
-  festivalId,
+  initialFestivalId,
   existing,
 }: {
-  festivalId: number;
+  /** 행사 상세나 행사별 후기 목록에서 들어오면 그 행사를 미리 골라 둔다. */
+  initialFestivalId?: number;
   existing?: PostDetail;
 }) {
   const { api, mode, toast } = useApp();
   const navigate = useNavigate();
+  const [festival, setFestival] = useState<EventView | null>(null);
+  useEffect(() => {
+    if (existing || !initialFestivalId) return;
+    let current = true;
+    api
+      .event(initialFestivalId)
+      .then((event) => {
+        if (current) setFestival(event);
+      })
+      // 못 불러오면 검색 칸이 그대로 보이므로 사용자가 직접 고르면 된다.
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [api, existing, initialFestivalId]);
+  const festivalId = existing?.festivalId ?? festival?.festivalId;
   const [title, setTitle] = useState(existing?.title || "");
   const [content, setContent] = useState(existing?.content || "");
   const [thumbnail, setThumbnail] = useState(existing?.thumbnail || "");
@@ -640,6 +653,10 @@ function ReviewForm({
   const [error, setError] = useState("");
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!festivalId) {
+      setError("후기를 남길 행사를 먼저 선택해 주세요.");
+      return;
+    }
     if (title.trim().length < 2 || isRichTextEmpty(content)) {
       setError("제목은 2자 이상, 내용을 함께 입력해 주세요.");
       return;
@@ -677,6 +694,22 @@ function ReviewForm({
   return (
     <form className="editor-form" onSubmit={submit}>
       <div className="form-section">
+        {!existing && (
+          // Field는 label로 감싸서 안에 버튼이 여러 개 있으면 클릭이 엉뚱한 버튼으로 간다.
+          <div className="field">
+            <span>
+              다녀온 행사
+              <b className="required">*</b>
+            </span>
+            <FestivalPicker
+              value={festival}
+              onChange={(next) => {
+                setFestival(next);
+                setError("");
+              }}
+            />
+          </div>
+        )}
         <Field label="후기 제목" required hint={`${title.length} / 30자`}>
           <input
             required
@@ -706,7 +739,9 @@ function ReviewForm({
           to={
             existing
               ? `/reviews/${existing.id}`
-              : `/reviews?festival=${festivalId}`
+              : festivalId
+                ? `/reviews?festival=${festivalId}`
+                : "/reviews"
           }
         >
           취소
