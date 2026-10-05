@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateOrUpdateFestivalSubmissionRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest;
 import com.team007.room_escape.domain.festival.infra.entity.*;
 import com.team007.room_escape.domain.festival.infra.repository.*;
 import com.team007.room_escape.domain.member.service.MemberReader;
@@ -28,8 +28,8 @@ class FestivalSubmissionServiceTest {
     private final LocalDateTime begin = LocalDateTime.of(2026, 10, 2, 10, 30);
     private final LocalDateTime end = LocalDateTime.of(2026, 10, 3, 18, 0);
 
-    private CreateOrUpdateFestivalSubmissionRequest request() {
-        return CreateOrUpdateFestivalSubmissionRequest.builder()
+    private FestivalSubmissionRequest.Upsert request() {
+        return FestivalSubmissionRequest.Upsert.builder()
                 .title("행사").category("축제").region(FestivalRegion.GYEONGGI)
                 .referenceUrl(" https://example.com/event/// ")
                 .beginDe(begin).endDe(end).build();
