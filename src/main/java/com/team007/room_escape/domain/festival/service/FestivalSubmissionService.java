@@ -27,200 +27,200 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FestivalSubmissionService {
 
-    private static final String DUPLICATE_CONSTRAINT_NAME =
-            "uk_member_festival_schedule_region_url";
+	private static final String DUPLICATE_CONSTRAINT_NAME =
+			"uk_member_festival_schedule_region_url";
 
-    private final FestivalRepository festivalRepository;
-    private final FestivalSubmissionRepository festivalSubmissionRepository;
-    private final MemberReader memberReader;
-    private final RichTextSanitizer richTextSanitizer;
+	private final FestivalRepository festivalRepository;
+	private final FestivalSubmissionRepository festivalSubmissionRepository;
+	private final MemberReader memberReader;
+	private final RichTextSanitizer richTextSanitizer;
 
-    @Transactional
-    public FestivalSubmissionResponse.Create create(UUID memberId, FestivalSubmissionRequest.Upsert request) {
-        Member member = memberReader.getUnrestrictedMember(memberId);
+	@Transactional
+	public FestivalSubmissionResponse.Create create(UUID memberId, FestivalSubmissionRequest.Upsert request) {
+		Member member = memberReader.getUnrestrictedMember(memberId);
 
-        String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
+		String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
 
-        validateNotDuplicate(
-                null,
-                request.beginDe(),
-                request.endDe(),
-                request.region(),
-                normalizedReferenceUrl
-        );
+		validateNotDuplicate(
+				null,
+				request.beginDe(),
+				request.endDe(),
+				request.region(),
+				normalizedReferenceUrl
+		);
 
-        Festival festival = Festival.builder()
-                .member(member)
-                .providerType(ProviderType.MEMBER)
-                .instNm(request.instNm())
-                .title(request.title())
-                .category(request.category())
-                .content(richTextSanitizer.sanitize(request.festivalContent()))
-                .url(normalizedReferenceUrl)
-                .region(request.region())
-                .regionDetail(request.regionDetail())
-                .imgUrl(request.imgUrl())
-                .beginDe(request.beginDe())
-                .endDe(request.endDe())
-                .eventTmInfo(request.eventTmInfo())
-                .partcptExpnInfo(request.partcptExpnInfo())
-                .telnoInfo(request.telnoInfo())
-                .hostInstNm(request.hostInstNm())
-                .writngDe(LocalDateTime.now())
-                .status(FestivalStatus.from(request.endDe()))
-                .build();
+		Festival festival = Festival.builder()
+				.member(member)
+				.providerType(ProviderType.MEMBER)
+				.instNm(request.instNm())
+				.title(request.title())
+				.category(request.category())
+				.content(richTextSanitizer.sanitize(request.festivalContent()))
+				.url(normalizedReferenceUrl)
+				.region(request.region())
+				.regionDetail(request.regionDetail())
+				.imgUrl(request.imgUrl())
+				.beginDe(request.beginDe())
+				.endDe(request.endDe())
+				.eventTmInfo(request.eventTmInfo())
+				.partcptExpnInfo(request.partcptExpnInfo())
+				.telnoInfo(request.telnoInfo())
+				.hostInstNm(request.hostInstNm())
+				.writngDe(LocalDateTime.now())
+				.status(FestivalStatus.from(request.endDe()))
+				.build();
 
-        Festival savedFestival = saveFestival(festival);
+		Festival savedFestival = saveFestival(festival);
 
-        FestivalSubmission festivalSubmission = FestivalSubmission.builder()
-                .festival(savedFestival)
-                .build();
+		FestivalSubmission festivalSubmission = FestivalSubmission.builder()
+				.festival(savedFestival)
+				.build();
 
-        FestivalSubmission savedFestivalSubmission =
-                festivalSubmissionRepository.save(festivalSubmission);
+		FestivalSubmission savedFestivalSubmission =
+				festivalSubmissionRepository.save(festivalSubmission);
 
-        return FestivalSubmissionResponse.Create.from(savedFestival, savedFestivalSubmission);
-    }
+		return FestivalSubmissionResponse.Create.from(savedFestival, savedFestivalSubmission);
+	}
 
-    @Transactional(readOnly = true)
-    public List<FestivalSubmissionResponse.ListItem> findAllByMemberId(UUID memberId) {
-        return festivalSubmissionRepository
-                .findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc
-                        (memberId, ProviderType.MEMBER)
-                .stream()
-                .map(FestivalSubmissionResponse.ListItem::from)
-                .toList();
-    }
+	@Transactional(readOnly = true)
+	public List<FestivalSubmissionResponse.ListItem> findAllByMemberId(UUID memberId) {
+		return festivalSubmissionRepository
+				.findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc
+						(memberId, ProviderType.MEMBER)
+				.stream()
+				.map(FestivalSubmissionResponse.ListItem::from)
+				.toList();
+	}
 
-    @Transactional(readOnly = true)
-    public FestivalSubmissionResponse.Detail findById(
-            UUID memberId,
-            UUID submissionId
-    ) {
-        FestivalSubmission festivalSubmission =
-                festivalSubmissionRepository
-                        .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
-                        .orElseThrow(() -> new BusinessException(
-                                FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
-                        ));
+	@Transactional(readOnly = true)
+	public FestivalSubmissionResponse.Detail findById(
+			UUID memberId,
+			UUID submissionId
+	) {
+		FestivalSubmission festivalSubmission =
+				festivalSubmissionRepository
+						.findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+						.orElseThrow(() -> new BusinessException(
+								FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+						));
 
-        return FestivalSubmissionResponse.Detail.from(festivalSubmission);
-    }
+		return FestivalSubmissionResponse.Detail.from(festivalSubmission);
+	}
 
-    @Transactional
-    public FestivalSubmissionResponse.Detail update(
-            UUID memberId,
-            UUID submissionId,
-            FestivalSubmissionRequest.Upsert request
-    ) {
-        memberReader.getUnrestrictedMember(memberId);
+	@Transactional
+	public FestivalSubmissionResponse.Detail update(
+			UUID memberId,
+			UUID submissionId,
+			FestivalSubmissionRequest.Upsert request
+	) {
+		memberReader.getUnrestrictedMember(memberId);
 
-        FestivalSubmission submission = festivalSubmissionRepository
-                .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
-                .orElseThrow(() -> new BusinessException(
-                        FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
-                ));
+		FestivalSubmission submission = festivalSubmissionRepository
+				.findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+				.orElseThrow(() -> new BusinessException(
+						FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+				));
 
-        Festival festival = submission.getFestival();
-        String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
+		Festival festival = submission.getFestival();
+		String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
 
-        validateNotDuplicate(
-                festival.getId(),
-                request.beginDe(),
-                request.endDe(),
-                request.region(),
-                normalizedReferenceUrl
-        );
+		validateNotDuplicate(
+				festival.getId(),
+				request.beginDe(),
+				request.endDe(),
+				request.region(),
+				normalizedReferenceUrl
+		);
 
-        festival.updateDetails(
-                request.instNm(),
-                request.title(),
-                request.category(),
-                richTextSanitizer.sanitize(request.festivalContent()),
-                normalizedReferenceUrl,
-                request.region(),
-                request.regionDetail(),
-                request.imgUrl(),
-                request.beginDe(),
-                request.endDe(),
-                request.eventTmInfo(),
-                request.partcptExpnInfo(),
-                request.telnoInfo(),
-                request.hostInstNm()
-        );
-        flushFestivalChanges();
+		festival.updateDetails(
+				request.instNm(),
+				request.title(),
+				request.category(),
+				richTextSanitizer.sanitize(request.festivalContent()),
+				normalizedReferenceUrl,
+				request.region(),
+				request.regionDetail(),
+				request.imgUrl(),
+				request.beginDe(),
+				request.endDe(),
+				request.eventTmInfo(),
+				request.partcptExpnInfo(),
+				request.telnoInfo(),
+				request.hostInstNm()
+		);
+		flushFestivalChanges();
 
-        return FestivalSubmissionResponse.Detail.from(submission);
-    }
+		return FestivalSubmissionResponse.Detail.from(submission);
+	}
 
-    @Transactional
-    public void delete(UUID memberId, UUID submissionId) {
-        FestivalSubmission submission = festivalSubmissionRepository
-                .findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
-                .orElseThrow(() -> new BusinessException(
-                        FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
-                ));
+	@Transactional
+	public void delete(UUID memberId, UUID submissionId) {
+		FestivalSubmission submission = festivalSubmissionRepository
+				.findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+				.orElseThrow(() -> new BusinessException(
+						FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
+				));
 
-        submission.delete();
-        submission.getFestival().delete();
-    }
+		submission.delete();
+		submission.getFestival().delete();
+	}
 
-    private void validateNotDuplicate(
-            Long currentFestivalId,
-            LocalDateTime beginDe,
-            LocalDateTime endDe,
-            FestivalRegion region,
-            String referenceUrl
-    ) {
-        // 날짜 기준으로 비교하고, 같은 조건의 동시 요청은 잠금으로 순서대로 처리한다.
-        long lockKey = java.util.Objects.hash(beginDe.toLocalDate(), endDe.toLocalDate(), region.name(), referenceUrl);
-        festivalRepository.lockSubmissionDuplicateKey(lockKey);
-        boolean duplicated = festivalRepository.existsSubmissionDuplicate(
-                currentFestivalId,
-                beginDe.toLocalDate().atStartOfDay(),
-                beginDe.toLocalDate().plusDays(1).atStartOfDay(),
-                endDe.toLocalDate().atStartOfDay(),
-                endDe.toLocalDate().plusDays(1).atStartOfDay(),
-                region.name(), referenceUrl);
+	private void validateNotDuplicate(
+			Long currentFestivalId,
+			LocalDateTime beginDe,
+			LocalDateTime endDe,
+			FestivalRegion region,
+			String referenceUrl
+	) {
+		// 날짜 기준으로 비교하고, 같은 조건의 동시 요청은 잠금으로 순서대로 처리한다.
+		long lockKey = java.util.Objects.hash(beginDe.toLocalDate(), endDe.toLocalDate(), region.name(), referenceUrl);
+		festivalRepository.lockSubmissionDuplicateKey(lockKey);
+		boolean duplicated = festivalRepository.existsSubmissionDuplicate(
+				currentFestivalId,
+				beginDe.toLocalDate().atStartOfDay(),
+				beginDe.toLocalDate().plusDays(1).atStartOfDay(),
+				endDe.toLocalDate().atStartOfDay(),
+				endDe.toLocalDate().plusDays(1).atStartOfDay(),
+				region.name(), referenceUrl);
 
-        if (duplicated) {
-            throw new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
-        }
-    }
+		if (duplicated) {
+			throw new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
+		}
+	}
 
-    private String normalizeReferenceUrl(String referenceUrl) {
-        return referenceUrl
-                .trim()
-                .replaceFirst("/+$", "");
-    }
+	private String normalizeReferenceUrl(String referenceUrl) {
+		return referenceUrl
+				.trim()
+				.replaceFirst("/+$", "");
+	}
 
-    private Festival saveFestival(Festival festival) {
-        try {
-            return festivalRepository.saveAndFlush(festival);
-        } catch (DataIntegrityViolationException exception) {
-            throw translateDuplicateConstraint(exception);
-        }
-    }
+	private Festival saveFestival(Festival festival) {
+		try {
+			return festivalRepository.saveAndFlush(festival);
+		} catch (DataIntegrityViolationException exception) {
+			throw translateDuplicateConstraint(exception);
+		}
+	}
 
-    private void flushFestivalChanges() {
-        try {
-            festivalRepository.flush();
-        } catch (DataIntegrityViolationException exception) {
-            throw translateDuplicateConstraint(exception);
-        }
-    }
+	private void flushFestivalChanges() {
+		try {
+			festivalRepository.flush();
+		} catch (DataIntegrityViolationException exception) {
+			throw translateDuplicateConstraint(exception);
+		}
+	}
 
-    private RuntimeException translateDuplicateConstraint(DataIntegrityViolationException exception) {
-        Throwable cause = exception;
+	private RuntimeException translateDuplicateConstraint(DataIntegrityViolationException exception) {
+		Throwable cause = exception;
 
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException constraintException
-                    && DUPLICATE_CONSTRAINT_NAME.equals(constraintException.getConstraintName())) {
-                return new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
-            }
-            cause = cause.getCause();
-        }
+		while (cause != null) {
+			if (cause instanceof ConstraintViolationException constraintException
+					&& DUPLICATE_CONSTRAINT_NAME.equals(constraintException.getConstraintName())) {
+				return new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
+			}
+			cause = cause.getCause();
+		}
 
-        return exception;
-    }
+		return exception;
+	}
 }

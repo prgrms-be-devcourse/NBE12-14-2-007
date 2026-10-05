@@ -23,41 +23,41 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class FestivalAccuracyVoteController {
 
-    private final FestivalAccuracyVoteService accuracyVoteService;
+	private final FestivalAccuracyVoteService accuracyVoteService;
 
-    @PutMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "행사 정보 정확도 평가",
-            description = "사용자 등록 행사에 정확해요 또는 정보가 달라요 평가를 등록하거나 변경합니다."
-    )
-    public ResponseEntity<ApiResponse<FestivalAccuracyVoteResponse.Info>> vote(
-            @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable Long festivalId,
-            @Valid @RequestBody FestivalAccuracyVoteRequest.Upsert request
-    ) {
-        FestivalAccuracyVoteResponse.Info response = accuracyVoteService.vote(
-                principal.getId(),
-                festivalId,
-                request
-        );
+	@PutMapping("/me")
+	@PreAuthorize("isAuthenticated()")
+	@Operation(summary = "행사 정보 정확도 평가",
+			description = "사용자 등록 행사에 정확해요 또는 정보가 달라요 평가를 등록하거나 변경합니다."
+	)
+	public ResponseEntity<ApiResponse<FestivalAccuracyVoteResponse.Info>> vote(
+			@AuthenticationPrincipal CustomUserDetails principal,
+			@PathVariable Long festivalId,
+			@Valid @RequestBody FestivalAccuracyVoteRequest.Upsert request
+	) {
+		FestivalAccuracyVoteResponse.Info response = accuracyVoteService.vote(
+				principal.getId(),
+				festivalId,
+				request
+		);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 
-    @DeleteMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "행사 정보 정확도 평가 취소",
-            description = "로그인한 사용자의 행사 정보 정확도 평가를 취소합니다."
-    )
-    public ResponseEntity<ApiResponse<FestivalAccuracyVoteResponse.Info>> cancelVote(
-            @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable Long festivalId
-    ) {
-        FestivalAccuracyVoteResponse.Info response = accuracyVoteService.cancelVote(
-                principal.getId(),
-                festivalId
-        );
+	@DeleteMapping("/me")
+	@PreAuthorize("isAuthenticated()")
+	@Operation(summary = "행사 정보 정확도 평가 취소",
+			description = "로그인한 사용자의 행사 정보 정확도 평가를 취소합니다."
+	)
+	public ResponseEntity<ApiResponse<FestivalAccuracyVoteResponse.Info>> cancelVote(
+			@AuthenticationPrincipal CustomUserDetails principal,
+			@PathVariable Long festivalId
+	) {
+		FestivalAccuracyVoteResponse.Info response = accuracyVoteService.cancelVote(
+				principal.getId(),
+				festivalId
+		);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 }
