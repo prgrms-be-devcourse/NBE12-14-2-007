@@ -75,11 +75,11 @@ public class AdminFestivalController {
 	@Operation(summary = "[ADMIN] 행사 수정", description = "보낸 값으로 행사 정보를 전부 덮어쓴다.")
 	@PatchMapping("/{festivalId}")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> update(
+	public ResponseEntity<ApiResponse<FestivalResponse.Detail>> update(
 		@PathVariable("festivalId") Long festivalId,
 		@Valid @RequestBody AdminFestivalRequest.Update request
 	) {
-		FestivalResponse.DetailResponse response =
+		FestivalResponse.Detail response =
 			adminFestivalService.update(festivalId, request);
 
 		return ResponseEntity.ok(ApiResponse.success(response));

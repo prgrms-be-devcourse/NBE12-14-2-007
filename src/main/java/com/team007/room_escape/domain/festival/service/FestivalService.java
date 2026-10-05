@@ -117,7 +117,7 @@ public class FestivalService {
 
 	/** 검색어와 선택 필터로 공공행사와 사용자 등록 행사를 통합 검색한다. */
 	@Transactional(readOnly = true)
-	public Page<FestivalResponse.ListResponse> searchFestivals(
+	public Page<FestivalResponse.ListItem> searchFestivals(
 			FestivalSearchRequest request,
 			Pageable pageable
 	) {
@@ -133,7 +133,7 @@ public class FestivalService {
 				: request.date().plusDays(1).atStartOfDay();
 
 		if (LikeSort.isRequested(pageable)) {
-			return toListResponses(festivalRepository.searchFestivalsOrderByLikeCount(
+			return toListItems(festivalRepository.searchFestivalsOrderByLikeCount(
 					keyword != null,
 					keyword,
 
@@ -157,7 +157,7 @@ public class FestivalService {
 
 		/** 정렬을 지정하지 않으면 오늘 기준으로 가장 가깝게 시작하는 행사부터 보여준다. */
 		if (pageable.getSort().isUnsorted()) {
-			return toListResponses(festivalRepository.searchFestivalsOrderByNearestStart(
+			return toListItems(festivalRepository.searchFestivalsOrderByNearestStart(
 					keyword != null,
 					keyword,
 
@@ -181,7 +181,7 @@ public class FestivalService {
 			));
 		}
 
-		return toListResponses(festivalRepository.searchFestivals(
+		return toListItems(festivalRepository.searchFestivals(
 				keyword != null,
 				keyword,
 
@@ -204,9 +204,9 @@ public class FestivalService {
 	}
 
 	/** 페이지에 담긴 행사들의 좋아요·투표 수를 한 번에 센다. (N+1 방지) */
-	private Page<FestivalResponse.ListResponse> toListResponses(Page<Festival> festivals) {
+	private Page<FestivalResponse.ListItem> toListItems(Page<Festival> festivals) {
 		if (festivals.isEmpty()) {
-			return festivals.map(festival -> FestivalResponse.Converter.toList(
+			return festivals.map(festival -> FestivalResponse.ListItem.from(
 				festival, 0L, 0L, 0L, imageUrlResolver));
 		}
 
@@ -215,7 +215,7 @@ public class FestivalService {
 
 		return festivals.map(festival -> {
 			ListCounts count = counts.get(festival.getId());
-			return FestivalResponse.Converter.toList(
+			return FestivalResponse.ListItem.from(
 				festival,
 				count.likeCount(),
 				count.accurateCount(),
@@ -245,7 +245,7 @@ public class FestivalService {
 
 	/** 행사 상세와 정확도 평가·좋아요 정보를 한 번에 조회한다. */
 	@Transactional(readOnly = true)
-	public FestivalResponse.DetailResponse getFestival(Long festivalId, UUID memberId) {
+	public FestivalResponse.Detail getFestival(Long festivalId, UUID memberId) {
 		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
@@ -274,7 +274,7 @@ public class FestivalService {
 		long likeCount = likeRepository.countByFestivalId(festivalId);
 		boolean likedByMe = memberId != null
 			&& likeRepository.existsByFestivalIdAndMemberId(festivalId, memberId);
-		return FestivalResponse.Converter.toDetail(
+		return FestivalResponse.Detail.from(
 			festival,
 			accurateCount,
 			inaccurateCount,

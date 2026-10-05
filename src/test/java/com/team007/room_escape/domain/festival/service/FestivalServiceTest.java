@@ -447,7 +447,7 @@ class FestivalServiceTest {
 				pageable
 		)).thenReturn(festivalPage);
 
-		Page<FestivalResponse.ListResponse> result =
+		Page<FestivalResponse.ListItem> result =
 				festivalService.searchFestivals(request, pageable);
 
 		assertThat(result.getTotalElements()).isEqualTo(1);
@@ -509,7 +509,7 @@ class FestivalServiceTest {
 				pageable
 		)).thenReturn(festivalPage);
 
-		Page<FestivalResponse.ListResponse> result =
+		Page<FestivalResponse.ListItem> result =
 				festivalService.searchFestivals(request, pageable);
 
 		assertThat(result.getContent().get(0).status())
@@ -518,7 +518,7 @@ class FestivalServiceTest {
 
 	@Test
 	@DisplayName("검색 결과에 제목과 지역 등 주요 필드가 매핑된다")
-	void mapsFestivalFieldsToListResponse() {
+	void mapsFestivalFieldsToListItem() {
 		LocalDate date = LocalDate.now();
 		FestivalSearchRequest request = searchRequest(date);
 		Pageable pageable = searchPageable();
@@ -549,7 +549,7 @@ class FestivalServiceTest {
 				pageable
 		)).thenReturn(festivalPage);
 
-		FestivalResponse.ListResponse response =
+		FestivalResponse.ListItem response =
 				festivalService.searchFestivals(request, pageable)
 						.getContent()
 						.get(0);
@@ -585,7 +585,7 @@ class FestivalServiceTest {
 			.build();
 		when(festivalRepository.findByIdAndDeletedAtIsNull(7L)).thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(7L, null);
+		FestivalResponse.Detail detail = festivalService.getFestival(7L, null);
 
 		assertThat(detail.festivalId()).isEqualTo(7L);
 		assertThat(detail.providerType()).isEqualTo(ProviderType.PUBLIC);
@@ -620,7 +620,7 @@ class FestivalServiceTest {
 		when(festivalRepository.findByIdAndDeletedAtIsNull(8L))
 			.thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L, null);
+		FestivalResponse.Detail detail = festivalService.getFestival(8L, null);
 
 		assertThat(detail.providerType()).isEqualTo(ProviderType.MEMBER);
 		assertThat(detail.festivalContent()).isEqualTo("이웃과 함께하는 주말 장터");
@@ -660,7 +660,7 @@ class FestivalServiceTest {
 		when(likeRepository.countByFestivalId(8L)).thenReturn(5L);
 		when(likeRepository.existsByFestivalIdAndMemberId(8L, memberId)).thenReturn(true);
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L, memberId);
+		FestivalResponse.Detail detail = festivalService.getFestival(8L, memberId);
 
 		assertThat(detail.accurateCount()).isEqualTo(3);
 		assertThat(detail.inaccurateCount()).isEqualTo(1);
@@ -716,10 +716,10 @@ class FestivalServiceTest {
 				unsorted
 		)).thenReturn(new PageImpl<>(List.of(festival), unsorted, 1));
 
-		Page<FestivalResponse.ListResponse> result = festivalService.searchFestivals(request, unsorted);
+		Page<FestivalResponse.ListItem> result = festivalService.searchFestivals(request, unsorted);
 
 		assertThat(result.getContent())
-				.extracting(FestivalResponse.ListResponse::festivalId)
+				.extracting(FestivalResponse.ListItem::festivalId)
 				.containsExactly(10L);
 		verify(festivalRepository, never()).searchFestivals(
 				anyBoolean(), any(), anyBoolean(), any(), anyBoolean(), any(),
@@ -749,11 +749,11 @@ class FestivalServiceTest {
 		when(likeRepository.countByFestivalIds(List.of(10L, 11L)))
 				.thenReturn(List.of(new FestivalLikeCount(10L, 7L)));
 
-		Page<FestivalResponse.ListResponse> result = festivalService.searchFestivals(request, pageable);
+		Page<FestivalResponse.ListItem> result = festivalService.searchFestivals(request, pageable);
 
 		// 좋아요가 하나도 없는 행사는 집계 결과에 없으므로 0으로 채운다
 		assertThat(result.getContent())
-				.extracting(FestivalResponse.ListResponse::festivalId, FestivalResponse.ListResponse::likeCount)
+				.extracting(FestivalResponse.ListItem::festivalId, FestivalResponse.ListItem::likeCount)
 				.containsExactly(tuple(10L, 7L), tuple(11L, 0L));
 		assertThat(result.getTotalElements()).isEqualTo(11);
 		verify(festivalRepository, never()).searchFestivals(
