@@ -1,9 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest.CreateOrUpdateFestivalSubmissionRequest;
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.CreateFestivalSubmissionResponse;
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindAllFestivalSubmissionResponse;
-import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse.FindFestivalSubmissionResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
@@ -38,7 +36,7 @@ public class FestivalSubmissionService {
     private final RichTextSanitizer richTextSanitizer;
 
     @Transactional
-    public CreateFestivalSubmissionResponse create(UUID memberId, CreateOrUpdateFestivalSubmissionRequest request) {
+    public FestivalSubmissionResponse.Create create(UUID memberId, FestivalSubmissionRequest.Upsert request) {
         Member member = memberReader.getUnrestrictedMember(memberId);
 
         String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
@@ -81,21 +79,21 @@ public class FestivalSubmissionService {
         FestivalSubmission savedFestivalSubmission =
                 festivalSubmissionRepository.save(festivalSubmission);
 
-        return CreateFestivalSubmissionResponse.from(savedFestival, savedFestivalSubmission);
+        return FestivalSubmissionResponse.Create.from(savedFestival, savedFestivalSubmission);
     }
 
     @Transactional(readOnly = true)
-    public List<FindAllFestivalSubmissionResponse> findAllByMemberId(UUID memberId) {
+    public List<FestivalSubmissionResponse.ListItem> findAllByMemberId(UUID memberId) {
         return festivalSubmissionRepository
                 .findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc
                         (memberId, ProviderType.MEMBER)
                 .stream()
-                .map(FindAllFestivalSubmissionResponse::from)
+                .map(FestivalSubmissionResponse.ListItem::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public FindFestivalSubmissionResponse findById(
+    public FestivalSubmissionResponse.Detail findById(
             UUID memberId,
             UUID submissionId
     ) {
@@ -106,14 +104,14 @@ public class FestivalSubmissionService {
                                 FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
                         ));
 
-        return FindFestivalSubmissionResponse.from(festivalSubmission);
+        return FestivalSubmissionResponse.Detail.from(festivalSubmission);
     }
 
     @Transactional
-    public FindFestivalSubmissionResponse update(
+    public FestivalSubmissionResponse.Detail update(
             UUID memberId,
             UUID submissionId,
-            CreateOrUpdateFestivalSubmissionRequest request
+            FestivalSubmissionRequest.Upsert request
     ) {
         memberReader.getUnrestrictedMember(memberId);
 
@@ -152,7 +150,7 @@ public class FestivalSubmissionService {
         );
         flushFestivalChanges();
 
-        return FindFestivalSubmissionResponse.from(submission);
+        return FestivalSubmissionResponse.Detail.from(submission);
     }
 
     @Transactional
