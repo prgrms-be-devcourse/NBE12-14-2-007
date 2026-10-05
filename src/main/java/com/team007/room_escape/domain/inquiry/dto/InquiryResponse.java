@@ -6,6 +6,7 @@ import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryTargetType;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 public class InquiryResponse {
@@ -15,6 +16,7 @@ public class InquiryResponse {
 
 	/** 내 문의 목록 항목. 본문과 답변은 상세에서만 내려준다. */
 	@Builder
+	@Schema(name = "InquiryListItem", description = "내 문의 목록 항목")
 	public record ListItem(
 		UUID id,
 		InquiryCategory category,
@@ -40,6 +42,7 @@ public class InquiryResponse {
 
 	/** 문의 상세. 등록·수정 응답도 같은 모양이다. */
 	@Builder
+	@Schema(name = "InquiryDetail", description = "문의 상세")
 	public record Detail(
 		UUID id,
 		InquiryCategory category,

@@ -92,7 +92,7 @@ public class AdminFestivalService {
 	/** 행사 수정. 동기화는 신규만 insert 해서 여기서 고친 값이 덮이지 않는다. */
 	// TODO 동기화가 upsert로 바뀌면 관리자가 고친 행사는 건너뛰도록 표시가 필요하다.
 	@Transactional
-	public FestivalResponse.DetailResponse update(
+	public FestivalResponse.Detail update(
 		Long festivalId,
 		AdminFestivalRequest.Update request
 	) {
@@ -122,6 +122,6 @@ public class AdminFestivalService {
 			request.hostInstNm()
 		);
 
-		return FestivalResponse.Converter.toDetail(festival, 0, 0, null, 0, false, null);
+		return FestivalResponse.Detail.from(festival, 0, 0, null, 0, false, null);
 	}
 }

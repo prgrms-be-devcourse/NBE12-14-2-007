@@ -34,7 +34,7 @@ public class FestivalController {
 
 	@Operation(summary = "행사 통합 검색", description = "공공행사와 사용자 등록 행사를 통합 검색한다. 모든 조건은 선택이다.")
 	@GetMapping
-	public ResponseEntity<ApiResponse<Page<FestivalResponse.ListResponse>>>
+	public ResponseEntity<ApiResponse<Page<FestivalResponse.ListItem>>>
 	searchFestivals(
 			@ParameterObject
 			@ModelAttribute FestivalSearchRequest request,
@@ -42,7 +42,7 @@ public class FestivalController {
 			@PageableDefault(size = 9)
 			Pageable pageable
 	) {
-		Page<FestivalResponse.ListResponse> response =
+		Page<FestivalResponse.ListItem> response =
 				festivalService.searchFestivals(request, pageable);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
@@ -50,11 +50,11 @@ public class FestivalController {
 
 	@Operation(summary = "행사 상세 조회", description = "공공행사 또는 회원 제보 행사 1건의 상세 정보를 조회합니다.")
 	@GetMapping("/{festivalId}")
-	public ResponseEntity<ApiResponse<FestivalResponse.DetailResponse>> getFestival(
+	public ResponseEntity<ApiResponse<FestivalResponse.Detail>> getFestival(
 			@AuthenticationPrincipal CustomUserDetails principal,
 			@PathVariable Long festivalId
 	) {
-		FestivalResponse.DetailResponse response = festivalService.getFestival(
+		FestivalResponse.Detail response = festivalService.getFestival(
 				festivalId,
 				principal == null ? null : principal.getId()
 		);
