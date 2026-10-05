@@ -16,7 +16,9 @@ import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.util.RichTextSanitizer;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -211,16 +213,10 @@ public class FestivalSubmissionService {
 	}
 
 	private RuntimeException translateDuplicateConstraint(DataIntegrityViolationException exception) {
-		Throwable cause = exception;
+		boolean duplicated = Stream.iterate((Throwable) exception, Objects::nonNull, Throwable::getCause)
+			.anyMatch(cause -> cause instanceof ConstraintViolationException constraintException
+				&& DUPLICATE_CONSTRAINT_NAME.equals(constraintException.getConstraintName()));
 
-		while (cause != null) {
-			if (cause instanceof ConstraintViolationException constraintException
-					&& DUPLICATE_CONSTRAINT_NAME.equals(constraintException.getConstraintName())) {
-				return new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
-			}
-			cause = cause.getCause();
-		}
-
-		return exception;
+		return duplicated ? new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL) : exception;
 	}
 }
