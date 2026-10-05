@@ -32,7 +32,7 @@ public class InquiryService {
 
 	/** 문의 등록. 로그인한 회원이면 등급과 상관없이 쓸 수 있다. */
 	@Transactional
-	public InquiryResponse.Info create(UUID memberId, InquiryRequest.Create request) {
+	public InquiryResponse.Detail create(UUID memberId, InquiryRequest.Create request) {
 		Member member = memberReader.getActiveMember(memberId);
 		targetValidator.validate(request.targetType(), request.targetId());
 		r2StorageService.requireOwnedBy(request.img(), null, memberId);
@@ -51,30 +51,30 @@ public class InquiryService {
 
 		Inquiry saved = inquiryRepository.save(inquiry);
 
-		return InquiryResponse.Info.from(saved, imageUrlResolver.resolve(saved.getImg()));
+		return InquiryResponse.Detail.from(saved, imageUrlResolver.resolve(saved.getImg()));
 	}
 
 	/** 내 문의 목록. 최신순. */
 	@Transactional(readOnly = true)
-	public List<InquiryResponse.Info> findMine(UUID memberId) {
+	public List<InquiryResponse.ListItem> findMine(UUID memberId) {
 		return inquiryRepository.findAllByMember_IdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId).stream()
-			.map(inquiry -> InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg())))
+			.map(InquiryResponse.ListItem::from)
 			.toList();
 	}
 
 	/** 내 문의 상세. 남의 문의는 존재를 숨기려고 404로 응답한다. */
 	@Transactional(readOnly = true)
-	public InquiryResponse.Info findMineById(UUID inquiryId, UUID memberId) {
+	public InquiryResponse.Detail findMineById(UUID inquiryId, UUID memberId) {
 		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
 			.filter(found -> found.isWrittenBy(memberId))
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
-		return InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg()));
+		return InquiryResponse.Detail.from(inquiry, imageUrlResolver.resolve(inquiry.getImg()));
 	}
 
 	/** 문의 수정. 답변이 달린 뒤에는 수정할 수 없다. */
 	@Transactional
-	public InquiryResponse.Info update(UUID inquiryId, UUID memberId, InquiryRequest.Update request) {
+	public InquiryResponse.Detail update(UUID inquiryId, UUID memberId, InquiryRequest.Update request) {
 		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
@@ -93,7 +93,7 @@ public class InquiryService {
 
 		deleteReplacedImage(previousImg, inquiry.getImg(), memberId);
 
-		return InquiryResponse.Info.from(inquiry, imageUrlResolver.resolve(inquiry.getImg()));
+		return InquiryResponse.Detail.from(inquiry, imageUrlResolver.resolve(inquiry.getImg()));
 	}
 
 	/** 문의 삭제. 작성자 본인과 관리자가 삭제할 수 있다. */

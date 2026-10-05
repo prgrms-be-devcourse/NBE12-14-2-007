@@ -13,9 +13,34 @@ public class InquiryResponse {
 	private InquiryResponse() {
 	}
 
-	/** 문의 응답. 등록·수정·목록·상세에서 함께 쓴다. */
+	/** 내 문의 목록 항목. 본문과 답변은 상세에서만 내려준다. */
 	@Builder
-	public record Info(
+	public record ListItem(
+		UUID id,
+		InquiryCategory category,
+		InquiryTargetType targetType,
+		String targetId,
+		String title,
+		InquiryStatus status,
+		LocalDateTime createdAt
+	) {
+
+		public static ListItem from(Inquiry inquiry) {
+			return ListItem.builder()
+				.id(inquiry.getId())
+				.category(inquiry.getCategory())
+				.targetType(inquiry.getTargetType())
+				.targetId(inquiry.getTargetId())
+				.title(inquiry.getTitle())
+				.status(inquiry.getStatus())
+				.createdAt(inquiry.getCreatedAt())
+				.build();
+		}
+	}
+
+	/** 문의 상세. 등록·수정 응답도 같은 모양이다. */
+	@Builder
+	public record Detail(
 		UUID id,
 		InquiryCategory category,
 		InquiryTargetType targetType,
@@ -30,8 +55,8 @@ public class InquiryResponse {
 		LocalDateTime createdAt
 	) {
 
-		public static Info from(Inquiry inquiry, String imgUrl) {
-			return Info.builder()
+		public static Detail from(Inquiry inquiry, String imgUrl) {
+			return Detail.builder()
 				.id(inquiry.getId())
 				.category(inquiry.getCategory())
 				.targetType(inquiry.getTargetType())
