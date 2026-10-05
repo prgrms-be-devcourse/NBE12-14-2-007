@@ -197,9 +197,7 @@ export interface Page<T> {
 export interface Comment {
   id: number;
   postId: string;
-  memberId: string;
-  nickname: string;
-  profile_img: string | null;
+  member: CommunityMember;
   content: string;
   date: string;
 }
