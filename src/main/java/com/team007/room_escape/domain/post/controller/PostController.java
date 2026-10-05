@@ -32,26 +32,26 @@ public class PostController {
 	@Operation(summary = "후기 작성", description = "특정 행사에 후기를 작성합니다.")
 	@PostMapping("/festivals/{id}/posts")
 	@PreAuthorize("hasRole('UNVERIFIED')")
-	public ResponseEntity<ApiResponse<PostResponse.CreateResponse>> createPost(
+	public ResponseEntity<ApiResponse<PostResponse.Create>> createPost(
 			@PathVariable Long id,
 			@Valid @RequestBody PostRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 			) {
 
-		PostResponse.CreateResponse response = postService.createPost(id, request, user.getId());
+		PostResponse.Create response = postService.createPost(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	@Operation(summary = "후기 검색", description = "후기를 검색합니다. sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다.")
 	@GetMapping("/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPosts(
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListItem>>> searchPosts(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
 			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.ListResponse> posts = postService.searchPosts(type, keyword, page);
+		Page<PostResponse.ListItem> posts = postService.searchPosts(type, keyword, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
@@ -59,38 +59,38 @@ public class PostController {
 	@Operation(summary = "관리자 후기 조회", description = "삭제된 후기를 포함하여 후기 목록을 조회하거나 검색합니다.")
 	@GetMapping("/admin/posts")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse<Page<PostResponse.AdminListResponse>>> searchPostsForAdmin(
+	public ResponseEntity<ApiResponse<Page<PostResponse.AdminListItem>>> searchPostsForAdmin(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
 			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.AdminListResponse> posts = postService.searchPostsForAdmin(type, keyword, page);
+		Page<PostResponse.AdminListItem> posts = postService.searchPostsForAdmin(type, keyword, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
 
 	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기를 검색합니다. sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다.")
 	@GetMapping("/festivals/{id}/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPostsByFestival(
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListItem>>> getPostsByFestival(
 			@PathVariable Long id,
 			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.ListResponse> posts = postService.getPostsByFestival(id, page);
+		Page<PostResponse.ListItem> posts = postService.getPostsByFestival(id, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
 
 	@Operation(summary = "후기 단건 조회", description = "후기 상세 정보를 조회합니다.")
 	@GetMapping("/posts/{id}")
-	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(
+	public ResponseEntity<ApiResponse<PostResponse.Detail>> getPostDetail(
 			@PathVariable UUID id,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
 		// 비회원이면 user가 null이다.
-		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(
+		PostResponse.Detail postDetailDto = postService.getPostDetail(
 				id,
 				user == null ? null : user.getId()
 		);
@@ -101,13 +101,13 @@ public class PostController {
 	@Operation(summary = "후기 수정", description = "본인이 작성한 후기를 수정합니다.")
 	@PatchMapping("/posts/{id}")
 	@PreAuthorize("hasRole('UNVERIFIED')")
-	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> updatePost(
+	public ResponseEntity<ApiResponse<PostResponse.Detail>> updatePost(
 			@PathVariable UUID id,
 			@Valid @RequestBody PostRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
-		PostResponse.DetailResponse response = postService.updatePost(id, request, user.getId());
+		PostResponse.Detail response = postService.updatePost(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}

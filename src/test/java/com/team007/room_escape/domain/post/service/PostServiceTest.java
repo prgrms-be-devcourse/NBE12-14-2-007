@@ -70,10 +70,10 @@ class PostServiceTest {
 		when(postRepository.searchPostsOrderByLikeCount("MEMBER_NICKNAME", "닉", UNSORTED))
 				.thenReturn(new PageImpl<>(List.of(post), UNSORTED, 13));
 
-		Page<PostResponse.ListResponse> result =
+		Page<PostResponse.ListItem> result =
 				postService.searchPosts(PostSearchType.MEMBER_NICKNAME, "닉", LIKE_SORT);
 
-		assertThat(result.getContent()).extracting(PostResponse.ListResponse::likeCount).containsExactly(4L);
+		assertThat(result.getContent()).extracting(PostResponse.ListItem::likeCount).containsExactly(4L);
 		assertThat(result.getTotalElements()).isEqualTo(13);
 		verify(postRepository, never()).searchPosts(any(), any(), any());
 		verify(postRepository, never()).findAllNotDeleted(any());
@@ -86,7 +86,7 @@ class PostServiceTest {
 		when(postRepository.findAllOrderByLikeCount(UNSORTED))
 				.thenReturn(Page.empty(UNSORTED));
 
-		Page<PostResponse.ListResponse> result =
+		Page<PostResponse.ListItem> result =
 				postService.searchPosts(PostSearchType.TITLE, "  ", LIKE_SORT);
 
 		assertThat(result.getContent()).isEmpty();
@@ -102,9 +102,9 @@ class PostServiceTest {
 		when(postRepository.findAllByFestivalIdOrderByLikeCount(3L, UNSORTED))
 				.thenReturn(new PageImpl<>(List.of(post), UNSORTED, 1));
 
-		Page<PostResponse.ListResponse> result = postService.getPostsByFestival(3L, LIKE_SORT);
+		Page<PostResponse.ListItem> result = postService.getPostsByFestival(3L, LIKE_SORT);
 
-		assertThat(result.getContent()).extracting(PostResponse.ListResponse::likeCount).containsExactly(0L);
+		assertThat(result.getContent()).extracting(PostResponse.ListItem::likeCount).containsExactly(0L);
 		verify(postRepository, never()).findAllByFestivalId(anyLong(), any());
 	}
 
@@ -117,10 +117,10 @@ class PostServiceTest {
 		when(postRepository.findAllNotDeleted(latest))
 				.thenReturn(new PageImpl<>(List.of(first, second), latest, 2));
 
-		Page<PostResponse.ListResponse> result = postService.searchPosts(null, null, latest);
+		Page<PostResponse.ListItem> result = postService.searchPosts(null, null, latest);
 
 		assertThat(result.getContent())
-				.extracting(PostResponse.ListResponse::id, PostResponse.ListResponse::likeCount)
+				.extracting(PostResponse.ListItem::id, PostResponse.ListItem::likeCount)
 				.containsExactly(tuple(first.getId(), 0L), tuple(second.getId(), 2L));
 		verify(postRepository, never()).findAllOrderByLikeCount(any());
 		verify(postRepository, never()).searchPostsOrderByLikeCount(any(), any(), any());
