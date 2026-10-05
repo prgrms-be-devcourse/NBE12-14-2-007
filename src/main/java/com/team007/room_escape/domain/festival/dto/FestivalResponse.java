@@ -240,7 +240,7 @@ public class FestivalResponse {
 		if (member == null || imageUrlResolver == null) {
 			return null;
 		}
-		return MemberResponse.MemberInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
+		return MemberResponse.MemberInfo.from(member, imageUrlResolver);
 	}
 
 	private static String image(String value, ImageUrlResolver imageUrlResolver) {

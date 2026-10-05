@@ -3,39 +3,18 @@ package com.team007.room_escape.domain.community.dto;
 import com.team007.room_escape.domain.community.infra.entity.CommunityComment;
 import com.team007.room_escape.domain.community.infra.entity.CommunityPost;
 import com.team007.room_escape.domain.community.type.CommunityCategory;
-import com.team007.room_escape.domain.member.infra.entity.Member;
-import com.team007.room_escape.domain.member.infra.entity.MemberRole;
+import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class CommunityResponse {
 
-	/** profileImg는 DB의 key가 아니라 공개 URL로 내려준다. */
-	public record MemberInfo(
-		UUID id,
-		String nickname,
-		String profileImg,
-		MemberRole role
-	) {
-		public static MemberInfo from(Member member, ImageUrlResolver imageUrlResolver) {
-			if (member == null || member.isDeleted()) {
-				return new MemberInfo(null, Member.WITHDRAWN_NICKNAME, null, null);
-			}
-			return new MemberInfo(
-				member.getId(),
-				member.getNickname(),
-				imageUrlResolver.resolve(member.getProfileImg()),
-				member.getRole()
-			);
-		}
-	}
-
 	public record PostSummary(
 		UUID id,
 		CommunityCategory category,
 		String title,
-		MemberInfo member,
+		MemberResponse.MemberInfo member,
 		long viewCount,
 		long commentCount,
 		LocalDateTime createdAt
@@ -45,7 +24,7 @@ public class CommunityResponse {
 				post.getId(),
 				post.getCategory(),
 				post.getTitle(),
-				MemberInfo.from(post.getMember(), imageUrlResolver),
+				MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver),
 				post.getViewCount(),
 				commentCount,
 				post.getCreatedAt()
@@ -58,7 +37,7 @@ public class CommunityResponse {
 		CommunityCategory category,
 		String title,
 		String content,
-		MemberInfo member,
+		MemberResponse.MemberInfo member,
 		long viewCount,
 		long commentCount,
 		LocalDateTime createdAt,
@@ -70,7 +49,7 @@ public class CommunityResponse {
 				post.getCategory(),
 				post.getTitle(),
 				post.getContent(),
-				MemberInfo.from(post.getMember(), imageUrlResolver),
+				MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver),
 				post.getViewCount(),
 				commentCount,
 				post.getCreatedAt(),
@@ -82,7 +61,7 @@ public class CommunityResponse {
 	public record CommentInfo(
 		Long id,
 		UUID postId,
-		MemberInfo member,
+		MemberResponse.MemberInfo member,
 		String content,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt
@@ -91,7 +70,7 @@ public class CommunityResponse {
 			return new CommentInfo(
 				comment.getId(),
 				comment.getPost().getId(),
-				MemberInfo.from(comment.getMember(), imageUrlResolver),
+				MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver),
 				comment.getContent(),
 				comment.getCreatedAt(),
 				comment.getUpdatedAt()
