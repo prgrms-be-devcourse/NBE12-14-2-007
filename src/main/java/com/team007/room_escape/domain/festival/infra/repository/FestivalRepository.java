@@ -19,29 +19,29 @@ import java.util.Optional;
 
 public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
-    // PostgreSQL 트랜잭션 종료 시 자동 해제. 같은 중복 조건의 등록/수정을 직렬화한다.
-    @Query(value = "SELECT count(*) FROM pg_advisory_xact_lock(:key)", nativeQuery = true)
-    long lockSubmissionDuplicateKey(@Param("key") long key);
+	// PostgreSQL 트랜잭션 종료 시 자동 해제. 같은 중복 조건의 등록/수정을 직렬화한다.
+	@Query(value = "SELECT count(*) FROM pg_advisory_xact_lock(:key)", nativeQuery = true)
+	long lockSubmissionDuplicateKey(@Param("key") long key);
 
-    @Query(value = """
-        SELECT EXISTS (
-        SELECT 1 FROM festival f
-        WHERE f.deleted_at IS NULL
-          AND (CAST(:currentId AS bigint) IS NULL OR f.id <> :currentId)
-          AND f.begin_de >= :beginStart AND f.begin_de < :beginEnd
-          AND f.end_de >= :endStart AND f.end_de < :endEnd
-          AND f.region = :region
-          AND rtrim(trim(f.url), '/') = :url
-        )
-        """, nativeQuery = true)
-    boolean existsSubmissionDuplicate(
-            @Param("currentId") Long currentId,
-            @Param("beginStart") LocalDateTime beginStart,
-            @Param("beginEnd") LocalDateTime beginEnd,
-            @Param("endStart") LocalDateTime endStart,
-            @Param("endEnd") LocalDateTime endEnd,
-            @Param("region") String region,
-            @Param("url") String url);
+	@Query(value = """
+		SELECT EXISTS (
+		SELECT 1 FROM festival f
+		WHERE f.deleted_at IS NULL
+		  AND (CAST(:currentId AS bigint) IS NULL OR f.id <> :currentId)
+		  AND f.begin_de >= :beginStart AND f.begin_de < :beginEnd
+		  AND f.end_de >= :endStart AND f.end_de < :endEnd
+		  AND f.region = :region
+		  AND rtrim(trim(f.url), '/') = :url
+		)
+		""", nativeQuery = true)
+	boolean existsSubmissionDuplicate(
+			@Param("currentId") Long currentId,
+			@Param("beginStart") LocalDateTime beginStart,
+			@Param("beginEnd") LocalDateTime beginEnd,
+			@Param("endStart") LocalDateTime endStart,
+			@Param("endEnd") LocalDateTime endEnd,
+			@Param("region") String region,
+			@Param("url") String url);
 
 	/** 저장 건수 조회 */
 	long countByProviderType(ProviderType providerType);
@@ -54,22 +54,22 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	/** 목록 카드에 제보자 닉네임·등급을 보여줘서 회원을 함께 불러온다. */
 	@EntityGraph(attributePaths = "member")
 	@Query("""
-        SELECT f
-        FROM Festival f
-        WHERE f.deletedAt IS NULL
-          AND (:hasKeyword = false
-                OR LOWER(COALESCE(f.title, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.instNm, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.regionDetail, ''))
-                    LIKE CONCAT('%', :keyword, '%'))
-          AND (:hasRegion = false OR f.region = :region)
-          AND (:hasProviderType = false OR f.providerType = :providerType)
-          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
-          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
-          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
-        """)
+		SELECT f
+		FROM Festival f
+		WHERE f.deletedAt IS NULL
+		  AND (:hasKeyword = false
+				OR LOWER(COALESCE(f.title, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.instNm, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.regionDetail, ''))
+					LIKE CONCAT('%', :keyword, '%'))
+		  AND (:hasRegion = false OR f.region = :region)
+		  AND (:hasProviderType = false OR f.providerType = :providerType)
+		  AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+		  AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		""")
 	Page<Festival> searchFestivals(
 			@Param("hasKeyword") boolean hasKeyword,
 			@Param("keyword") String keyword,
@@ -95,48 +95,48 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	@EntityGraph(attributePaths = "member")
 	@Query(
 		value = """
-        SELECT f
-        FROM Festival f
-        WHERE f.deletedAt IS NULL
-          AND (:hasKeyword = false
-                OR LOWER(COALESCE(f.title, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.instNm, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.regionDetail, ''))
-                    LIKE CONCAT('%', :keyword, '%'))
-          AND (:hasRegion = false OR f.region = :region)
-          AND (:hasProviderType = false OR f.providerType = :providerType)
-          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
-          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
-          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
-        ORDER BY
-          CASE
-            WHEN f.beginDe IS NULL THEN 2
-            WHEN f.beginDe >= :today THEN 0
-            ELSE 1
-          END ASC,
-          CASE WHEN f.beginDe >= :today THEN f.beginDe END ASC,
-          f.beginDe DESC,
-          f.id DESC
-        """,
+		SELECT f
+		FROM Festival f
+		WHERE f.deletedAt IS NULL
+		  AND (:hasKeyword = false
+				OR LOWER(COALESCE(f.title, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.instNm, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.regionDetail, ''))
+					LIKE CONCAT('%', :keyword, '%'))
+		  AND (:hasRegion = false OR f.region = :region)
+		  AND (:hasProviderType = false OR f.providerType = :providerType)
+		  AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+		  AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		ORDER BY
+		  CASE
+			WHEN f.beginDe IS NULL THEN 2
+			WHEN f.beginDe >= :today THEN 0
+			ELSE 1
+		  END ASC,
+		  CASE WHEN f.beginDe >= :today THEN f.beginDe END ASC,
+		  f.beginDe DESC,
+		  f.id DESC
+		""",
 		countQuery = """
-        SELECT COUNT(f)
-        FROM Festival f
-        WHERE f.deletedAt IS NULL
-          AND (:hasKeyword = false
-                OR LOWER(COALESCE(f.title, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.instNm, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.regionDetail, ''))
-                    LIKE CONCAT('%', :keyword, '%'))
-          AND (:hasRegion = false OR f.region = :region)
-          AND (:hasProviderType = false OR f.providerType = :providerType)
-          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
-          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
-          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
-        """)
+		SELECT COUNT(f)
+		FROM Festival f
+		WHERE f.deletedAt IS NULL
+		  AND (:hasKeyword = false
+				OR LOWER(COALESCE(f.title, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.instNm, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.regionDetail, ''))
+					LIKE CONCAT('%', :keyword, '%'))
+		  AND (:hasRegion = false OR f.region = :region)
+		  AND (:hasProviderType = false OR f.providerType = :providerType)
+		  AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+		  AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		""")
 	Page<Festival> searchFestivalsOrderByNearestStart(
 			@Param("hasKeyword") boolean hasKeyword,
 			@Param("keyword") String keyword,
@@ -164,46 +164,46 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	@EntityGraph(attributePaths = "member")
 	@Query(
 		value = """
-        SELECT f
-        FROM Festival f
-        LEFT JOIN (
-            SELECT l.festival.id AS festivalId, COUNT(l) AS likeCount
-            FROM Like l
-            WHERE l.festival IS NOT NULL
-            GROUP BY l.festival.id
-        ) lc ON lc.festivalId = f.id
-        WHERE f.deletedAt IS NULL
-          AND (:hasKeyword = false
-                OR LOWER(COALESCE(f.title, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.instNm, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.regionDetail, ''))
-                    LIKE CONCAT('%', :keyword, '%'))
-          AND (:hasRegion = false OR f.region = :region)
-          AND (:hasProviderType = false OR f.providerType = :providerType)
-          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
-          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
-          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
-        ORDER BY COALESCE(lc.likeCount, 0) DESC, f.beginDe ASC, f.id DESC
-        """,
+		SELECT f
+		FROM Festival f
+		LEFT JOIN (
+			SELECT l.festival.id AS festivalId, COUNT(l) AS likeCount
+			FROM Like l
+			WHERE l.festival IS NOT NULL
+			GROUP BY l.festival.id
+		) lc ON lc.festivalId = f.id
+		WHERE f.deletedAt IS NULL
+		  AND (:hasKeyword = false
+				OR LOWER(COALESCE(f.title, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.instNm, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.regionDetail, ''))
+					LIKE CONCAT('%', :keyword, '%'))
+		  AND (:hasRegion = false OR f.region = :region)
+		  AND (:hasProviderType = false OR f.providerType = :providerType)
+		  AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+		  AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		ORDER BY COALESCE(lc.likeCount, 0) DESC, f.beginDe ASC, f.id DESC
+		""",
 		countQuery = """
-        SELECT COUNT(f)
-        FROM Festival f
-        WHERE f.deletedAt IS NULL
-          AND (:hasKeyword = false
-                OR LOWER(COALESCE(f.title, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.instNm, ''))
-                    LIKE CONCAT('%', :keyword, '%')
-                OR LOWER(COALESCE(f.regionDetail, ''))
-                    LIKE CONCAT('%', :keyword, '%'))
-          AND (:hasRegion = false OR f.region = :region)
-          AND (:hasProviderType = false OR f.providerType = :providerType)
-          AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
-          AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
-          AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
-        """)
+		SELECT COUNT(f)
+		FROM Festival f
+		WHERE f.deletedAt IS NULL
+		  AND (:hasKeyword = false
+				OR LOWER(COALESCE(f.title, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.instNm, ''))
+					LIKE CONCAT('%', :keyword, '%')
+				OR LOWER(COALESCE(f.regionDetail, ''))
+					LIKE CONCAT('%', :keyword, '%'))
+		  AND (:hasRegion = false OR f.region = :region)
+		  AND (:hasProviderType = false OR f.providerType = :providerType)
+		  AND (:hasCategory = false OR LOWER(COALESCE(f.category, '')) = :category)
+		  AND (:hasDate = false OR (f.beginDe < :dateEnd AND (f.endDe IS NULL OR f.endDe >= :dateStart)))
+		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
+		""")
 	Page<Festival> searchFestivalsOrderByLikeCount(
 			@Param("hasKeyword") boolean hasKeyword,
 			@Param("keyword") String keyword,
@@ -255,8 +255,8 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		FROM Festival f
 		WHERE (:includeDeleted = true OR f.deletedAt IS NULL)
 		  AND (LOWER(COALESCE(f.title, '')) LIKE CONCAT('%', :keyword, '%')
-		       OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
-		       OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
+			   OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
+			   OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
 		  AND (:providerType IS NULL OR f.providerType = :providerType)
 		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
 		""",
@@ -265,8 +265,8 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		FROM Festival f
 		WHERE (:includeDeleted = true OR f.deletedAt IS NULL)
 		  AND (LOWER(COALESCE(f.title, '')) LIKE CONCAT('%', :keyword, '%')
-		       OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
-		       OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
+			   OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
+			   OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
 		  AND (:providerType IS NULL OR f.providerType = :providerType)
 		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
 		""")

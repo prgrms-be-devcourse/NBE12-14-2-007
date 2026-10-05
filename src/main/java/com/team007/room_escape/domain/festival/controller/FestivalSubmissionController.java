@@ -22,83 +22,83 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class FestivalSubmissionController {
 
-    private final FestivalSubmissionService festivalSubmissionService;
+	private final FestivalSubmissionService festivalSubmissionService;
 
-    @PostMapping("/festivals/submissions")
-    @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "행사 정보 등록",
-            description = "로그인한 사용자가 행사 내용을 제보합니다."
-    )
-    public ResponseEntity<ApiResponse<FestivalSubmissionResponse.Create>> create(
-            @AuthenticationPrincipal CustomUserDetails principal,
-            @Valid @RequestBody FestivalSubmissionRequest.Upsert request
-    ) {
-        FestivalSubmissionResponse.Create response =
-                festivalSubmissionService.create(principal.getId(), request);
+	@PostMapping("/festivals/submissions")
+	@PreAuthorize("hasRole('UNVERIFIED')")
+	@Operation(summary = "행사 정보 등록",
+			description = "로그인한 사용자가 행사 내용을 제보합니다."
+	)
+	public ResponseEntity<ApiResponse<FestivalSubmissionResponse.Create>> create(
+			@AuthenticationPrincipal CustomUserDetails principal,
+			@Valid @RequestBody FestivalSubmissionRequest.Upsert request
+	) {
+		FestivalSubmissionResponse.Create response =
+				festivalSubmissionService.create(principal.getId(), request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response));
-    }
+		return ResponseEntity
+				.status(HttpStatus.CREATED)
+				.body(ApiResponse.success(response));
+	}
 
-    @GetMapping("/members/me/submissions")
-    @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "[ME] 내 행사 목록 조회", description = "로그인한 사용자가 제보한 행사 목록을 조회합니다.")
-    public ResponseEntity<ApiResponse<List<FestivalSubmissionResponse.ListItem>>> findAllMine(
-            @AuthenticationPrincipal CustomUserDetails principal
-    ) {
-        List<FestivalSubmissionResponse.ListItem> response =
-                festivalSubmissionService.findAllByMemberId(principal.getId());
+	@GetMapping("/members/me/submissions")
+	@PreAuthorize("hasRole('UNVERIFIED')")
+	@Operation(summary = "[ME] 내 행사 목록 조회", description = "로그인한 사용자가 제보한 행사 목록을 조회합니다.")
+	public ResponseEntity<ApiResponse<List<FestivalSubmissionResponse.ListItem>>> findAllMine(
+			@AuthenticationPrincipal CustomUserDetails principal
+	) {
+		List<FestivalSubmissionResponse.ListItem> response =
+				festivalSubmissionService.findAllByMemberId(principal.getId());
 
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 
-    @GetMapping("/members/me/submissions/{submissionId}")
-    @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "[ME] 내 행사 상세 조회", description = "로그인한 사용자가 자신이 제보한 행사 정보를 상세 조회합니다.")
-    public ResponseEntity<ApiResponse<FestivalSubmissionResponse.Detail>> findMine(
-            @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable UUID submissionId
-    ) {
-        FestivalSubmissionResponse.Detail response =
-                festivalSubmissionService.findById(
-                        principal.getId(),
-                        submissionId
-                );
+	@GetMapping("/members/me/submissions/{submissionId}")
+	@PreAuthorize("hasRole('UNVERIFIED')")
+	@Operation(summary = "[ME] 내 행사 상세 조회", description = "로그인한 사용자가 자신이 제보한 행사 정보를 상세 조회합니다.")
+	public ResponseEntity<ApiResponse<FestivalSubmissionResponse.Detail>> findMine(
+			@AuthenticationPrincipal CustomUserDetails principal,
+			@PathVariable UUID submissionId
+	) {
+		FestivalSubmissionResponse.Detail response =
+				festivalSubmissionService.findById(
+						principal.getId(),
+						submissionId
+				);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 
-    @PatchMapping("/members/me/submissions/{submissionId}")
-    @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "[ME] 내 행사 제보 수정", description = "로그인한 사용자가 본인이 등록한 행사 정보와 제보 내용을 수정합니다.")
-    public ResponseEntity<ApiResponse<FestivalSubmissionResponse.Detail>> update(
-            @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable UUID submissionId,
-            @Valid @RequestBody FestivalSubmissionRequest.Upsert request
-    ) {
-        FestivalSubmissionResponse.Detail response =
-                festivalSubmissionService.update(
-                        principal.getId(),
-                        submissionId,
-                        request
-                );
+	@PatchMapping("/members/me/submissions/{submissionId}")
+	@PreAuthorize("hasRole('UNVERIFIED')")
+	@Operation(summary = "[ME] 내 행사 제보 수정", description = "로그인한 사용자가 본인이 등록한 행사 정보와 제보 내용을 수정합니다.")
+	public ResponseEntity<ApiResponse<FestivalSubmissionResponse.Detail>> update(
+			@AuthenticationPrincipal CustomUserDetails principal,
+			@PathVariable UUID submissionId,
+			@Valid @RequestBody FestivalSubmissionRequest.Upsert request
+	) {
+		FestivalSubmissionResponse.Detail response =
+				festivalSubmissionService.update(
+						principal.getId(),
+						submissionId,
+						request
+				);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 
-    @DeleteMapping("/members/me/submissions/{submissionId}")
-    @PreAuthorize("hasRole('UNVERIFIED')")
-    @Operation(summary = "[ME] 내 행사 제보 삭제", description = "로그인한 사용자가 본인이 등록한 행사 제보를 삭제합니다.")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @AuthenticationPrincipal CustomUserDetails principal,
-            @PathVariable UUID submissionId
-    ) {
-        festivalSubmissionService.delete(
-                principal.getId(),
-                submissionId
-        );
+	@DeleteMapping("/members/me/submissions/{submissionId}")
+	@PreAuthorize("hasRole('UNVERIFIED')")
+	@Operation(summary = "[ME] 내 행사 제보 삭제", description = "로그인한 사용자가 본인이 등록한 행사 제보를 삭제합니다.")
+	public ResponseEntity<ApiResponse<Void>> delete(
+			@AuthenticationPrincipal CustomUserDetails principal,
+			@PathVariable UUID submissionId
+	) {
+		festivalSubmissionService.delete(
+				principal.getId(),
+				submissionId
+		);
 
-        return ResponseEntity.ok(ApiResponse.noContentSuccess());
-    }
+		return ResponseEntity.ok(ApiResponse.noContentSuccess());
+	}
 }

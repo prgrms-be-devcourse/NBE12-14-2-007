@@ -19,16 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class WeatherController {
 
-    private final WeatherService weatherService;
+	private final WeatherService weatherService;
 
-    @Operation(summary = "지역·날짜별 날씨 조회",
-        description = "단기예보 제공 범위(오늘~2일 후) 밖이거나 조회에 실패하면 UNKNOWN을 반환합니다.")
-    @GetMapping
-    public ResponseEntity<ApiResponse<WeatherResponse>> getWeather(
-        @RequestParam FestivalRegion region,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    ) {
-        WeatherResponse response = weatherService.getWeather(region, date);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+	@Operation(summary = "지역·날짜별 날씨 조회",
+		description = "단기예보 제공 범위(오늘~2일 후) 밖이거나 조회에 실패하면 UNKNOWN을 반환합니다.")
+	@GetMapping
+	public ResponseEntity<ApiResponse<WeatherResponse>> getWeather(
+		@RequestParam FestivalRegion region,
+		@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+	) {
+		WeatherResponse response = weatherService.getWeather(region, date);
+		return ResponseEntity.ok(ApiResponse.success(response));
+	}
 }
