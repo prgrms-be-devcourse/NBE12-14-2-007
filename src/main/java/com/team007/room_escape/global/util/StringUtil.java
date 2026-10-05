@@ -1,14 +1,6 @@
 package com.team007.room_escape.global.util;
 
-/**
- * 문자열 정규화.
- *
- * 빈 문자열과 null이 섞이면 "값 없음"이 두 가지로 표현되어 비교·검색이 어긋난다.
- * 저장 직전에 한 가지(null)로 모은다.
- *
- * 이름을 StringUtils가 아니라 StringUtil로 둔 이유는
- * org.springframework.util.StringUtils와 헷갈리지 않게 하기 위함이다.
- */
+/** 빈 문자열과 null을 null 하나로 모은다. Spring의 StringUtils와 헷갈리지 않게 StringUtil로 지었다. */
 public final class StringUtil {
 
 	private StringUtil() {

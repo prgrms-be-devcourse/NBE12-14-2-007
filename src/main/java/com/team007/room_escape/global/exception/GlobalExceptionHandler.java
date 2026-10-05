@@ -19,10 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-/**
- * 컨트롤러·필터에서 발생한 예외를 ApiResponse 형식으로 통일해 응답한다.
- * 필터 단계 예외도 HandlerExceptionResolver를 통해 여기로 들어온다.
- */
+/** 컨트롤러·필터 예외를 ApiResponse 형식으로 통일해 응답한다. 필터 예외도 HandlerExceptionResolver로 들어온다. */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -84,10 +81,7 @@ public class GlobalExceptionHandler {
 			.body(ApiResponse.error(ec.getMessage(), ec.getCode()));
 	}
 
-	/**
-	 * 업로드 파일이 spring.servlet.multipart.max-file-size 를 넘은 경우.
-	 * 안 잡으면 500이 나가서 사용자가 "서버 오류"로 오해한다.
-	 */
+	/** 업로드 파일이 max-file-size를 넘은 경우. 안 잡으면 500이 나간다. */
 	@ExceptionHandler(MaxUploadSizeExceededException.class)
 	public ResponseEntity<ApiResponse<Void>> handleFileTooLarge(MaxUploadSizeExceededException e) {
 		CommonExceptionCode ec = CommonExceptionCode.FILE_TOO_LARGE;
@@ -96,12 +90,7 @@ public class GlobalExceptionHandler {
 			.body(ApiResponse.error(ec.getMessage(), ec.getCode()));
 	}
 
-	/**
-	 * 요청 본문을 읽지 못한 경우. 깨진 JSON, 잘못된 enum 값, 날짜 형식 오류 등.
-	 * 서버 잘못이 아니라 요청이 잘못된 것이므로 400으로 돌려준다.
-	 *
-	 * 원문 메시지에는 패키지명과 필드 구조가 들어 있어 그대로 노출하지 않는다.
-	 */
+	/** 요청 본문을 읽지 못한 경우(깨진 JSON, 잘못된 enum 등). 원문 메시지는 노출하지 않는다. */
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiResponse<Void>> handleUnreadableBody(HttpMessageNotReadableException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -110,10 +99,7 @@ public class GlobalExceptionHandler {
 			.body(ApiResponse.error("요청 형식이 올바르지 않습니다.", ec.getCode()));
 	}
 
-	/**
-	 * 경로 변수·쿼리 파라미터의 타입이 맞지 않는 경우.
-	 * 예: /posts/{UUID} 자리에 문자열, ?status=아무거나 처럼 없는 enum 값.
-	 */
+	/** 경로 변수·쿼리 파라미터 타입이 맞지 않는 경우. (예: UUID 자리에 문자열) */
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -123,9 +109,7 @@ public class GlobalExceptionHandler {
 				"'" + e.getName() + "' 값이 올바르지 않습니다.", ec.getCode()));
 	}
 
-	/**
-	 * 필수 쿼리 파라미터가 빠진 경우.
-	 */
+	/** 필수 쿼리 파라미터가 빠진 경우 */
 	@ExceptionHandler(MissingServletRequestParameterException.class)
 	public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -135,12 +119,7 @@ public class GlobalExceptionHandler {
 				"'" + e.getParameterName() + "' 값이 필요합니다.", ec.getCode()));
 	}
 
-	/**
-	 * Pageable 의 sort 에 엔티티에 없는 필드가 들어온 경우.
-	 * Spring Data 가 던지는 예외라 안 잡으면 500이 된다.
-	 *
-	 * 서비스마다 정렬 화이트리스트를 두는 대신 여기서 한 번에 400으로 바꾼다.
-	 */
+	/** sort에 엔티티에 없는 필드가 들어온 경우. 안 잡으면 500이라 여기서 400으로 바꾼다. */
 	@ExceptionHandler(PropertyReferenceException.class)
 	public ResponseEntity<ApiResponse<Void>> handleBadSort(PropertyReferenceException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
