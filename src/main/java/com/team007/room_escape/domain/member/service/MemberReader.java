@@ -8,12 +8,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * 로그인한 회원을 DB에서 다시 읽는다.
- *
- * 토큰이 아직 유효해도 그 사이 탈퇴했거나 제재를 받았을 수 있으므로
- * 토큰 값만 믿지 않고 여기서 확인한다.
- */
+/** 로그인한 회원을 DB에서 다시 읽는다. 토큰이 유효해도 그 사이 탈퇴·제재됐을 수 있다. */
 @Component
 @RequiredArgsConstructor
 public class MemberReader {
