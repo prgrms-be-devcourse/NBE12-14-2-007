@@ -1,10 +1,18 @@
 # Prometheus 수집 설정.
-# 앱은 IDE/gradle로 호스트에서 직접 띄우므로 컨테이너 안에서는 host.docker.internal 로 접근한다.
 global:
   scrape_interval: 15s
 
 scrape_configs:
+  # 운영 서버(Railway). 디스코드 알림 규칙은 이 job 을 본다.
   - job_name: roomescape
+    metrics_path: /actuator/prometheus
+    scheme: https
+    static_configs:
+      - targets: ["roomescape-api.up.railway.app"]
+
+  # 로컬 개발 서버. 앱은 IDE/gradle로 호스트에서 직접 띄우므로 컨테이너 안에서는 host.docker.internal 로 접근한다.
+  # 알림 대상이 아니라서 로컬 앱을 안 띄워도 알림이 가지 않는다.
+  - job_name: roomescape-local
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8080"]

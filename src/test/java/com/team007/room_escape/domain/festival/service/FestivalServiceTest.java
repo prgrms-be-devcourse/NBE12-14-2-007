@@ -223,7 +223,7 @@ class FestivalServiceTest {
 
 	/**
 	 * endDe를 "어제" 날짜로 동적으로 만들어서, 테스트를 언제 실행하든
-	 * resolveStatus()가 CLOSED를 반환하는지 안정적으로 확인한다.
+	 * FestivalStatus.from()이 CLOSED를 반환하는지 안정적으로 확인한다.
 	 */
 	@Test
 	@DisplayName("종료일이 지난 행사는 CLOSED 상태로 저장된다")
@@ -243,7 +243,7 @@ class FestivalServiceTest {
 	/**
 	 * 실제 API 응답에서도 일부 필드가 빈 값으로 오는 걸 확인했었는데,
 	 * 날짜 필드가 빈 문자열("")로 와도 parseDate()가 예외 없이 null을 반환하고,
-	 * resolveStatus(null)은 기본값 OPEN을 반환하는지 확인한다.
+	 * FestivalStatus.from(null)은 기본값 OPEN을 반환하는지 확인한다.
 	 */
 	@Test
 	@DisplayName("종료일이 비어 있으면 날짜는 null이고 상태는 OPEN으로 저장된다")

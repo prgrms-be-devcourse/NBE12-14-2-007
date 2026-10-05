@@ -262,23 +262,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
 	boolean existsByIdAndDeletedAtIsNull(Long festivalId);
 
-	/** 신규 등록용 중복 확인 */
-	boolean existsByBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
-			LocalDateTime beginDe,
-			LocalDateTime endDe,
-			FestivalRegion region,
-			String url
-	);
-
-	/** 행사 수정일 경우, 본인 행사 제외하고 중복 확인 */
-	boolean existsByIdNotAndBeginDeAndEndDeAndRegionAndUrlAndDeletedAtIsNull(
-			Long festivalId,
-			LocalDateTime beginDe,
-			LocalDateTime endDe,
-			FestivalRegion region,
-			String url
-	);
-
 	/**
 	 * 관리자용 행사 검색. includeDeleted 가 true면 삭제된 행사까지 함께 조회한다.
 	 * 공개 검색(searchFestivals)과 달리 삭제된 행사를 볼 수 있어야 복구가 가능하다.
