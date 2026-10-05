@@ -17,20 +17,14 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * 이미지 업로드 공통 API.
- * 프론트는 업로드로 key를 먼저 받아두고, 실제 등록/수정 요청에 그 key를 담아 보낸다.
- */
+/** 이미지 업로드 공통 API. 프론트는 key를 먼저 받아두고 등록·수정 요청에 담아 보낸다. */
 @Tag(name = "Image", description = "이미지 업로드 API")
 @RestController
 @RequestMapping("/api/v1/images")
 @RequiredArgsConstructor
 public class ImageController {
 
-	/**
-	 * 업로드 대상 구분. 버킷 안에서 어느 폴더에 저장할지를 정한다.
-	 * 클라이언트가 임의 경로를 넘기지 못하도록 enum으로 고정한다.
-	 */
+	/** 업로드 폴더 구분. 임의 경로를 못 넘기게 enum으로 고정한다. */
 	@Getter
 	@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 	public enum ImageType {
@@ -43,12 +37,7 @@ public class ImageController {
 		private final String directory;
 	}
 
-	/**
-	 * 업로드 결과.
-	 *
-	 * @param key DB에 저장할 값. URL이 아니라 이 key를 저장한다
-	 * @param url 화면에서 바로 쓸 수 있는 공개 URL
-	 */
+	/** 업로드 결과. key는 DB에 저장할 값, url은 화면에서 바로 쓸 공개 URL이다. */
 	public record UploadInfo(String key, String url) {
 	}
 
@@ -63,7 +52,7 @@ public class ImageController {
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<ApiResponse<UploadInfo>> upload(
 		@AuthenticationPrincipal CustomUserDetails principal,
-		// 이름을 생략하면 컴파일 옵션(-parameters)에 의존하게 된다. 명시해두면 어떤 빌드에서도 안전하다.
+		// 이름을 명시해 -parameters 컴파일 옵션에 의존하지 않는다.
 		@RequestParam("type") ImageType type,
 		@RequestPart("file") MultipartFile file
 	) {

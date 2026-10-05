@@ -18,11 +18,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-/**
- * Cloudflare R2 파일 저장소.
- * DB에는 공개 URL이 아니라 key만 저장하고, 내려줄 때 ImageUrlResolver로 조합한다.
- * 도메인이 바뀌어도 데이터를 손대지 않기 위함이다.
- */
+/** Cloudflare R2 파일 저장소. DB에는 URL이 아니라 key만 저장해서 도메인이 바뀌어도 데이터를 안 건드린다. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,16 +34,7 @@ public class R2StorageService {
 	private final S3Client s3Client;
 	private final R2Properties properties;
 
-	/**
-	 * 사용자가 올린 파일을 업로드하고 저장 key를 돌려준다.
-	 *
-	 * key에 업로드한 회원 ID를 넣어 두고, 저장·삭제할 때 본인 파일인지 이 값으로 확인한다.
-	 * key는 공개 URL에 그대로 드러나므로 key를 안다고 해서 주인이라고 볼 수 없다.
-	 *
-	 * @param directory 버킷 안의 논리적 폴더 (예: posts, profiles)
-	 * @param ownerId   업로드한 회원 ID
-	 * @return 저장 key (예: posts/{회원ID}/0198....jpg)
-	 */
+	/** 업로드 후 key를 돌려준다. key는 공개되므로 주인 확인용으로 key에 회원 ID를 넣는다. (예: posts/{회원ID}/0198....jpg) */
 	public String upload(MultipartFile file, String directory, UUID ownerId) {
 		if (file == null || file.isEmpty()) {
 			throw new BusinessException(StorageExceptionCode.EMPTY_FILE);
@@ -65,7 +52,7 @@ public class R2StorageService {
 					.bucket(properties.bucket())
 					.key(key)
 					.contentType(file.getContentType())
-					// key가 UUID라 이 URL의 내용은 평생 안 바뀐다 -> 1년 캐시해도 안전함 (CDN·브라우저 둘 다 적용됨)
+					// key가 UUID라 내용이 안 바뀌어서 1년 캐시해도 안전하다.
 					.cacheControl("public, max-age=31536000, immutable")
 					.build(),
 				RequestBody.fromInputStream(file.getInputStream(), file.getSize())
@@ -77,15 +64,7 @@ public class R2StorageService {
 		return key;
 	}
 
-	/**
-	 * 서버가 직접 만든 바이트 배열을 업로드한다 (외부 URL 다운로드·리사이즈 결과 등).
-	 * MultipartFile이 없는 경우(HTTP 요청이 아닌 배치 처리 등)에 사용한다.
-	 *
-	 * @param content     업로드할 바이트 데이터 (예: 리사이즈된 이미지)
-	 * @param contentType MIME 타입. MultipartFile처럼 자동으로 안 들어오므로 호출부가 직접 넘겨야 한다
-	 * @param directory   버킷 안의 논리적 폴더 (예: festivals)
-	 * @return 저장 key
-	 */
+	/** 서버가 만든 바이트 배열을 업로드한다. 배치처럼 MultipartFile이 없을 때 쓰고, contentType은 직접 넘긴다. */
 	public String upload(byte[] content, String contentType, String directory) {
 		String extension = ALLOWED_TYPES.get(contentType);
 		if (extension == null) {
@@ -110,10 +89,7 @@ public class R2StorageService {
 		return key;
 	}
 
-	/**
-	 * 이 회원이 업로드한 key인지. key 형식은 {폴더}/{회원ID}/{파일명}이다.
-	 * 회원 ID가 들어가기 전에 올린 옛 key({폴더}/{파일명})는 주인을 알 수 없으므로 false다.
-	 */
+	/** 이 회원이 올린 key인지. 형식은 {폴더}/{회원ID}/{파일명}이고, 회원 ID가 없는 옛 key는 false다. */
 	public boolean isOwnedBy(String key, UUID memberId) {
 		if (key == null || memberId == null) {
 			return false;
@@ -122,10 +98,7 @@ public class R2StorageService {
 		return parts.length == 3 && parts[1].equals(memberId.toString());
 	}
 
-	/**
-	 * 새로 저장하려는 이미지 key가 본인 것인지 확인한다.
-	 * 비우는 경우(null, 빈 문자열)와 지금 값을 그대로 다시 보내는 경우는 통과시킨다.
-	 */
+	/** 새로 저장할 key가 본인 것인지 확인한다. 비우거나 지금 값 그대로면 통과시킨다. */
 	public void requireOwnedBy(String newKey, String currentKey, UUID memberId) {
 		if (newKey == null || newKey.isBlank() || newKey.equals(currentKey)) {
 			return;
@@ -135,11 +108,7 @@ public class R2StorageService {
 		}
 	}
 
-	/**
-	 * 본인이 올린 파일일 때만 지운다. 주인을 알 수 없는 옛 파일은 남겨둔다.
-	 * 트랜잭션 안에서 부르면 커밋된 뒤에 지운다. 먼저 지웠다가 롤백되면 DB는 옛 key를
-	 * 그대로 가리키는데 파일은 사라져서 이미지가 깨진다.
-	 */
+	/** 본인 파일만 지운다. 롤백 시 이미지가 깨지지 않게 트랜잭션 커밋 후에 지운다. */
 	public void deleteOwnedBy(String key, UUID memberId) {
 		if (!isOwnedBy(key, memberId)) {
 			return;

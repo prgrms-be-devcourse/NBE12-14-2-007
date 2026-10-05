@@ -10,13 +10,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-/**
- * 메일 발송.
- *
- * SMTP는 응답까지 수 초가 걸려서 요청 스레드에서 보내면 API가 그만큼 느려진다.
- * 그래서 @Async로 빼고, 발송 실패는 로그만 남긴다.
- * (인증 코드는 이미 DB에 저장돼 있으므로 사용자는 재발송으로 복구할 수 있다)
- */
+/** 메일 발송. SMTP가 느려서 @Async로 보내고, 실패는 로그만 남긴다(재발송으로 복구 가능). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
