@@ -18,10 +18,7 @@ public class AdminInquiryResponse {
 	private AdminInquiryResponse() {
 	}
 
-	/**
-	 * 관리자 문의 목록의 한 줄. 목록에서는 본문과 답변을 내려주지 않는다.
-	 * 관리자라도 필요한 만큼만 보는 편이 안전하고, 목록 응답도 가벼워진다.
-	 */
+	/** 관리자 문의 목록 항목. 본문과 답변은 상세에서만 내려준다. */
 	@Builder
 	@Schema(name = "AdminInquiryListItem", description = "관리자 문의 목록 항목")
 	public record ListItem(
@@ -54,9 +51,6 @@ public class AdminInquiryResponse {
 		LocalDateTime deletedAt
 	) {
 
-		/**
-		 * @param writerProfileImgUrl 작성자 프로필 이미지의 공개 URL. 없으면 null
-		 */
 		public static ListItem from(Inquiry inquiry, String writerProfileImgUrl) {
 			Member writer = inquiry.getMember();
 
@@ -74,10 +68,7 @@ public class AdminInquiryResponse {
 		}
 	}
 
-	/**
-	 * 관리자 문의 상세. 목록과 달리 본문·첨부·답변까지 내려준다.
-	 * 답변을 쓰려면 관리자가 무엇에 답하는지 봐야 하므로 상세에서만 본문을 연다.
-	 */
+	/** 관리자 문의 상세. 본문·첨부·답변까지 내려준다. */
 	@Builder
 	@Schema(name = "AdminInquiryDetail", description = "관리자 문의 상세")
 	public record Detail(
@@ -94,7 +85,7 @@ public class AdminInquiryResponse {
 		@Schema(description = "신고·제보 대상 ID. 일반 문의면 null", example = "123")
 		String targetId,
 
-		@Schema(description = "댓글 신고일 때 그 댓글이 달린 글 ID. 후기 댓글이면 후기, 커뮤니티 댓글이면 커뮤니티 글. 그 외에는 null")
+		@Schema(description = "댓글 신고일 때 그 댓글이 달린 글 ID. 그 외에는 null")
 		UUID targetPostId,
 
 		@Schema(description = "제목")
@@ -125,11 +116,6 @@ public class AdminInquiryResponse {
 		LocalDateTime deletedAt
 	) {
 
-		/**
-		 * @param imgUrl              첨부 이미지의 공개 URL. 없으면 null
-		 * @param writerProfileImgUrl 작성자 프로필 이미지의 공개 URL. 없으면 null
-		 * @param targetPostId        신고된 댓글이 달린 글 ID. 댓글 신고가 아니거나 댓글이 삭제됐으면 null
-		 */
 		public static Detail from(
 			Inquiry inquiry,
 			String imgUrl,

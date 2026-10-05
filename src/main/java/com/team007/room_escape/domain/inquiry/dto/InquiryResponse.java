@@ -13,7 +13,7 @@ public class InquiryResponse {
 	private InquiryResponse() {
 	}
 
-	/** 문의 등록·수정 응답. 두 경우의 모양이 같아 하나로 쓴다. */
+	/** 문의 응답. 등록·수정·목록·상세에서 함께 쓴다. */
 	@Builder
 	public record Info(
 		UUID id,
@@ -30,9 +30,6 @@ public class InquiryResponse {
 		LocalDateTime createdAt
 	) {
 
-		/**
-		 * @param imgUrl 저장 key를 변환한 공개 URL. 첨부가 없으면 null
-		 */
 		public static Info from(Inquiry inquiry, String imgUrl) {
 			return Info.builder()
 				.id(inquiry.getId())
