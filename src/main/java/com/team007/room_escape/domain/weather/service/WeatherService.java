@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -124,13 +125,11 @@ public class WeatherService {
 	/** 발표 후 10분 지연 반영, 이미 발표 완료된 가장 최근 회차 계산 */
 	private LocalDateTime resolveBase(LocalDateTime now) {
 		LocalDateTime cutoff = now.minus(PUBLISH_DELAY);
-		for (int i = BASE_HOURS.length - 1; i >= 0; i--) {
-			LocalDateTime candidate = cutoff.toLocalDate().atTime(BASE_HOURS[i], 0);
-			if (!candidate.isAfter(cutoff)) {
-				return candidate;
-			}
-		}
-		// 오늘 02시 발표(-10분 여유)보다 이른 새벽이면 전날 23시 발표로 대체
-		return cutoff.toLocalDate().minusDays(1).atTime(23, 0);
+		return Arrays.stream(BASE_HOURS)
+			.mapToObj(hour -> cutoff.toLocalDate().atTime(hour, 0))
+			.filter(candidate -> !candidate.isAfter(cutoff))
+			.max(Comparator.naturalOrder())
+			// 오늘 02시 발표(-10분 여유)보다 이른 새벽이면 전날 23시 발표로 대체
+			.orElseGet(() -> cutoff.toLocalDate().minusDays(1).atTime(23, 0));
 	}
 }

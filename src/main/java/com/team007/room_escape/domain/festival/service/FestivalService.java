@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -345,8 +344,8 @@ public class FestivalService {
 			Page<Festival> legacy = festivalRepository.findLegacyImages(
 				r2Properties.publicUrl(), Pageable.ofSize(LEGACY_IMAGE_BATCH_SIZE));
 
-			Map<Long, String> processedUrls = new HashMap<>();
-			legacy.forEach(f -> processedUrls.put(f.getId(), festivalImageProcessor.process(f.getImgUrl())));
+			Map<Long, String> processedUrls = legacy.stream()
+				.collect(Collectors.toMap(Festival::getId, f -> festivalImageProcessor.process(f.getImgUrl())));
 
 			transactionTemplate.executeWithoutResult(status ->
 				festivalRepository.findAllById(processedUrls.keySet())

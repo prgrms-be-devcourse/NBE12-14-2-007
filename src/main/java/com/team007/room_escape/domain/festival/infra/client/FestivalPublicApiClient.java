@@ -96,30 +96,21 @@ public class FestivalPublicApiClient {
 			.toUri();
 	}
 
-	/** 응답의 head, row가 키가 아니라 배열 순서로 섞여 있어서 순회하며 찾는다. */
+	/** 응답은 {"GGCULTUREVENTSTUS": [ {head: [...]}, {row: [...]} ]} 형태다. */
 	private FestivalApiResult parse(JsonNode body) {
 		try {
 			JsonNode root = body.path("GGCULTUREVENTSTUS");
 
-			int totalCount = 0;
-			List<FestivalApiRow> rows = List.of();
+			// head·row 위치가 정해져 있지 않아서 키 이름으로 찾는다. 없으면 MissingNode다.
+			int totalCount = root.findPath("head").findPath("list_total_count").asInt(0);
 
-			for (JsonNode section : root) {
-				if (section.has("head")) {
+			// row는 이미 트리라 convertValue로 POJO 리스트만 만든다.
+			JsonNode rowNode = root.findPath("row");
+			List<FestivalApiRow> rows = rowNode.isMissingNode()
+				? List.of()
+				: objectMapper.convertValue(rowNode, new TypeReference<List<FestivalApiRow>>() {});
 
-					// head 안 낱개 객체 중 원하는 키를 가진 것만 찾는다.
-					for (JsonNode headItem : section.get("head")) {
-						if (headItem.has("list_total_count")) {
-							totalCount = headItem.get("list_total_count").asInt();
-						}
-					}
-				}
-				if (section.has("row")) {
-					// row는 이미 트리라 convertValue로 POJO 리스트만 만든다.
-					rows = objectMapper.convertValue(section.get("row"),
-						new TypeReference<List<FestivalApiRow>>() {});
-				}
-			}return new FestivalApiResult(totalCount, rows);
+			return new FestivalApiResult(totalCount, rows);
 		} catch (Exception e) {
 			log.error("[{}] 공공 API 응답 파싱 실패", FestivalExceptionCode.PUBLIC_API_PARSE_FAILED.getCode(), e);
 			throw new BusinessException(FestivalExceptionCode.PUBLIC_API_PARSE_FAILED);
