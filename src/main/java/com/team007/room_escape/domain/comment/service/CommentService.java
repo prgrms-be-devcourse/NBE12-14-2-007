@@ -30,9 +30,9 @@ public class CommentService {
 	private final ImageUrlResolver imageUrlResolver;
 
 	@Transactional
-	public CommentResponse.CommentInfo createComment(
+	public CommentResponse.Info createComment(
 			UUID postId,
-			CommentRequest request,
+			CommentRequest.Upsert request,
 			UUID memberId
 	) {
 		Member member = memberReader.getUnrestrictedMember(memberId);
@@ -48,25 +48,25 @@ public class CommentService {
 
 		commentRepository.save(comment);
 
-		return CommentResponse.CommentInfo.from(comment, imageUrlResolver);
+		return CommentResponse.Info.from(comment, imageUrlResolver);
 	}
 
 	@Transactional(readOnly = true)
-	public List<CommentResponse.CommentInfo> getComments(UUID postId, Pageable page) {
+	public List<CommentResponse.Info> getComments(UUID postId, Pageable page) {
 
 		if(!postRepository.existsByIdAndDeletedAtIsNull(postId)) {
 			throw new BusinessException(PostExceptionCode.POST_NOT_FOUND);
 		}
 
 		return commentRepository.findAllByPostId(postId, page).stream()
-				.map(comment -> CommentResponse.CommentInfo.from(comment, imageUrlResolver))
+				.map(comment -> CommentResponse.Info.from(comment, imageUrlResolver))
 				.toList();
 	}
 
 	@Transactional
-	public CommentResponse.CommentInfo updateComment(
+	public CommentResponse.Info updateComment(
 			Long id,
-			CommentRequest request,
+			CommentRequest.Upsert request,
 			UUID memberId
 	) {
 		memberReader.getUnrestrictedMember(memberId);
@@ -80,7 +80,7 @@ public class CommentService {
 
 		comment.update(request.content());
 
-		return CommentResponse.CommentInfo.from(comment, imageUrlResolver);
+		return CommentResponse.Info.from(comment, imageUrlResolver);
 	}
 
 	@Transactional

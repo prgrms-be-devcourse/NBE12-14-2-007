@@ -404,7 +404,7 @@ function Comments({ postId }: { postId: string }) {
             <CommentRow
               key={comment.id}
               comment={comment}
-              own={comment.memberId === member?.id}
+              own={comment.member.id === member?.id}
               admin={member?.role === "ROLE_ADMIN"}
               reload={reload}
             />
@@ -474,22 +474,22 @@ function CommentRow({
   }
   return (
     <div className="comment-row">
-      <span className="avatar small">{comment.nickname[0]}</span>
+      <span className="avatar small">{comment.member.nickname[0]}</span>
       <div>
         <div className="comment-meta">
           <ReportableName
-            memberId={comment.memberId}
-            nickname={comment.nickname}
+            memberId={comment.member.id}
+            nickname={comment.member.nickname}
           />
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
           <span />
           {!own && (
             <ReportButton
-              ariaLabel={`${comment.nickname} 님의 댓글 신고`}
+              ariaLabel={`${comment.member.nickname} 님의 댓글 신고`}
               target={{
                 type: "COMMENT",
                 id: String(comment.id),
-                name: `${comment.nickname} 님의 댓글 "${comment.content.slice(0, 30)}${comment.content.length > 30 ? "…" : ""}"`,
+                name: `${comment.member.nickname} 님의 댓글 "${comment.content.slice(0, 30)}${comment.content.length > 30 ? "…" : ""}"`,
                 details: [
                   `후기 주소: ${window.location.origin}/reviews/${comment.postId}`,
                   `댓글 내용: ${comment.content}`,
