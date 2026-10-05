@@ -174,8 +174,7 @@ public class FestivalSubmissionService {
             FestivalRegion region,
             String referenceUrl
     ) {
-        // 화면에서 입력하는 날짜 기준으로 비교한다. 기존 데이터의 시각이 달라도 차단한다.
-        // 같은 조건의 동시 요청도 검사와 저장을 순서대로 처리하도록 트랜잭션 잠금을 건다.
+        // 날짜 기준으로 비교하고, 같은 조건의 동시 요청은 잠금으로 순서대로 처리한다.
         long lockKey = java.util.Objects.hash(beginDe.toLocalDate(), endDe.toLocalDate(), region.name(), referenceUrl);
         festivalRepository.lockSubmissionDuplicateKey(lockKey);
         boolean duplicated = festivalRepository.existsSubmissionDuplicate(

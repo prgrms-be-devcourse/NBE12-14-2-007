@@ -27,7 +27,7 @@ public class PublicFestivalSource extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "jsonb")
 	private String source;
 
-	/** 이번 배치에서 실제로 받아온 행 개수. 매번 source(jsonb) 전체를 파싱하지 않고도 몇 건인지 바로 확인하기 위함 */
+	/** 이번 배치에서 받아온 행 개수. jsonb를 파싱하지 않고 건수를 보려고 둔다. */
 	@Column(name = "total_count", nullable = false)
 	private int totalCount;
 

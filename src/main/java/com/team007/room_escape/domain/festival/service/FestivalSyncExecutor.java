@@ -6,12 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * 공공 행사 동기화가 동시에 두 번 실행되지 않게 막는 실행기.
- * 스케줄러와 수동 동기화 버튼이 모두 이 클래스를 거친다.
- * 동기화 전체가 끝나서 신규 저장까지 커밋된 뒤에 잠금이 풀려야
- * 다음 실행이 최신 저장 건수를 보고 중복 저장하지 않는다.
- */
+/** 동기화가 동시에 두 번 돌지 않게 막는다. 신규 저장이 커밋된 뒤에 잠금을 푼다. */
 @Component
 @RequiredArgsConstructor
 public class FestivalSyncExecutor {

@@ -32,13 +32,7 @@ public class FestivalController {
 	private final FestivalService festivalService;
 	private final FestivalSyncExecutor festivalSyncExecutor;
 
-	@Operation(summary = "행사 통합 검색", description = """
-                검색어와 지역, 데이터 출처, 행사 카테고리, 날짜를 이용해
-                공공행사와 사용자 등록 행사를 통합 검색합니다.
-                모든 검색 조건은 선택사항입니다.
-                기본 정렬은 오늘 기준으로 가장 가깝게 시작하는 행사 순입니다.
-                sort=likeCount,desc 로 좋아요순, sort=createdAt,desc 로 최근 등록순,
-                sort=title,asc 로 이름순 정렬할 수 있습니다""")
+	@Operation(summary = "행사 통합 검색", description = "공공행사와 사용자 등록 행사를 통합 검색한다. 모든 조건은 선택이다.")
 	@GetMapping
 	public ResponseEntity<ApiResponse<Page<FestivalResponse.ListResponse>>>
 	searchFestivals(
