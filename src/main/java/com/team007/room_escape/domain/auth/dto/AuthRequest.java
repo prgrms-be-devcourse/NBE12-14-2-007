@@ -22,7 +22,6 @@ public class AuthRequest {
 		@NotBlank
 		@Schema(description = "비밀번호", example = "Password1!")
 		String password
-
 	) {
 	}
 
@@ -42,7 +41,7 @@ public class AuthRequest {
 		@Size(min = 2, max = 30)
 		@Schema(description = "닉네임", example = "축제좋아")
 		String nickname,
-		
+
 		@ValidPhone
 		@Schema(description = "휴대폰 번호. 하이픈 없이 숫자만", example = "01012345678")
 		String phone

@@ -2,8 +2,7 @@ package com.team007.room_escape.domain.auth.service;
 
 import static com.team007.room_escape.global.util.StringUtil.emptyToNull;
 
-import com.team007.room_escape.domain.auth.dto.AuthRequest.Signup;
-import com.team007.room_escape.domain.auth.dto.TokenPair;
+import com.team007.room_escape.domain.auth.dto.AuthRequest;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
@@ -33,7 +32,7 @@ public class AuthService {
 
 	/** 비회원은 이미지를 올릴 수 없어서 프로필 사진은 가입 후 마이페이지에서 등록한다. */
 	@Transactional
-	public void signup(Signup request) {
+	public void signup(AuthRequest.Signup request) {
 		log.info("[가입] 요청 email={} nickname={} phone={}",
 			request.email(), request.nickname(), request.phone());
 
@@ -116,5 +115,12 @@ public class AuthService {
 			LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenValiditySeconds())
 		);
 		return new TokenPair(accessToken, refreshToken);
+	}
+
+	/** 서비스 → 컨트롤러 내부 전달용. Refresh Token은 쿠키로 나가서 응답 본문에는 쓰지 않는다. */
+	public record TokenPair(
+		String accessToken,
+		String refreshToken
+	) {
 	}
 }
