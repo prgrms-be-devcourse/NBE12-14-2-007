@@ -89,7 +89,7 @@ public class PostController {
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
-		// 비회원도 볼 수 있는 API라서 로그인 정보가 없으면 user가 null이다.
+		// 비회원이면 user가 null이다.
 		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(
 				id,
 				user == null ? null : user.getId()

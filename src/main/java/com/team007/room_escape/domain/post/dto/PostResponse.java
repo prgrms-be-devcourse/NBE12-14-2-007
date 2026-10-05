@@ -26,14 +26,7 @@ public class PostResponse {
             String nickname,
             String profileImg
     ) {
-        /**
-         * 탈퇴한 회원은 닉네임과 프로필을 가린다.
-         *
-         * Member 에는 @SQLRestriction 을 걸 수 없어서(글·댓글 연관관계가 깨진다)
-         * 탈퇴 회원도 그대로 로딩된다. 그래서 응답을 만드는 이 자리에서 가려야 한다.
-         *
-         * id 도 null 로 준다. 값을 남기면 화면이 없는 프로필로 링크를 걸게 된다.
-         */
+        /** 탈퇴 회원은 닉네임·프로필·id를 가린다. Member엔 @SQLRestriction이 없어서 여기서 가려야 한다. */
         public static MemberInfo from(Post post, ImageUrlResolver imageUrlResolver) {
             Member member = post.getMember();
 

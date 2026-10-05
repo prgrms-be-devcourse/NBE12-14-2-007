@@ -44,13 +44,7 @@ public class Post extends SoftDeletableEntity {
 	@Column(length = 2048)
 	private String thumbnail;
 
-	/**
-	 * 좋아요 수. 좋아요순 정렬용으로 "like" 테이블 건수를 따로 들고 있는다.
-	 * 좋아요 등록·취소 때 PostRepository.increaseLikeCount / decreaseLikeCount 로만 바꾼다.
-	 *
-	 * updatable = false: 후기 수정·삭제로 엔티티를 저장할 때 읽어 둔 옛 값으로 덮어쓰지 않게 한다.
-	 * (그 사이 다른 사람이 누른 좋아요가 사라지는 것을 막는다)
-	 */
+	/** 좋아요 수. increase/decreaseLikeCount로만 바꾸고, 엔티티 저장 때 옛 값으로 덮지 않게 updatable = false. */
 	@Column(nullable = false, updatable = false)
 	private long likeCount;
 
