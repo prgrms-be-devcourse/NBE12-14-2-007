@@ -6,14 +6,15 @@ import jakarta.validation.constraints.NotNull;
 
 public final class FestivalAccuracyVoteRequest {
 
-    private FestivalAccuracyVoteRequest() {
-    }
+	private FestivalAccuracyVoteRequest() {
+	}
 
-    public record CreateOrUpdateFestivalAccuracyVoteRequest(
+	@Schema(name = "FestivalAccuracyVoteUpsertRequest", description = "행사 정보 정확도 평가 요청")
+	public record Upsert(
 
-            @NotNull(message = "평가 종류는 필수입니다.")
-            @Schema(description = "행사 정보 정확도 평가", example = "ACCURATE")
-            FestivalAccuracyVoteType voteType
-    ) {
-    }
+		@NotNull(message = "평가 종류는 필수입니다.")
+		@Schema(description = "행사 정보 정확도 평가", example = "ACCURATE")
+		FestivalAccuracyVoteType voteType
+	) {
+	}
 }
