@@ -40,7 +40,7 @@ public class PostService {
 
 
 	@Transactional
-	public PostResponse.CreateResponse createPost(
+	public PostResponse.Create createPost(
 			Long festivalId,
 			PostRequest request,
 			UUID memberId
@@ -63,11 +63,11 @@ public class PostService {
 
 		postRepository.save(post);
 
-		return PostResponse.CreateResponse.from(post);
+		return PostResponse.Create.from(post);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> searchPosts(
+	public Page<PostResponse.ListItem> searchPosts(
 			PostSearchType type,
 			String keyword,
 			Pageable page
@@ -76,47 +76,47 @@ public class PostService {
 
 		if(LikeSort.isRequested(page)) {
 			Pageable unsorted = LikeSort.withoutSort(page);
-			return toListResponses(hasKeyword
+			return toListItems(hasKeyword
 					? postRepository.searchPostsOrderByLikeCount(type.name(), keyword, unsorted)
 					: postRepository.findAllOrderByLikeCount(unsorted));
 		}
 		if(!hasKeyword) {
-			return toListResponses(postRepository.findAllNotDeleted(page));
+			return toListItems(postRepository.findAllNotDeleted(page));
 		}
-		return toListResponses(postRepository.searchPosts(type, keyword, page));
+		return toListItems(postRepository.searchPosts(type, keyword, page));
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.AdminListResponse> searchPostsForAdmin(
+	public Page<PostResponse.AdminListItem> searchPostsForAdmin(
 			PostSearchType type,
 			String keyword,
 			Pageable page
 	) {
 		if(type == null || keyword == null || keyword.isBlank()) {
 			return postRepository.findAllIncludingDeleted(page)
-					.map(post -> PostResponse.AdminListResponse.from(post, imageUrlResolver));
+					.map(post -> PostResponse.AdminListItem.from(post, imageUrlResolver));
 		}
 
 		return postRepository.searchPostsIncludingDeleted(type, keyword, page)
-					.map(post -> PostResponse.AdminListResponse.from(post, imageUrlResolver));
+					.map(post -> PostResponse.AdminListItem.from(post, imageUrlResolver));
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> getPostsByFestival(Long festivalId, Pageable page) {
+	public Page<PostResponse.ListItem> getPostsByFestival(Long festivalId, Pageable page) {
 		if(LikeSort.isRequested(page)) {
-			return toListResponses(postRepository.findAllByFestivalIdOrderByLikeCount(
+			return toListItems(postRepository.findAllByFestivalIdOrderByLikeCount(
 					festivalId, LikeSort.withoutSort(page)
 			));
 		}
-		return toListResponses(postRepository.findAllByFestivalId(festivalId, page));
+		return toListItems(postRepository.findAllByFestivalId(festivalId, page));
 	}
 
-	private Page<PostResponse.ListResponse> toListResponses(Page<Post> posts) {
-		return posts.map(post -> PostResponse.ListResponse.from(post, post.getLikeCount(), imageUrlResolver));
+	private Page<PostResponse.ListItem> toListItems(Page<Post> posts) {
+		return posts.map(post -> PostResponse.ListItem.from(post, post.getLikeCount(), imageUrlResolver));
 	}
 
 	@Transactional(readOnly = true)
-	public PostResponse.DetailResponse getPostDetail(UUID id, UUID memberId) {
+	public PostResponse.Detail getPostDetail(UUID id, UUID memberId) {
 
 		Post post = postRepository.findByIdAndDeletedAtIsNull(id)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
@@ -125,11 +125,11 @@ public class PostService {
 		boolean likedByMe = memberId != null
 				&& likeRepository.existsByPostIdAndMemberId(id, memberId);
 
-		return PostResponse.DetailResponse.from(post, likedByMe, imageUrlResolver);
+		return PostResponse.Detail.from(post, likedByMe, imageUrlResolver);
 	}
 
 	@Transactional
-	public PostResponse.DetailResponse updatePost(
+	public PostResponse.Detail updatePost(
 			UUID postId,
 			PostRequest request,
 			UUID memberId
@@ -156,7 +156,7 @@ public class PostService {
 		);
 		deleteReplacedThumbnail(previousThumbnail, thumbnail, memberId);
 
-		return PostResponse.DetailResponse.from(
+		return PostResponse.Detail.from(
 				post,
 				likeRepository.existsByPostIdAndMemberId(postId, memberId),
 				imageUrlResolver
