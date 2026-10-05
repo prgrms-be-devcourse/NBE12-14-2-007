@@ -9,7 +9,6 @@ import com.team007.room_escape.domain.festival.infra.dto.FestivalVoteCount;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.entity.PublicFestivalSource;
@@ -25,8 +24,6 @@ import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,8 +44,6 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class FestivalService {
 
-	/** API가 날짜를 "260916" 형태로 넘겨줘서 해석하는 규칙 */
-	private static final DateTimeFormatter API_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 	private static final int MAX_PAGE_SIZE = 1000; // API 문서상 1회 요청 최대 건수
 	private static final int LEGACY_IMAGE_BATCH_SIZE = 30;
 
@@ -357,63 +352,9 @@ public class FestivalService {
 	}
 
 	// TODO: 서울 API 연동 시 toSeoulFestival() 추가
-	/** 경기도 API 응답을 엔티티로 바꾼다. */
+	/** 경기도 API 행을 엔티티로 바꾼다. 이미지 다운로드·R2 업로드는 여기서 한다. */
 	private Festival toGyeonggiFestival(FestivalApiRow row) {
-		LocalDateTime beginDe = parseDate(row.beginDe());
-		LocalDateTime endDe = parseEndDate(row.endDe());
-
-		return Festival.builder()
-			.providerType(ProviderType.PUBLIC)
-			.instNm(row.instNm())
-			.title(row.title())
-			.category(row.categoryNm())
-			.url(row.url())
-			.eventTmInfo(row.eventTmInfo())
-			.partcptExpnInfo(row.partcptExpnInfo())
-			.telnoInfo(row.telnoInfo())
-			.hostInstNm(row.hostInstNm())
-			.hmpgUrl(normalizeHomepageUrl(row.hmpgUrl()))
-			.imgUrl(festivalImageProcessor.process(row.imageUrl()))
-			.beginDe(beginDe)
-			.endDe(endDe)
-			.writngDe(parseDate(row.writngDe()))
-			.status(FestivalStatus.from(endDe))
-			// 시/군 단위 지역 필드가 없어서 도 단위로만 저장한다.
-			.region(FestivalRegion.GYEONGGI)
-			.build();
-	}
-
-	/** 스킴 없이 오는 HMPG_URL에 https://를 붙이고, 앞에 섞인 문자는 잘라낸다. */
-	private String normalizeHomepageUrl(String value) {
-		if (value == null || value.isBlank()
-				|| value.equals("-") || value.equalsIgnoreCase("undefined")) {
-			return null;
-		}
-		String trimmed = value.trim();
-		int httpIndex = trimmed.toLowerCase().indexOf("http://");
-		if (httpIndex < 0) {
-			httpIndex = trimmed.toLowerCase().indexOf("https://");
-		}
-		if (httpIndex >= 0) {
-			return trimmed.substring(httpIndex);
-		}
-		return "https://" + trimmed;
-	}
-
-	/** yyyyMMdd 문자열을 날짜로 바꾼다. 비어 있으면 null. */
-	private LocalDateTime parseDate(String yyyyMMdd) {
-		if (yyyyMMdd == null || yyyyMMdd.isBlank()) {
-			return null;
-		}
-		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atStartOfDay();
-	}
-
-	/** 종료일은 그날 23:59:59까지로 해석한다. 마지막 날 자정에 종료 처리되는 걸 막는다. */
-	private LocalDateTime parseEndDate(String yyyyMMdd) {
-		if (yyyyMMdd == null || yyyyMMdd.isBlank()) {
-			return null;
-		}
-		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atTime(LocalTime.MAX);
+		return row.toFestival(festivalImageProcessor.process(row.imageUrl()));
 	}
 
 	/** 입력값의 앞뒤 공백을 제거하고, 빈 문자열은 검색 조건에서 제외한다. */
