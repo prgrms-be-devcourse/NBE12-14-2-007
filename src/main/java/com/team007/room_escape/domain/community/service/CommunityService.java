@@ -39,7 +39,7 @@ public class CommunityService {
 	private final ImageUrlResolver imageUrlResolver;
 
 	@Transactional(readOnly = true)
-	public Page<CommunityResponse.PostSummary> getPosts(
+	public Page<CommunityResponse.PostListItem> getPosts(
 		CommunityCategory category,
 		String keyword,
 		Pageable pageable
@@ -54,7 +54,7 @@ public class CommunityService {
 				CommunityCommentRepository.PostCommentCount::getPostId,
 				CommunityCommentRepository.PostCommentCount::getCommentCount
 			));
-		return posts.map(post -> CommunityResponse.PostSummary.from(
+		return posts.map(post -> CommunityResponse.PostListItem.from(
 			post,
 			commentCounts.getOrDefault(post.getId(), 0L),
 			imageUrlResolver
