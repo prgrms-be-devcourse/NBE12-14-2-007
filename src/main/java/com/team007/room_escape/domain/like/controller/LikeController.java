@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.like.controller;
 
-import com.team007.room_escape.domain.like.infra.dto.LikeResponse;
+import com.team007.room_escape.domain.like.dto.LikeResponse;
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.service.LikeService;
 import com.team007.room_escape.global.response.ApiResponse;

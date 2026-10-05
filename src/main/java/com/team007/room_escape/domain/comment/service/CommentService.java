@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.comment.service;
 
-import com.team007.room_escape.domain.comment.infra.dto.CommentRequest;
-import com.team007.room_escape.domain.comment.infra.dto.CommentResponse;
+import com.team007.room_escape.domain.comment.dto.CommentRequest;
+import com.team007.room_escape.domain.comment.dto.CommentResponse;
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.comment.infra.repository.CommentRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;

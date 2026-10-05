@@ -1,4 +1,4 @@
-package com.team007.room_escape.domain.post.infra.dto;
+package com.team007.room_escape.domain.post.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
