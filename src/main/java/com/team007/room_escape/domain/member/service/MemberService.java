@@ -39,7 +39,7 @@ public class MemberService {
 	public MemberResponse.MyPageInfo getMyPage(UUID memberId) {
 		Member member = memberReader.getActiveMember(memberId);
 
-		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
+		return toMyPageInfo(member);
 	}
 
 	/** 마이페이지 수정. 제재 회원은 신고 회피를 막으려고 수정할 수 없다. */
@@ -55,7 +55,7 @@ public class MemberService {
 
 		deleteReplacedProfileImage(previousProfileImg, member.getProfileImg(), memberId);
 
-		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
+		return toMyPageInfo(member);
 	}
 
 	/** 인증 코드를 가입 이메일로 보낸다. 메일 발송 중 커넥션을 잡지 않으려고 트랜잭션을 걸지 않는다. */
@@ -121,6 +121,11 @@ public class MemberService {
 		if (memberRepository.existsByNicknameAndDeletedAtIsNull(nickname)) {
 			throw new BusinessException(MemberExceptionCode.NICKNAME_DUPLICATED);
 		}
+	}
+
+	/** 프로필 이미지 key를 공개 URL로 바꿔 내려준다. */
+	private MemberResponse.MyPageInfo toMyPageInfo(Member member) {
+		return MemberResponse.MyPageInfo.from(member, imageUrlResolver.resolve(member.getProfileImg()));
 	}
 
 	/** 교체된 옛 이미지를 R2에서 지운다. */
