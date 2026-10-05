@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
-import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteRequest.CreateOrUpdateFestivalAccuracyVoteRequest;
-import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteResponse.AccuracyVoteResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
@@ -28,10 +28,10 @@ public class FestivalAccuracyVoteService {
     private final MemberTrustGradeService memberTrustGradeService;
 
     @Transactional
-    public AccuracyVoteResponse vote(
+    public FestivalAccuracyVoteResponse.Info vote(
             UUID memberId,
             Long festivalId,
-            CreateOrUpdateFestivalAccuracyVoteRequest request
+            FestivalAccuracyVoteRequest.Upsert request
     ) {
         Member member = memberReader.getActiveMember(memberId);
         Festival festival = findUserSubmittedFestival(festivalId);
@@ -54,13 +54,13 @@ public class FestivalAccuracyVoteService {
         vote.changeVote(request.voteType());
         accuracyVoteRepository.save(vote);
 
-        AccuracyVoteResponse response = buildResponse(festival, vote.getVoteType());
+        FestivalAccuracyVoteResponse.Info response = buildResponse(festival, vote.getVoteType());
         memberTrustGradeService.refreshForFestival(festival);
         return response;
     }
 
     @Transactional
-    public AccuracyVoteResponse cancelVote(
+    public FestivalAccuracyVoteResponse.Info cancelVote(
             UUID memberId,
             Long festivalId
     ) {
@@ -71,12 +71,12 @@ public class FestivalAccuracyVoteService {
                 .findByFestivalAndMember(festival, member)
                 .ifPresent(accuracyVoteRepository::delete);
 
-        AccuracyVoteResponse response = buildResponse(festival, null);
+        FestivalAccuracyVoteResponse.Info response = buildResponse(festival, null);
         memberTrustGradeService.refreshForFestival(festival);
         return response;
     }
 
-    private AccuracyVoteResponse buildResponse(
+    private FestivalAccuracyVoteResponse.Info buildResponse(
             Festival festival,
             FestivalAccuracyVoteType myVote
     ) {
@@ -94,7 +94,7 @@ public class FestivalAccuracyVoteService {
                         FestivalAccuracyVoteType.INACCURATE
                 );
 
-        return AccuracyVoteResponse.of(
+        return FestivalAccuracyVoteResponse.Info.from(
                 accurateCount,
                 inaccurateCount,
                 myVote
