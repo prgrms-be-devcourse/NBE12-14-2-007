@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.post.dto;
 
-import com.team007.room_escape.domain.member.infra.entity.Member;
+import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,38 +24,11 @@ public class PostResponse {
 		}
 	}
 
-	// TODO 나중에 Member에서 DTO로 만들어서 사용 (현재 Post, Comment에서 공통적으로 사용중)
-	@Builder
-	@Schema(name = "PostMemberInfo", description = "후기 작성자")
-	public record MemberInfo(
-		UUID id,
-		String nickname,
-		String profileImg
-	) {
-
-		/** 탈퇴 회원은 닉네임·프로필·id를 가린다. Member엔 @SQLRestriction이 없어서 여기서 가려야 한다. */
-		public static MemberInfo from(Post post, ImageUrlResolver imageUrlResolver) {
-			Member member = post.getMember();
-
-			if (member == null || member.isDeleted()) {
-				return MemberInfo.builder()
-					.nickname(Member.WITHDRAWN_NICKNAME)
-					.build();
-			}
-
-			return MemberInfo.builder()
-				.id(member.getId())
-				.nickname(member.getNickname())
-				.profileImg(imageUrlResolver.resolve(member.getProfileImg()))
-				.build();
-		}
-	}
-
 	@Builder
 	@Schema(name = "PostListItem", description = "후기 목록 항목")
 	public record ListItem(
 		UUID id,
-		MemberInfo member,
+		MemberResponse.MemberInfo member,
 		Long festivalId,
 		String festivalTitle,
 		String title,
@@ -67,7 +40,7 @@ public class PostResponse {
 		public static ListItem from(Post post, long likeCount, ImageUrlResolver imageUrlResolver) {
 			return ListItem.builder()
 				.id(post.getId())
-				.member(MemberInfo.from(post, imageUrlResolver))
+				.member(MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver))
 				.festivalId(post.getFestival().getId())
 				.festivalTitle(post.getFestival().getTitle())
 				.title(post.getTitle())
@@ -82,7 +55,7 @@ public class PostResponse {
 	@Schema(name = "PostAdminListItem", description = "관리자 후기 목록 항목")
 	public record AdminListItem(
 		UUID id,
-		MemberInfo member,
+		MemberResponse.MemberInfo member,
 		Long festivalId,
 		String festivalTitle,
 		String title,
@@ -94,7 +67,7 @@ public class PostResponse {
 		public static AdminListItem from(Post post, ImageUrlResolver imageUrlResolver) {
 			return AdminListItem.builder()
 				.id(post.getId())
-				.member(MemberInfo.from(post, imageUrlResolver))
+				.member(MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver))
 				.festivalId(post.getFestival().getId())
 				.festivalTitle(post.getFestival().getTitle())
 				.title(post.getTitle())
@@ -109,7 +82,7 @@ public class PostResponse {
 	@Schema(name = "PostDetail", description = "후기 상세")
 	public record Detail(
 		UUID id,
-		MemberInfo member,
+		MemberResponse.MemberInfo member,
 		Long festivalId,
 		String festivalTitle,
 		String title,
@@ -122,7 +95,7 @@ public class PostResponse {
 		public static Detail from(Post post, boolean likedByMe, ImageUrlResolver imageUrlResolver) {
 			return Detail.builder()
 				.id(post.getId())
-				.member(MemberInfo.from(post, imageUrlResolver))
+				.member(MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver))
 				.festivalId(post.getFestival().getId())
 				.festivalTitle(post.getFestival().getTitle())
 				.title(post.getTitle())

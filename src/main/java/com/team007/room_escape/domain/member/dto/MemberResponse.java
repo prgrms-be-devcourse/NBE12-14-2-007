@@ -5,6 +5,9 @@ import java.util.UUID;
 
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
+import com.team007.room_escape.global.storage.ImageUrlResolver;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Builder;
 
@@ -71,8 +74,9 @@ public class MemberResponse {
 		}
 	}
 
-	/** 다른 도메인 응답에 붙는 작성자 정보. */
+	/** 다른 도메인 응답에 붙는 작성자 정보. 탈퇴 회원은 닉네임만 "탈퇴한 사용자"로 내려준다. */
 	@Builder
+	@Schema(name = "MemberInfo", description = "작성자 정보")
 	public record MemberInfo(
 		UUID id,
 		String nickname,
@@ -80,12 +84,19 @@ public class MemberResponse {
 		String profileImg
 	) {
 
-		public static MemberInfo from(Member member, String profileImgUrl) {
+		/** Member엔 @SQLRestriction이 없어서 탈퇴 회원도 로딩되므로 여기서 가린다. */
+		public static MemberInfo from(Member member, ImageUrlResolver imageUrlResolver) {
+			if (member == null || member.isDeleted()) {
+				return MemberInfo.builder()
+					.nickname(Member.WITHDRAWN_NICKNAME)
+					.build();
+			}
+
 			return MemberInfo.builder()
 				.id(member.getId())
 				.nickname(member.getNickname())
 				.role(member.getRole())
-				.profileImg(profileImgUrl)
+				.profileImg(imageUrlResolver.resolve(member.getProfileImg()))
 				.build();
 		}
 	}
