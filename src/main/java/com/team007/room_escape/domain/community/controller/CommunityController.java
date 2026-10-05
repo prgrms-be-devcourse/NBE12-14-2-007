@@ -38,7 +38,7 @@ public class CommunityController {
 
 	@Operation(summary = "커뮤니티 글 목록")
 	@GetMapping("/posts")
-	public ResponseEntity<ApiResponse<Page<CommunityResponse.PostSummary>>> getPosts(
+	public ResponseEntity<ApiResponse<Page<CommunityResponse.PostListItem>>> getPosts(
 		@RequestParam(required = false) CommunityCategory category,
 		@RequestParam(required = false) String keyword,
 		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)

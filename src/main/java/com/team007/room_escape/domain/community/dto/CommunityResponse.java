@@ -5,12 +5,19 @@ import com.team007.room_escape.domain.community.infra.entity.CommunityPost;
 import com.team007.room_escape.domain.community.type.CommunityCategory;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.Builder;
 
 public class CommunityResponse {
 
-	public record PostSummary(
+	private CommunityResponse() {
+	}
+
+	@Builder
+	@Schema(name = "CommunityPostListItem", description = "커뮤니티 글 목록 항목")
+	public record PostListItem(
 		UUID id,
 		CommunityCategory category,
 		String title,
@@ -19,19 +26,23 @@ public class CommunityResponse {
 		long commentCount,
 		LocalDateTime createdAt
 	) {
-		public static PostSummary from(CommunityPost post, long commentCount, ImageUrlResolver imageUrlResolver) {
-			return new PostSummary(
-				post.getId(),
-				post.getCategory(),
-				post.getTitle(),
-				MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver),
-				post.getViewCount(),
-				commentCount,
-				post.getCreatedAt()
-			);
+
+		public static PostListItem from(CommunityPost post, long commentCount, ImageUrlResolver imageUrlResolver) {
+			return PostListItem.builder()
+				.id(post.getId())
+				.category(post.getCategory())
+				.title(post.getTitle())
+				.member(MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver))
+				.viewCount(post.getViewCount())
+				.commentCount(commentCount)
+				.createdAt(post.getCreatedAt())
+				.build();
 		}
 	}
 
+	/** 커뮤니티 글 상세. 작성·수정 응답도 같은 모양이다. */
+	@Builder
+	@Schema(name = "CommunityPostDetail", description = "커뮤니티 글 상세")
 	public record PostDetail(
 		UUID id,
 		CommunityCategory category,
@@ -43,21 +54,25 @@ public class CommunityResponse {
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt
 	) {
+
 		public static PostDetail from(CommunityPost post, long commentCount, ImageUrlResolver imageUrlResolver) {
-			return new PostDetail(
-				post.getId(),
-				post.getCategory(),
-				post.getTitle(),
-				post.getContent(),
-				MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver),
-				post.getViewCount(),
-				commentCount,
-				post.getCreatedAt(),
-				post.getUpdatedAt()
-			);
+			return PostDetail.builder()
+				.id(post.getId())
+				.category(post.getCategory())
+				.title(post.getTitle())
+				.content(post.getContent())
+				.member(MemberResponse.MemberInfo.from(post.getMember(), imageUrlResolver))
+				.viewCount(post.getViewCount())
+				.commentCount(commentCount)
+				.createdAt(post.getCreatedAt())
+				.updatedAt(post.getUpdatedAt())
+				.build();
 		}
 	}
 
+	/** 커뮤니티 댓글. 작성·목록·수정에서 함께 쓴다. */
+	@Builder
+	@Schema(name = "CommunityCommentInfo", description = "커뮤니티 댓글")
 	public record CommentInfo(
 		Long id,
 		UUID postId,
@@ -66,15 +81,16 @@ public class CommunityResponse {
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt
 	) {
+
 		public static CommentInfo from(CommunityComment comment, ImageUrlResolver imageUrlResolver) {
-			return new CommentInfo(
-				comment.getId(),
-				comment.getPost().getId(),
-				MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver),
-				comment.getContent(),
-				comment.getCreatedAt(),
-				comment.getUpdatedAt()
-			);
+			return CommentInfo.builder()
+				.id(comment.getId())
+				.postId(comment.getPost().getId())
+				.member(MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver))
+				.content(comment.getContent())
+				.createdAt(comment.getCreatedAt())
+				.updatedAt(comment.getUpdatedAt())
+				.build();
 		}
 	}
 }
