@@ -389,7 +389,7 @@ public class FestivalService {
 			.beginDe(beginDe)
 			.endDe(endDe)
 			.writngDe(parseDate(row.writngDe()))
-			.status(resolveStatus(endDe))
+			.status(FestivalStatus.from(endDe))
 			/** API 응답에 시/군 단위 지역 필드가 없어서, 일단 도 단위로만 저장 (경기도 전역 API) **/
 			.region(FestivalRegion.GYEONGGI)
 			.build();
@@ -430,15 +430,6 @@ public class FestivalService {
 		return LocalDate.parse(yyyyMMdd, API_DATE_FORMAT).atTime(LocalTime.MAX);
 	}
 
-	private FestivalStatus resolveStatus(LocalDateTime endDe) {
-		if (endDe == null) {
-			return FestivalStatus.OPEN;
-		}
-
-		return endDe.isBefore(LocalDateTime.now())
-				? FestivalStatus.CLOSED
-				: FestivalStatus.OPEN;
-	}
 	/** 입력값의 앞뒤 공백을 제거하고, 빈 문자열은 검색 조건에서 제외한다.*/
 	private String normalize(String value) {
 		if (value == null || value.isBlank()) {
