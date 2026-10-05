@@ -2,8 +2,7 @@ package com.team007.room_escape.domain.festival.infra.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-//API 응답의 row(행사 1건)를 그대로 담는 DTO
-//API가 주는 Json 필드 자바 필드와 맞춰 매칭하게끔
+// API 응답의 row(행사 1건)를 그대로 담는 DTO. 필드명을 API JSON에 맞춘다.
 public record FestivalApiRow(
     @JsonProperty("INST_NM") String instNm,
     @JsonProperty("TITLE") String title,
@@ -20,5 +19,4 @@ public record FestivalApiRow(
     @JsonProperty("WRITNG_DE") String writngDe
 ) {
 }
-//날짜도 String인 이유 : API가 날짜 타입이 아니라
-//260915 이런 식으로 문자열 형식으로 줌 => 파싱은 나중
+// API가 날짜를 "260915" 같은 문자열로 줘서 String으로 받고 나중에 파싱한다.

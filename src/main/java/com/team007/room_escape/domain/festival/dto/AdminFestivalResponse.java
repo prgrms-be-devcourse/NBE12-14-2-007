@@ -15,12 +15,7 @@ public class AdminFestivalResponse {
 	private AdminFestivalResponse() {
 	}
 
-	/**
-	 * 관리자 행사 목록의 한 줄.
-	 * 공개 목록(FestivalResponse.ListResponse)과 같은 모양에 deletedAt 만 더했다.
-	 * 삭제 시각이 없으면 공개 목록에 그대로 쓸 수 있는데, 그러면 삭제 여부를
-	 * 화면에서 알 수 없어 복구 버튼을 어디에 붙일지 판단할 수 없다.
-	 */
+	/** 관리자 행사 목록 항목. 공개 목록과 같은 모양에 복구 판단용 deletedAt만 더했다. */
 	@Builder
 	@Schema(name = "AdminFestivalListItem", description = "관리자 행사 목록 항목")
 	public record ListItem(

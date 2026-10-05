@@ -210,10 +210,7 @@ public class FestivalResponse {
         }
     }
 
-    /**
-     * 행사 엔티티를 목록·상세 응답으로 바꾼다.
-     * 제보자 정보와 이미지 주소 변환은 여기서만 한다.
-     */
+    /** 행사 엔티티를 목록·상세 응답으로 바꾼다. 제보자·이미지 변환은 여기서만 한다. */
     public static final class Converter {
 
         private Converter() {
