@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.post.controller;
 
-import com.team007.room_escape.domain.post.infra.dto.PostRequest;
-import com.team007.room_escape.domain.post.infra.dto.PostResponse;
+import com.team007.room_escape.domain.post.dto.PostRequest;
+import com.team007.room_escape.domain.post.dto.PostResponse;
 import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.domain.post.service.PostService;
 import com.team007.room_escape.global.response.ApiResponse;

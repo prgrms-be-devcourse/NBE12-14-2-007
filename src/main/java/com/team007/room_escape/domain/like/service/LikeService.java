@@ -2,7 +2,7 @@ package com.team007.room_escape.domain.like.service;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
-import com.team007.room_escape.domain.like.infra.dto.LikeResponse;
+import com.team007.room_escape.domain.like.dto.LikeResponse;
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;

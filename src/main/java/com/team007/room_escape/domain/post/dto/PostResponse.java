@@ -1,4 +1,4 @@
-package com.team007.room_escape.domain.post.infra.dto;
+package com.team007.room_escape.domain.post.dto;
 
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.post.infra.entity.Post;

@@ -1,4 +1,4 @@
-package com.team007.room_escape.domain.comment.infra.dto;
+package com.team007.room_escape.domain.comment.dto;
 
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.member.infra.entity.Member;
