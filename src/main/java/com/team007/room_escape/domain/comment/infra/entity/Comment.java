@@ -17,7 +17,7 @@ import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "`comment`")
-// 소프트 삭제된 댓글은 모든 조회(findById, findAll, JPQL, 연관관계 로딩)에서 자동으로 제외된다.
+// 삭제된 댓글은 모든 조회에서 자동으로 빠진다.
 @SQLRestriction("deleted_at is null")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -40,7 +40,7 @@ public class Comment extends SoftDeletableEntity {
 	@Column(nullable = false, columnDefinition = "text")
 	private String content;
 
-	//TODO : 별점과, 대댓글 생각해보기 ~ 
+	// TODO 별점, 대댓글 검토
 
 	public void update(String content) {
 		this.content = content;

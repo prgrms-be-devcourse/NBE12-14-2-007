@@ -121,7 +121,7 @@ public class PostService {
 		Post post = postRepository.findByIdAndDeletedAtIsNull(id)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
-		// 화면이 좋아요 버튼 상태를 복원할 수 있도록 내가 눌렀는지 함께 내려준다. 비회원은 항상 false.
+		// 좋아요 버튼 상태용. 비회원은 항상 false.
 		boolean likedByMe = memberId != null
 				&& likeRepository.existsByPostIdAndMemberId(id, memberId);
 
@@ -144,7 +144,7 @@ public class PostService {
 
 		}
 		String sanitizedContent = sanitizeRequiredContent(request.content());
-		// 화면은 썸네일을 안 바꿔도 응답에서 받은 URL을 그대로 다시 보내므로, 양쪽을 key로 맞춰 비교한다.
+		// 화면은 썸네일을 안 바꿔도 URL을 다시 보내서 양쪽을 key로 맞춰 비교한다.
 		String previousThumbnail = imageUrlResolver.toKey(post.getThumbnail());
 		String thumbnail = imageUrlResolver.toKey(request.thumbnail());
 		r2StorageService.requireOwnedBy(thumbnail, previousThumbnail, memberId);
@@ -177,7 +177,7 @@ public class PostService {
 		post.delete();
 	}
 
-	/** 교체된 옛 썸네일은 R2에서 지운다. 안 지우면 쓰지 않는 파일이 계속 쌓인다. */
+	/** 교체된 옛 썸네일을 R2에서 지운다. */
 	private void deleteReplacedThumbnail(String previousKey, String currentKey, UUID memberId) {
 		if (previousKey == null || previousKey.equals(currentKey)) {
 			return;
