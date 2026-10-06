@@ -27,11 +27,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminInquiryService {
 
-	/**
-	 * 정렬에 허용하는 필드.
-	 * Pageable 의 sort 는 클라이언트가 아무 이름이나 넣을 수 있어서,
-	 * 엔티티에 없는 필드가 들어오면 500이 난다. 그래서 먼저 걸러낸다.
-	 */
 	private static final Set<String> SORTABLE = Set.of("createdAt", "status", "category");
 
 	private final InquiryRepository inquiryRepository;
@@ -41,10 +36,7 @@ public class AdminInquiryService {
 
 	/** 관리자 문의 검색. 조건을 비우면 전체를 조회한다. */
 	@Transactional(readOnly = true)
-	public Page<AdminInquiryResponse.ListItem> search(
-		AdminInquiryRequest.Search request,
-		Pageable pageable
-	) {
+	public Page<AdminInquiryResponse.ListItem> search(AdminInquiryRequest.Search request, Pageable pageable) {
 		validateSort(pageable.getSort());
 
 		return inquiryRepository.search(
@@ -55,15 +47,11 @@ public class AdminInquiryService {
 			pageable
 		).map(inquiry -> AdminInquiryResponse.ListItem.from(
 			inquiry,
-			inquiry.getMember() == null
-				? null
-				: imageUrlResolver.resolve(inquiry.getMember().getProfileImg())
-		));
+			inquiry.getMember() == null ? null : imageUrlResolver.resolve(inquiry.getMember().getProfileImg())));
 	}
 
 	/**
 	 * 관리자 문의 상세. 삭제된 문의도 열어볼 수 있다.
-	 * 신고 내용을 지웠다고 해서 관리자가 못 보면 신고 처리 이력을 확인할 수 없다.
 	 */
 	@Transactional(readOnly = true)
 	public AdminInquiryResponse.Detail findById(UUID inquiryId) {
@@ -72,7 +60,6 @@ public class AdminInquiryService {
 
 	/**
 	 * 관리자 답변을 등록한다. 이미 답변이 있으면 덮어쓴다.
-	 *
 	 * 삭제된 문의에는 답변하지 않는다. 작성자가 이미 지운 글이라
 	 * 답변을 남겨도 작성자에게 보이지 않기 때문이다.
 	 */

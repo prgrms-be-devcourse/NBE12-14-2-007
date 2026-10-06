@@ -705,9 +705,12 @@ export function createApi(mode: Mode) {
         const c = {
           id: Date.now(),
           postId,
-          memberId: author.id,
-          nickname: author.nickname,
-          profile_img: author.profileImg,
+          member: {
+            id: author.id,
+            nickname: author.nickname,
+            profileImg: author.profileImg,
+            role: author.role,
+          },
           content,
           date: now(),
         };

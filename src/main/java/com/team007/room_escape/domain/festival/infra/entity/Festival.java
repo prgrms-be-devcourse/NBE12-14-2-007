@@ -18,10 +18,8 @@ import java.time.LocalDateTime;
 
 import lombok.*;
 
-// Post, FestivalSubmission 이 이 엔티티를 @ManyToOne 으로 참조한다.
-// @SQLRestriction 을 걸면 삭제된 행사를 참조하는 후기·제보를 조회할 때 예외가 나므로 걸지 않는다.
-// 목록/상세 조회는 리포지토리에서 deletedAtIsNull 로 직접 걸러야 한다.
-//TODO : 삭제시 "삭제된 행사입니다" 로 응답에 표시하기
+// 삭제된 행사를 참조하는 후기·제보 조회가 깨지지 않게 @SQLRestriction을 걸지 않는다. 목록·상세는 deletedAtIsNull로 거른다.
+// TODO 삭제된 행사는 응답에 "삭제된 행사입니다"로 표시하기
 @Entity
 @Table(name = "festival")
 @Getter
@@ -95,7 +93,7 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "region_detail", length = 255)
 	private String regionDetail;
 
-	//TODO 로 나중에 코드를 좀더 이쁘게 해봅시다
+	// TODO 인자가 많아서 정리 필요
 	public void updateDetails(
 			String instNm, String title, String category,
 			String content, String referenceUrl,

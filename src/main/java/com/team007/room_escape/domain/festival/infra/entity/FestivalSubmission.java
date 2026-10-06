@@ -23,12 +23,12 @@ import org.hibernate.annotations.UuidGenerator;
 @Builder
 public class FestivalSubmission extends SoftDeletableEntity {
 
-    @Id
-    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
-    private UUID id;
+	@Id
+	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+	private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "festival_id", nullable = false)
-    private Festival festival;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "festival_id", nullable = false)
+	private Festival festival;
 
 }

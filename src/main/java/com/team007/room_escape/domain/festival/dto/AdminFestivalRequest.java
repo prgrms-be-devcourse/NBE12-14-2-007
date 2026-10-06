@@ -33,10 +33,7 @@ public class AdminFestivalRequest {
 		Boolean includeDeleted
 	) {
 
-		/**
-		 * 앞뒤 공백을 지우고 소문자로 맞춘다.
-		 * 검색어가 없으면 빈 문자열을 돌려준다. LIKE '%%' 가 되어 전체가 조회된다.
-		 */
+		/** 검색어가 없으면 null 대신 빈 문자열을 돌려준다. */
 		public String keywordOrEmpty() {
 			if (keyword == null || keyword.isBlank()) {
 				return "";
@@ -54,15 +51,7 @@ public class AdminFestivalRequest {
 		}
 	}
 
-	/**
-	 * 관리자 행사 수정 요청.
-	 *
-	 * 보낸 값으로 전부 덮어쓴다(PUT 의미). 화면이 상세를 먼저 불러와 채운 뒤
-	 * 통째로 보내므로 일부만 보내는 경우를 다루지 않는다.
-	 *
-	 * 데이터 출처(providerType)와 작성자는 바꿀 수 없다.
-	 * 공공 행사를 회원 제보로 둔갑시킬 이유가 없기 때문이다.
-	 */
+	/** 관리자 행사 수정 요청. 보낸 값으로 전부 덮어쓰며, 출처와 작성자는 바꿀 수 없다. */
 	@Schema(name = "AdminFestivalUpdateRequest", description = "관리자 행사 수정 요청")
 	public record Update(
 
@@ -124,7 +113,7 @@ public class AdminFestivalRequest {
 		String hostInstNm
 	) {
 
-		/** 종료일이 시작일보다 앞서면 진행 상태(OPEN/CLOSED) 계산이 뒤틀린다. */
+		/** 종료일이 시작일보다 앞서면 진행 상태 계산이 틀어진다. */
 		public boolean hasValidPeriod() {
 			return !endDe.isBefore(beginDe);
 		}

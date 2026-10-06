@@ -27,11 +27,7 @@ public class AdminInquiryRequest {
 		@Schema(description = "접수 종류. QUESTION(일반 문의), REPORT(신고), TIP(제보)", example = "REPORT")
 		InquiryCategory category,
 
-		@Schema(
-			description = "삭제된 문의 포함 여부. 기본값 false",
-			example = "false",
-			defaultValue = "false"
-		)
+		@Schema(description = "삭제된 문의 포함 여부. 기본값 false", example = "false", defaultValue = "false")
 		Boolean includeDeleted
 	) {
 

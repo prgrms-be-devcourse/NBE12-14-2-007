@@ -254,9 +254,12 @@ const initial: DemoState = {
     {
       id: 1,
       postId: "demo-post-1",
-      memberId: "demo-neighbor-2",
-      nickname: "주말 수집가",
-      profile_img: null,
+      member: {
+        id: "demo-neighbor-2",
+        nickname: "주말 수집가",
+        profileImg: null,
+        role: "ROLE_UNVERIFIED",
+      },
       content: "저녁 산책 코스로 기억해 둘게요! (예시 댓글)",
       date: "2026-09-21T09:00:00",
     },

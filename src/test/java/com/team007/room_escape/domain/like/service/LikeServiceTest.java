@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
-import com.team007.room_escape.domain.like.infra.dto.LikeResponse;
+import com.team007.room_escape.domain.like.dto.LikeResponse;
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;

@@ -17,11 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-// Post, Comment, Like 가 이 엔티티를 @ManyToOne 으로 참조한다.
-// @SQLRestriction 을 걸면 탈퇴한 회원이 쓴 글·댓글을 조회할 때 예외가 나므로 걸지 않는다.
-// 로그인/가입 경로는 MemberRepository 의 deletedAtIsNull 메서드로 거른다.
-// 탈퇴 회원을 "탈퇴한 사용자"로 가리는 일은 응답 DTO에서 한다.
-// PostResponse.MemberInfo.from(), CommentResponse.CommentInfo.from() 참고.
+// 탈퇴 회원의 글·댓글 조회가 깨지지 않게 @SQLRestriction을 걸지 않는다. 활동 회원은 deletedAtIsNull 메서드로 거른다.
 @Entity
 @Table(name = "member")
 @Getter
@@ -65,13 +61,7 @@ public class Member extends SoftDeletableEntity {
 		return role == MemberRole.ROLE_WARNING;
 	}
 
-	/**
-	 * 마이페이지 정보 수정.
-	 * PATCH 의미에 맞춰 null인 값은 건드리지 않고, 빈 문자열이면 값을 지운다(null 저장).
-	 * nickname은 필수 컬럼이라 빈 문자열을 허용하지 않는다.
-	 *
-	 * @param profileImg R2 저장 key. 공개 URL이 아니다
-	 */
+	/** 마이페이지 수정. null은 건드리지 않고 빈 문자열이면 지운다. nickname은 지울 수 없다. */
 	public void updateProfile(String nickname, String phone, String profileImg) {
 		if (nickname != null && !nickname.isBlank()) {
 			this.nickname = nickname;
@@ -97,21 +87,11 @@ public class Member extends SoftDeletableEntity {
 		this.role = grade;
 	}
 
-	/** 관리자가 직접 권한을 바꿀 때만 사용한다. */
-	/**
-	 * 탈퇴한 회원이 쓴 글·댓글에 작성자 대신 보여줄 이름.
-	 *
-	 * 개인정보 파기 배치(MemberPurgeScheduler)가 보관 기간이 지난 회원의
-	 * 닉네임을 이 값으로 바꾼다. 그 전까지는 응답 DTO에서 이 값으로 가린다.
-	 * 두 곳이 같은 문자열을 써야 해서 여기에 모아 둔다.
-	 */
+	/** 탈퇴 회원 대신 보여줄 이름. 파기 배치와 응답 DTO가 같은 값을 쓰도록 여기 둔다. */
 	public static final String WITHDRAWN_NICKNAME = "탈퇴한 사용자";
 
-	// TODO role 변경 사유 추가 필요 (테이블 나눠야 할 듯)
-	//      어드민 화면은 이미 사유를 필수로 받고 있는데 저장할 곳이 없어 버려지고 있다.
-	//      누가·언제·누구를·왜 바꿨는지가 남아야 하므로 member 컬럼이 아니라
-	//      이력 테이블로 빼야 한다. 행사·후기 숨김 처리도 같은 사유를 받으므로
-	//      회원 전용으로 만들지 말고 함께 설계할 것.
+	/** 관리자가 직접 권한을 바꿀 때만 사용한다. */
+	// TODO 변경 사유를 이력 테이블에 남길 것 (행사·후기 숨김 사유와 함께 설계)
 	public void changeRole(MemberRole role) {
 		this.role = role;
 	}

@@ -37,16 +37,7 @@ public class AdminMemberController {
 
 	private final AdminMemberService adminMemberService;
 
-	@Operation(
-		summary = "[ADMIN] 회원 목록 조회",
-		description = """
-			닉네임·이메일 검색어와 등급으로 회원을 검색한다. 조건을 비우면 전체를 조회한다.
-			검색어는 닉네임 또는 이메일에 부분 일치하며 대소문자를 구분하지 않는다.
-			includeDeleted=true 면 탈퇴 회원도 함께 조회한다.
-			기본 정렬은 가입 최신순이며, sort 파라미터로 nickname, email, role 정렬도 쓸 수 있다.
-			(예: sort=nickname,asc)
-			"""
-	)
+	@Operation(summary = "[ADMIN] 회원 목록 조회", description = "닉네임·이메일 검색어와 등급으로 검색한다.")
 	@GetMapping
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<Page<MemberResponse.AdminInfo>>> search(
@@ -60,10 +51,7 @@ public class AdminMemberController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(
-		summary = "[ADMIN] 회원 단건 조회",
-		description = "회원 한 명의 정보를 조회한다. 탈퇴 회원도 조회된다. 없으면 404(MEMBER000)."
-	)
+	@Operation(summary = "[ADMIN] 회원 단건 조회", description = "탈퇴 회원도 조회된다.")
 	@GetMapping("/{memberId}")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<MemberResponse.AdminInfo>> get(
@@ -72,16 +60,7 @@ public class AdminMemberController {
 		return ResponseEntity.ok(ApiResponse.success(adminMemberService.get(memberId)));
 	}
 
-	@Operation(
-		summary = "[ADMIN] 회원 등급 변경",
-		description = """
-			회원의 신뢰 등급을 변경한다. 다음 네 가지는 거부된다.
-			본인 등급 변경(403, MEMBER006),
-			ROLE_ADMIN 부여(403, MEMBER005),
-			관리자 계정의 등급 변경(403, MEMBER004),
-			탈퇴 회원의 등급 변경(409, MEMBER007).
-			"""
-	)
+	@Operation(summary = "[ADMIN] 회원 등급 변경", description = "회원의 신뢰 등급을 변경한다. 관리자 관련 변경은 막는다.")
 	@PatchMapping("/{memberId}/role")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<MemberResponse.AdminInfo>> changeRole(

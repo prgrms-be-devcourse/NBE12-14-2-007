@@ -1,4 +1,4 @@
-package com.team007.room_escape.domain.like.infra.dto;
+package com.team007.room_escape.domain.like.dto;
 
 public record LikeResponse(
         long likeCount

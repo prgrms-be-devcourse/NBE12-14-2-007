@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    @Query("""
-    SELECT c
-    FROM Comment c
-    JOIN FETCH c.member
-    WHERE c.post.id = :postId
+	@Query("""
+	SELECT c
+	FROM Comment c
+	JOIN FETCH c.member
+	WHERE c.post.id = :postId
 """)
-    List<Comment> findAllByPostId(UUID postId , Pageable page);
+	List<Comment> findAllByPostId(UUID postId , Pageable page);
 }

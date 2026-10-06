@@ -479,7 +479,7 @@ function ReviewCommentRow({
     <li>
       <div className="adm-review-comment-body">
         <div className="adm-review-comment-meta">
-          <strong>{comment.nickname}</strong>
+          <strong>{comment.member.nickname}</strong>
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
         </div>
         <p>{comment.content}</p>

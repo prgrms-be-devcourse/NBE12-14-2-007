@@ -5,7 +5,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteRequest.CreateOrUpdateFestivalAccuracyVoteRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteRequest;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
@@ -46,8 +46,8 @@ class FestivalAccuracyVoteServiceTest {
 			.member(member)
 			.providerType(ProviderType.MEMBER)
 			.build();
-		CreateOrUpdateFestivalAccuracyVoteRequest request =
-			new CreateOrUpdateFestivalAccuracyVoteRequest(FestivalAccuracyVoteType.ACCURATE);
+		FestivalAccuracyVoteRequest.Upsert request =
+			new FestivalAccuracyVoteRequest.Upsert(FestivalAccuracyVoteType.ACCURATE);
 
 		when(memberReader.getActiveMember(memberId)).thenReturn(member);
 		when(festivalRepository.findByIdAndProviderTypeAndDeletedAtIsNull(
