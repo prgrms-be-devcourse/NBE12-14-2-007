@@ -2,11 +2,15 @@ package com.team007.room_escape.global.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.team007.room_escape.global.config.R2Properties;
 import org.junit.jupiter.api.Test;
 
 class RichTextSanitizerTest {
 
-	private final RichTextSanitizer sanitizer = new RichTextSanitizer();
+	private static final String PUBLIC_URL = "https://img.example.com";
+
+	private final RichTextSanitizer sanitizer =
+		new RichTextSanitizer(new R2Properties("account", "access", "secret", "bucket", PUBLIC_URL));
 
 	@Test
 	void 허용한_서식은_유지한다() {
@@ -32,6 +36,22 @@ class RichTextSanitizerTest {
 		assertThat(sanitizer.sanitize(content))
 			.doesNotContain("javascript:")
 			.contains("위험한 링크");
+	}
+
+	@Test
+	void R2에_올린_본문_이미지는_유지한다() {
+		String content = "<p>현장 사진</p><img src=\"" + PUBLIC_URL + "/post/a.webp\" alt=\"무대\" />";
+
+		assertThat(sanitizer.sanitize(content))
+			.contains("<img src=\"" + PUBLIC_URL + "/post/a.webp\" alt=\"무대\" />");
+	}
+
+	@Test
+	void 외부_주소의_이미지는_제거한다() {
+		String content = "<p>현장 사진</p><img src=\"https://evil.example.com/track.gif\" />"
+			+ "<img src=\"" + PUBLIC_URL + ".evil.com/a.webp\" />";
+
+		assertThat(sanitizer.sanitize(content)).isEqualTo("<p>현장 사진</p>");
 	}
 
 	@Test

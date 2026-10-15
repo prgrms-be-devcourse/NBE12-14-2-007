@@ -726,6 +726,7 @@ function ReviewForm({
             onChange={setContent}
             placeholder="어떤 점이 좋았나요? 다음에 방문할 이웃에게 전하고 싶은 팁도 좋아요."
             ariaLabel="후기 내용"
+            onUploadImage={async (file) => (await api.upload(file, "POST")).url}
           />
         </Field>
         <span className="upload-label">기억에 남은 사진</span>
