@@ -18,6 +18,7 @@
     "format:check": "prettier --check src tests *.ts *.json *.md index.html"
   },
   "dependencies": {
+    "@tiptap/extension-image": "^3.31.3",
     "@tiptap/extension-placeholder": "^3.31.3",
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",
