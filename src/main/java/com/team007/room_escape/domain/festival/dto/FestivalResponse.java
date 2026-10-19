@@ -53,9 +53,6 @@ public class FestivalResponse {
 		@Schema(description = "행사 종류")
 		String category,
 
-		@Schema(description = "기관명")
-		String instNm,
-
 		@Schema(description = "행사 이미지 URL")
 		String imgUrl,
 
@@ -96,7 +93,6 @@ public class FestivalResponse {
 				.providerType(festival.getProviderType())
 				.title(festival.getTitle())
 				.category(festival.getCategory())
-				.instNm(festival.getInstNm())
 				.imgUrl(image(festival.getImgUrl(), imageUrlResolver))
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
@@ -128,20 +124,11 @@ public class FestivalResponse {
 		@Schema(description = "행사 소개")
 		String festivalContent,
 
-		@Schema(description = "기관명")
-		String instNm,
-
-		@Schema(description = "주최기관명")
-		String hostInstNm,
-
 		@Schema(description = "행사 이미지 URL")
 		String imgUrl,
 
 		@Schema(description = "행사 원문 주소")
 		String url,
-
-		@Schema(description = "행사 홈페이지 URL")
-		String hmpgUrl,
 
 		@Schema(description = "사용자에게 안내할 행사 참고 링크")
 		String referenceUrl,
@@ -151,9 +138,6 @@ public class FestivalResponse {
 
 		@Schema(description = "행사 종료 일시")
 		LocalDateTime endDe,
-
-		@Schema(description = "행사 시간 정보")
-		String eventTmInfo,
 
 		@Schema(description = "참가 비용 정보")
 		String partcptExpnInfo,
@@ -204,17 +188,11 @@ public class FestivalResponse {
 				.title(festival.getTitle())
 				.category(festival.getCategory())
 				.festivalContent(festival.getContent())
-				.instNm(festival.getInstNm())
-				.hostInstNm(festival.getHostInstNm())
 				.imgUrl(image(festival.getImgUrl(), imageUrlResolver))
 				.url(festival.getUrl())
-				.hmpgUrl(festival.getHmpgUrl())
-				.referenceUrl(festival.getHmpgUrl() != null && !festival.getHmpgUrl().isBlank()
-					? festival.getHmpgUrl()
-					: festival.getUrl())
+				.referenceUrl(festival.getUrl())
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
-				.eventTmInfo(festival.getEventTmInfo())
 				.partcptExpnInfo(festival.getPartcptExpnInfo())
 				.telnoInfo(festival.getTelnoInfo())
 				.region(festival.getRegion())

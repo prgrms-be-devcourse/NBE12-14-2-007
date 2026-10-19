@@ -56,7 +56,6 @@ public class FestivalSubmissionService {
 		Festival festival = Festival.builder()
 				.member(member)
 				.providerType(ProviderType.MEMBER)
-				.instNm(request.instNm())
 				.title(request.title())
 				.category(request.category())
 				.content(richTextSanitizer.sanitize(request.festivalContent()))
@@ -66,11 +65,8 @@ public class FestivalSubmissionService {
 				.imgUrl(request.imgUrl())
 				.beginDe(request.beginDe())
 				.endDe(request.endDe())
-				.eventTmInfo(request.eventTmInfo())
 				.partcptExpnInfo(request.partcptExpnInfo())
 				.telnoInfo(request.telnoInfo())
-				.hostInstNm(request.hostInstNm())
-				.writngDe(LocalDateTime.now())
 				.status(FestivalStatus.from(request.endDe()))
 				.build();
 
@@ -140,7 +136,6 @@ public class FestivalSubmissionService {
 		);
 
 		festival.updateDetails(
-				request.instNm(),
 				request.title(),
 				request.category(),
 				richTextSanitizer.sanitize(request.festivalContent()),
@@ -150,10 +145,8 @@ public class FestivalSubmissionService {
 				request.imgUrl(),
 				request.beginDe(),
 				request.endDe(),
-				request.eventTmInfo(),
 				request.partcptExpnInfo(),
-				request.telnoInfo(),
-				request.hostInstNm()
+				request.telnoInfo()
 		);
 		flushFestivalChanges();
 

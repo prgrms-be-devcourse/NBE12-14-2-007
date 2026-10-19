@@ -43,9 +43,6 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "provider_type", nullable = false, length = 32)
 	private ProviderType providerType;
 
-	@Column(name = "inst_nm")
-	private String instNm;
-
 	private String title;
 
 	private String category;
@@ -67,23 +64,11 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "end_de")
 	private LocalDateTime endDe;
 
-	@Column(name = "event_tm_info")
-	private String eventTmInfo;
-
 	@Column(name = "partcpt_expn_info")
 	private String partcptExpnInfo;
 
 	@Column(name = "telno_info")
 	private String telnoInfo;
-
-	@Column(name = "host_inst_nm")
-	private String hostInstNm;
-
-	@Column(name = "hmpg_url", length = 2048)
-	private String hmpgUrl;
-
-	@Column(name = "writng_de")
-	private LocalDateTime writngDe;
 
 	@Enumerated(EnumType.STRING)
 	@Column(length = 32)
@@ -140,14 +125,12 @@ public class Festival extends SoftDeletableEntity {
 
 	// TODO 인자가 많아서 정리 필요
 	public void updateDetails(
-			String instNm, String title, String category,
+			String title, String category,
 			String content, String referenceUrl,
 			FestivalRegion region, String regionDetail, String imgUrl,
 			LocalDateTime beginDe, LocalDateTime endDe,
-			String eventTmInfo, String partcptExpnInfo,
-			String telnoInfo, String hostInstNm
+			String partcptExpnInfo, String telnoInfo
 	) {
-		this.instNm = instNm;
 		this.title = title;
 		this.category = category;
 		this.content = content;
@@ -158,10 +141,8 @@ public class Festival extends SoftDeletableEntity {
 		this.beginDe = beginDe;
 		this.endDe = endDe;
 		this.status = FestivalStatus.from(endDe);
-		this.eventTmInfo = eventTmInfo;
 		this.partcptExpnInfo = partcptExpnInfo;
 		this.telnoInfo = telnoInfo;
-		this.hostInstNm = hostInstNm;
 	}
 
 	/** 이관 배치에서 원본 URL을 R2 URL로 교체할 때 쓴다. 다른 필드는 건드리지 않는다. */
