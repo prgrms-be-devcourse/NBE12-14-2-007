@@ -32,6 +32,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
+	// 전국 문화정보 API(period2/detail2) 응답이 XML이라 JSON 대신 XML 파싱용 모듈을 추가한다.
+	implementation("tools.jackson:jackson-dataformat-xml")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-mail")
