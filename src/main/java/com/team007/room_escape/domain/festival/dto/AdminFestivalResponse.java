@@ -32,9 +32,6 @@ public class AdminFestivalResponse {
 		@Schema(description = "행사 종류")
 		String category,
 
-		@Schema(description = "기관명")
-		String instNm,
-
 		@Schema(description = "행사 이미지 URL")
 		String imgUrl,
 
@@ -60,7 +57,6 @@ public class AdminFestivalResponse {
 				.providerType(festival.getProviderType())
 				.title(festival.getTitle())
 				.category(festival.getCategory())
-				.instNm(festival.getInstNm())
 				.imgUrl(festival.getImgUrl())
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())

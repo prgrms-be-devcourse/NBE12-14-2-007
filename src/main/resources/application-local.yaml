@@ -12,7 +12,7 @@ spring:
     password: ${DATASOURCE_PASSWORD:roomescape}
   flyway:
     # 로컬만 데모·시드 데이터(db/seed)를 넣는다. 운영은 db/migration(스키마)만 돈다.
-    locations: classpath:db/migration,classpath:db/seed
+    locations: classpath:db/migration,classpath:db/migration_v2,classpath:db/seed
 
 app:
   cors:

@@ -106,7 +106,6 @@ public class AdminFestivalService {
 
 		// 진행 상태(status)는 종료일에서 다시 계산된다.
 		festival.updateDetails(
-			request.instNm(),
 			request.title(),
 			request.category(),
 			richTextSanitizer.sanitize(request.festivalContent()),
@@ -116,10 +115,8 @@ public class AdminFestivalService {
 			request.imgUrl(),
 			request.beginDe(),
 			request.endDe(),
-			request.eventTmInfo(),
 			request.partcptExpnInfo(),
-			request.telnoInfo(),
-			request.hostInstNm()
+			request.telnoInfo()
 		);
 
 		return FestivalResponse.Detail.from(festival, 0, 0, null, 0, false, null);

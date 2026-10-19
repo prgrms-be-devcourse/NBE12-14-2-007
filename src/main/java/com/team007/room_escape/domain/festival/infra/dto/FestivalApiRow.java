@@ -37,40 +37,18 @@ public record FestivalApiRow(
 
 		return Festival.builder()
 			.providerType(ProviderType.PUBLIC)
-			.instNm(instNm)
 			.title(title)
 			.category(categoryNm)
 			.url(url)
-			.eventTmInfo(eventTmInfo)
 			.partcptExpnInfo(partcptExpnInfo)
 			.telnoInfo(telnoInfo)
-			.hostInstNm(hostInstNm)
-			.hmpgUrl(normalizeHomepageUrl(hmpgUrl))
 			.imgUrl(processedImgUrl)
 			.beginDe(begin)
 			.endDe(end)
-			.writngDe(parseDate(writngDe))
 			.status(FestivalStatus.from(end))
 			// 시/군 단위 지역 필드가 없어서 도 단위로만 저장한다.
 			.region(FestivalRegion.GYEONGGI)
 			.build();
-	}
-
-	/** 스킴 없이 오는 HMPG_URL에 https://를 붙이고, 앞에 섞인 문자는 잘라낸다. */
-	private static String normalizeHomepageUrl(String value) {
-		if (value == null || value.isBlank()
-				|| value.equals("-") || value.equalsIgnoreCase("undefined")) {
-			return null;
-		}
-		String trimmed = value.trim();
-		int httpIndex = trimmed.toLowerCase().indexOf("http://");
-		if (httpIndex < 0) {
-			httpIndex = trimmed.toLowerCase().indexOf("https://");
-		}
-		if (httpIndex >= 0) {
-			return trimmed.substring(httpIndex);
-		}
-		return "https://" + trimmed;
 	}
 
 	/** yyyyMMdd 문자열을 날짜로 바꾼다. 비어 있으면 null. */

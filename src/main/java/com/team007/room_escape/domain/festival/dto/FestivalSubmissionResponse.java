@@ -130,9 +130,6 @@ public class FestivalSubmissionResponse {
 		@Schema(description = "행사 번호")
 		Long festivalId,
 
-		@Schema(description = "기관명")
-		String instNm,
-
 		@Schema(description = "행사 제목")
 		String title,
 
@@ -160,20 +157,11 @@ public class FestivalSubmissionResponse {
 		@Schema(description = "행사 종료 일시")
 		LocalDateTime endDe,
 
-		@Schema(description = "행사 시간 정보")
-		String eventTmInfo,
-
 		@Schema(description = "참가 비용 정보")
 		String partcptExpnInfo,
 
 		@Schema(description = "전화번호")
 		String telnoInfo,
-
-		@Schema(description = "주최기관명")
-		String hostInstNm,
-
-		@Schema(description = "행사 등록 일시")
-		LocalDateTime writngDe,
 
 		@Schema(description = "행사 상태", example = "OPEN")
 		FestivalStatus status
@@ -183,7 +171,6 @@ public class FestivalSubmissionResponse {
 			return FestivalInfo.builder()
 				.festivalId(festival.getId())
 				.category(festival.getCategory())
-				.instNm(festival.getInstNm())
 				.title(festival.getTitle())
 				.festivalContent(festival.getContent())
 				.referenceUrl(festival.getUrl())
@@ -192,11 +179,8 @@ public class FestivalSubmissionResponse {
 				.imgUrl(festival.getImgUrl())
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
-				.eventTmInfo(festival.getEventTmInfo())
 				.partcptExpnInfo(festival.getPartcptExpnInfo())
 				.telnoInfo(festival.getTelnoInfo())
-				.hostInstNm(festival.getHostInstNm())
-				.writngDe(festival.getWritngDe())
 				.status(FestivalStatus.from(festival.getEndDe()))
 				.build();
 		}
