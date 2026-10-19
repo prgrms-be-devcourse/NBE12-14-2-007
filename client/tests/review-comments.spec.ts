@@ -1,7 +1,12 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 
 const postId = "22222222-2222-4222-8222-222222222222";
-const me = { id: "member", nickname: "나", profileImg: null, role: "ROLE_UNVERIFIED" };
+const me = {
+  id: "member",
+  nickname: "나",
+  profileImg: null,
+  role: "ROLE_UNVERIFIED",
+};
 const neighbor = {
   id: "neighbor",
   nickname: "이웃",
@@ -111,7 +116,10 @@ async function setup(page: Page) {
       });
     if (url.pathname === `/api/v1/posts/${postId}/likes`)
       return respond(route, 0);
-    if (url.pathname === `/api/v1/posts/${postId}/comments` && method === "GET") {
+    if (
+      url.pathname === `/api/v1/posts/${postId}/comments` &&
+      method === "GET"
+    ) {
       listQueries.push(url.searchParams);
       return respond(
         route,
@@ -122,7 +130,10 @@ async function setup(page: Page) {
         ),
       );
     }
-    if (url.pathname === `/api/v1/posts/${postId}/comments` && method === "POST") {
+    if (
+      url.pathname === `/api/v1/posts/${postId}/comments` &&
+      method === "POST"
+    ) {
       const body = request.postDataJSON() as {
         content: string;
         parentId: number | null;
@@ -168,9 +179,9 @@ test("review comments show oldest first, keep deleted comments as placeholders a
   await expect(deletedRoot).toHaveText("삭제된 댓글입니다");
   await expect(deletedRoot.getByRole("button")).toHaveCount(0);
   // 부모가 지워져도 답글은 그대로 보인다.
-  await expect(threads.nth(0).locator(".comment-replies .comment-row")).toContainText(
-    "지워진 댓글에 남은 답글",
-  );
+  await expect(
+    threads.nth(0).locator(".comment-replies .comment-row"),
+  ).toContainText("지워진 댓글에 남은 답글");
   await expect(threads.nth(1)).toContainText("내가 쓴 댓글");
 
   // 답글에 다시 답글을 달면 부모 댓글 ID로 보내고, 상대 닉네임을 미리 넣어 준다.
@@ -182,7 +193,9 @@ test("review comments show oldest first, keep deleted comments as placeholders a
   await expect(page.getByLabel("답글 내용")).toHaveValue("@이웃 ");
   await page.getByLabel("답글 내용").fill("@이웃 저도 궁금해요");
   await page.getByRole("button", { name: "답글 남기기" }).click();
-  await expect(threads.nth(0).locator(".comment-replies .comment-row")).toHaveCount(2);
+  await expect(
+    threads.nth(0).locator(".comment-replies .comment-row"),
+  ).toHaveCount(2);
   expect(created).toEqual([{ content: "@이웃 저도 궁금해요", parentId: 1 }]);
 
   // 일반 댓글은 parentId 없이 보내고, 맨 아래에 붙는다.
