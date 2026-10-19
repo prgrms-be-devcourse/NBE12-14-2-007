@@ -269,7 +269,19 @@ function PanelTitle({
   );
 }
 function Status({ status }: { status: Visibility | RunState }) {
-  return <Badge tone={tone(status)}>{statusNames[status]}</Badge>;
+  return (
+    <Badge
+      tone={
+        status === "OPEN"
+          ? "green"
+          : status === "CLOSED"
+            ? "admin-event-ended"
+            : tone(status)
+      }
+    >
+      {statusNames[status]}
+    </Badge>
+  );
 }
 /**
  * 서버 페이징 이동. 관리자는 "전체 몇 건 중 몇 페이지"를 알아야 해서
@@ -1192,9 +1204,9 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
           headers={[
             isEvent ? "행사 정보" : "후기 / 행사",
             isEvent ? "유입 경로" : "작성자",
-            "노출 상태",
-            "등록일",
-            "관리",
+            isEvent ? "상태" : "노출 상태",
+            isEvent ? "행사 시작일" : "작성일",
+            "수정·삭제",
           ]}
           empty={!items.length}
         >
@@ -1208,10 +1220,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
                     </div>
                   )}
                   <div>
-                    <strong>
-                      {item.title}
-                      {item.deletedAt && " (삭제됨)"}
-                    </strong>
+                    <strong>{item.title}</strong>
                     <small>
                       {item.id} · {item.category}
                     </small>
@@ -1228,18 +1237,27 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
                 )}
               </td>
               <td>
-                <Status status={item.status} />
+                {isEvent && item.deletedAt ? (
+                  <Badge tone="admin-event-deleted">삭제</Badge>
+                ) : (
+                  <Status status={item.status} />
+                )}
               </td>
               <td>{item.date}</td>
               <td>
                 <button
                   className="adm-row-button"
-                  aria-label={`${item.title} 검토`}
+                  aria-label={`${item.title} 관리하기`}
                   onClick={() => setParam("item", item.id)}
                 >
-                  검토하기
+                  관리하기
                   <ChevronRight size={14} />
                 </button>
+                {isEvent &&
+                  item.deletedAt &&
+                  item.deletion?.type === "ADMIN" && (
+                    <span className="adm-restore-hint">복구 가능</span>
+                  )}
               </td>
             </tr>
           ))}
@@ -1254,7 +1272,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
       </section>
       <p className="adm-footnote">
         {isEvent
-          ? "진행 상태는 행사 종료일로 계산된 값입니다. 노출 관리(숨김·복구) 기능은 준비 중입니다."
+          ? "진행 상태는 행사 종료일로 계산됩니다. 관리자가 삭제한 행사만 복구할 수 있습니다. 노출 관리(숨김)는 준비 중입니다."
           : "공개·숨김은 관리자 화면의 예시 운영 상태입니다."}
       </p>
       {selected && (
@@ -1557,7 +1575,7 @@ function EventEditForm({
 /**
  * 행사 상세 모달의 조치 버튼들.
  *
- * 삭제는 되돌릴 수 있지만(소프트 삭제) 한 번 더 확인을 받는다.
+ * 관리자 삭제는 복구할 수 있지만 한 번 더 확인을 받는다.
  * 목록에서 사라지므로 실수로 누르면 바로 알아채기 어렵기 때문이다.
  */
 function EventActions({
@@ -1574,10 +1592,10 @@ function EventActions({
   const { deleteEvent, restoreEvent } = useAdmin();
   const { toast } = useApp();
   const [confirming, setConfirming] = useState(false);
+  const [deletionReason, setDeletionReason] = useState("");
   const [busy, setBusy] = useState(false);
   const deleted = !!item.deletedAt;
-  // 회원이 직접 지웠을 수 있어 서버가 회원 제보 복구를 막는다.
-  const canRestore = deleted && item.source === "PUBLIC";
+  const canRestore = deleted && item.deletion?.type === "ADMIN";
   async function run(action: () => Promise<void>) {
     setBusy(true);
     try {
@@ -1597,6 +1615,15 @@ function EventActions({
           사라집니다. 이 행사에 달린 후기는 지워지지 않으며, 나중에 복구할 수
           있습니다.
         </p>
+        <Field label="삭제 사유">
+          <textarea
+            value={deletionReason}
+            onChange={(e) => setDeletionReason(e.target.value)}
+            required
+            maxLength={500}
+            disabled={busy}
+          />
+        </Field>
         <div className="adm-dialog-actions">
           <button
             type="button"
@@ -1608,8 +1635,10 @@ function EventActions({
           <button
             type="button"
             className="btn danger"
-            disabled={busy}
-            onClick={() => run(() => deleteEvent(item.id))}
+            disabled={busy || !deletionReason.trim()}
+            onClick={() =>
+              run(() => deleteEvent(item.id, deletionReason.trim()))
+            }
           >
             {busy ? "삭제 중…" : "삭제합니다"}
           </button>
@@ -1623,9 +1652,12 @@ function EventActions({
         {deleted
           ? canRestore
             ? "삭제된 행사입니다. 복구하면 다시 서비스에 노출됩니다."
-            : "삭제된 회원 제보입니다. 작성자가 지웠을 수 있어 복구할 수 없습니다."
+            : "작성자 삭제 또는 삭제 주체를 확인할 수 없는 행사는 복구할 수 없습니다."
           : "노출 관리(숨김) 기능은 준비 중입니다. 현재 상태는 종료일로 계산된 진행 상태입니다."}
       </p>
+      {deleted && item.deletion && (
+        <p className="adm-dialog-note">삭제 사유: {item.deletion.reason}</p>
+      )}
       <div className="adm-dialog-actions">
         <button className="btn secondary" type="button" onClick={onClose}>
           닫기
@@ -1677,8 +1709,11 @@ function ContentDialog({
   const isEvent = kind === "events";
   // 목록 응답에는 본문이 없다. 행사는 상세를 따로 불러온다.
   const detail = useLoad(
-    () => (isEvent ? api.adminFestival(item.id) : Promise.resolve(null)),
-    [isEvent, item.id],
+    () =>
+      isEvent && !item.deletedAt
+        ? api.adminFestival(item.id)
+        : Promise.resolve(null),
+    [isEvent, item.id, item.deletedAt],
   );
   const [status, setStatus] = useState<Visibility>(
     item.status === "PUBLISHED" ? "HIDDEN" : "PUBLISHED",
@@ -1699,26 +1734,33 @@ function ContentDialog({
     );
   }
   return (
-    <Modal title={isEvent ? "행사 검토" : "후기 검토"} onClose={onClose}>
+    <Modal title={isEvent ? "행사 상세" : "후기 검토"} onClose={onClose}>
       {item.image && (
         <img className="adm-dialog-image" src={item.image} alt={item.title} />
       )}
       <div className="adm-dialog-title">
-        <Status status={item.status} />
+        {isEvent && item.deletedAt ? (
+          <Badge tone="admin-event-deleted">삭제</Badge>
+        ) : (
+          <Status status={item.status} />
+        )}
         <h3>{item.title}</h3>
         <p>
-          {item.author} · {item.date} · {item.id}
+          {isEvent
+            ? `${item.author} · 행사 번호: ${item.id}`
+            : `${item.author} · ${item.date} · ${item.id}`}
         </p>
+        {isEvent && <p>행사 시작일: {item.date}</p>}
       </div>
-      {isEvent ? (
+      {isEvent && !item.deletedAt ? (
         <EventDetailBody
           loading={detail.loading}
           error={detail.error}
           detail={detail.data}
         />
-      ) : (
+      ) : !isEvent ? (
         <p className="adm-content-body">{item.content}</p>
-      )}
+      ) : null}
       {item.reason && (
         <p className="adm-dialog-note">최근 처리 사유: {item.reason}</p>
       )}
@@ -1930,7 +1972,8 @@ function InquiryTargetActions({
   targetPostId: string | null;
 }) {
   const { api, toast } = useApp();
-  const { deleteEvent, restoreEvent } = useAdmin();
+  const { deleteEvent } = useAdmin();
+  const [deletionReason, setDeletionReason] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1987,7 +2030,10 @@ function InquiryTargetActions({
           : null;
   const missing =
     done === "" &&
-    ((kind === "events" && !festival.loading && !festival.error && !festival.data) ||
+    ((kind === "events" &&
+      !festival.loading &&
+      !festival.error &&
+      !festival.data) ||
       ((kind === "reviews" || kind === "communityPosts") &&
         !post.loading &&
         !post.error &&
@@ -2027,7 +2073,7 @@ function InquiryTargetActions({
             <p className="adm-dialog-note">
               이미 삭제된 {subject}입니다.
               {kind === "events" &&
-                " 공공 행사면 아래에서 복구할 수 있습니다. 회원 제보는 작성자가 지운 경우 복구되지 않습니다."}
+                " 행사 관리에서 삭제 이력을 확인해 주세요. 관리자가 삭제한 행사만 복구할 수 있습니다."}
             </p>
           )}
           {editing && festival.data && (
@@ -2047,6 +2093,17 @@ function InquiryTargetActions({
                 이 {subject}을(를) 삭제하면 서비스 화면에서 보이지 않습니다.
                 답변은 아래 칸에 따로 남기면 됩니다.
               </p>
+              {kind === "events" && (
+                <Field label="삭제 사유">
+                  <textarea
+                    value={deletionReason}
+                    onChange={(e) => setDeletionReason(e.target.value)}
+                    required
+                    maxLength={500}
+                    disabled={busy}
+                  />
+                </Field>
+              )}
               <div className="adm-dialog-actions">
                 <button
                   type="button"
@@ -2058,10 +2115,15 @@ function InquiryTargetActions({
                 <button
                   type="button"
                   className="btn danger"
-                  disabled={busy}
+                  disabled={
+                    busy || (kind === "events" && !deletionReason.trim())
+                  }
                   onClick={() => {
                     if (kind === "events") {
-                      void run(() => deleteEvent(id), "행사를 삭제했습니다.");
+                      void run(
+                        () => deleteEvent(id, deletionReason.trim()),
+                        "행사를 삭제했습니다.",
+                      );
                     } else if (kind === "reviews") {
                       void run(
                         () => api.deletePost(id),
@@ -2093,16 +2155,9 @@ function InquiryTargetActions({
           {!editing && !confirming && !done && (
             <div className="adm-dialog-actions">
               {kind === "events" && missing ? (
-                <button
-                  type="button"
-                  className="btn primary"
-                  disabled={busy}
-                  onClick={() =>
-                    void run(() => restoreEvent(id), "행사를 복구했습니다.")
-                  }
-                >
-                  {busy ? "복구 중…" : "행사 복구"}
-                </button>
+                <Link className="btn primary" to="/admin/events">
+                  행사 관리에서 삭제 이력 확인
+                </Link>
               ) : (
                 <>
                   <button

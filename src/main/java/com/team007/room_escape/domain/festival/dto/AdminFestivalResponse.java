@@ -15,7 +15,7 @@ public class AdminFestivalResponse {
 	private AdminFestivalResponse() {
 	}
 
-	/** 관리자 행사 목록 항목. 공개 목록과 같은 모양에 복구 판단용 deletedAt만 더했다. */
+	/** 관리자 행사 목록 항목. 삭제 정보로 안내 사유와 복구 가능 여부를 판단한다. */
 	@Builder
 	@Schema(name = "AdminFestivalListItem", description = "관리자 행사 목록 항목")
 	public record ListItem(
@@ -51,7 +51,10 @@ public class AdminFestivalResponse {
 		FestivalStatus status,
 
 		@Schema(description = "삭제 시각. 삭제되지 않았으면 null")
-		LocalDateTime deletedAt
+		LocalDateTime deletedAt,
+
+		@Schema(description = "삭제 주체 구분 및 안내 사유")
+		FestivalDeletionResponse.Info deletion
 	) {
 
 		public static ListItem from(Festival festival) {
@@ -67,6 +70,7 @@ public class AdminFestivalResponse {
 				.region(festival.getRegion())
 				.status(festival.getStatus())
 				.deletedAt(festival.getDeletedAt())
+				.deletion(FestivalDeletionResponse.Info.from(festival))
 				.build();
 		}
 	}

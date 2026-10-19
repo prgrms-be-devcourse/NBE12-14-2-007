@@ -3,6 +3,7 @@ package com.team007.room_escape.domain.festival.service;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionRequest;
 import com.team007.room_escape.domain.festival.dto.FestivalSubmissionResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalDeletionType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
@@ -36,6 +37,7 @@ public class FestivalSubmissionService {
 	private final FestivalSubmissionRepository festivalSubmissionRepository;
 	private final MemberReader memberReader;
 	private final RichTextSanitizer richTextSanitizer;
+	private final FestivalDeletionService festivalDeletionService;
 
 	@Transactional
 	public FestivalSubmissionResponse.Create create(UUID memberId, FestivalSubmissionRequest.Upsert request) {
@@ -87,7 +89,7 @@ public class FestivalSubmissionService {
 	@Transactional(readOnly = true)
 	public List<FestivalSubmissionResponse.ListItem> findAllByMemberId(UUID memberId) {
 		return festivalSubmissionRepository
-				.findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc
+				.findAllByFestival_Member_IdAndFestival_ProviderTypeOrderByCreatedAtDesc
 						(memberId, ProviderType.MEMBER)
 				.stream()
 				.map(FestivalSubmissionResponse.ListItem::from)
@@ -101,7 +103,7 @@ public class FestivalSubmissionService {
 	) {
 		FestivalSubmission festivalSubmission =
 				festivalSubmissionRepository
-						.findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+						.findByIdAndFestival_Member_Id(submissionId, memberId)
 						.orElseThrow(() -> new BusinessException(
 								FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
 						));
@@ -118,12 +120,15 @@ public class FestivalSubmissionService {
 		memberReader.getUnrestrictedMember(memberId);
 
 		FestivalSubmission submission = festivalSubmissionRepository
-				.findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+				.findByIdAndFestival_Member_Id(submissionId, memberId)
 				.orElseThrow(() -> new BusinessException(
 						FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
 				));
 
 		Festival festival = submission.getFestival();
+		if (festival.isDeleted()) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
+		}
 		String normalizedReferenceUrl = normalizeReferenceUrl(request.referenceUrl());
 
 		validateNotDuplicate(
@@ -158,13 +163,13 @@ public class FestivalSubmissionService {
 	@Transactional
 	public void delete(UUID memberId, UUID submissionId) {
 		FestivalSubmission submission = festivalSubmissionRepository
-				.findByIdAndFestival_Member_IdAndDeletedAtIsNull(submissionId, memberId)
+				.findByIdAndFestival_Member_Id(submissionId, memberId)
 				.orElseThrow(() -> new BusinessException(
 						FestivalExceptionCode.FESTIVAL_SUBMISSION_NOT_FOUND
 				));
 
-		submission.delete();
-		submission.getFestival().delete();
+		festivalDeletionService.delete(submission.getFestival(), memberId,
+				FestivalDeletionType.AUTHOR, "작성자 삭제");
 	}
 
 	private void validateNotDuplicate(

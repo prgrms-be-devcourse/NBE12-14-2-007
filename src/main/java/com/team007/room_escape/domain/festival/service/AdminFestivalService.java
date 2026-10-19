@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,9 +13,8 @@ import com.team007.room_escape.domain.festival.dto.AdminFestivalRequest;
 import com.team007.room_escape.domain.festival.dto.AdminFestivalResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
-import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalDeletionType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
-import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -31,8 +31,8 @@ public class AdminFestivalService {
 		Set.of("beginDe", "endDe", "title", "createdAt");
 
 	private final FestivalRepository festivalRepository;
-	private final MemberTrustGradeService memberTrustGradeService;
 	private final RichTextSanitizer richTextSanitizer;
+	private final FestivalDeletionService festivalDeletionService;
 
 	/** 관리자 행사 검색. 복구 대상을 찾도록 삭제된 행사도 볼 수 있다. */
 	@Transactional(readOnly = true)
@@ -53,30 +53,21 @@ public class AdminFestivalService {
 
 	/** 행사 삭제. 삭제 시각만 남겨 복구할 수 있고, 달린 후기는 그대로 남는다. */
 	@Transactional
-	public void delete(Long festivalId) {
+	public void delete(Long festivalId, UUID actorId, String reason) {
 		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
-		festival.delete();
-		festivalRepository.flush();
-		memberTrustGradeService.refreshForFestival(festival);
+		festivalDeletionService.delete(festival, actorId,
+			FestivalDeletionType.ADMIN, reason);
 	}
 
-	/** 삭제된 행사 복구. 누가 지웠는지 몰라서 지금은 공공 행사만 복구한다. */
-	// TODO 삭제 주체를 기록하게 되면 회원 제보도 "관리자가 지운 것"만 복구를 열 것.
+	/** 행사 출처와 관계없이 관리자가 삭제한 행사만 복구한다. */
 	@Transactional
 	public void restore(Long festivalId) {
 		Festival festival = festivalRepository.findById(festivalId)
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
-		if (!festival.isDeleted()) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
-		}
-		if (festival.getProviderType() != ProviderType.PUBLIC) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_RESTORE_FORBIDDEN);
-		}
-
-		festival.restore();
+		festivalDeletionService.restore(festival);
 	}
 
 	private void validateSort(Sort sort) {

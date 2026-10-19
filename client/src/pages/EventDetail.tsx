@@ -49,6 +49,7 @@ import { FestivalPosts } from "./Reviews";
 import { RichTextContent } from "../components/RichText";
 import { ReportableName, ReportButton } from "../components/ReportButton";
 import { TrustGradeBadge } from "../components/TrustGradeBadge";
+import { FestivalDeletionNotice } from "../components/FestivalDeletionNotice";
 
 export function EventDetailPage() {
   const { eventId, submissionId } = useParams();
@@ -105,19 +106,39 @@ function SubmissionDetailLoader({ id }: { id: string }) {
   ) : error ? (
     <ErrorState message={error} retry={reload} />
   ) : data ? (
-    <EventDetail
-      key={id}
-      event={{
-        ...data.submission.festival,
-        manager: null,
-        source: "MEMBER",
-        submissionId: id,
-      }}
-    />
+    data.submission.festival.deletion ? (
+      <>
+        <Link className="back-link" to="/mypage?tab=submissions">
+          <ArrowLeft size={16} />내 제보 목록으로
+        </Link>
+        <h1 className="deleted-event-title">
+          {data.submission.festival.title}
+        </h1>
+        <FestivalDeletionNotice deletion={data.submission.festival.deletion} />
+        <div className="form-actions">
+          <button className="btn secondary" disabled>
+            제보 수정
+          </button>
+          <button className="btn secondary" disabled>
+            내 제보 삭제
+          </button>
+        </div>
+      </>
+    ) : (
+      <EventDetail
+        key={id}
+        event={{
+          ...data.submission.festival,
+          manager: null,
+          source: "MEMBER",
+          submissionId: id,
+        }}
+      />
+    )
   ) : null;
 }
 function EventDetail({ event }: { event: EventView }) {
-  const { api, toast } = useApp();
+  const { api, toast, setMember } = useApp();
   const navigate = useNavigate();
   const [tab, setTab] = useState("about");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -166,13 +187,21 @@ function EventDetail({ event }: { event: EventView }) {
             {copied ? <Check size={16} /> : <Share2 size={16} />}공유하기
           </button>
           {event.submissionId && (
-            <Link
-              className="text-button"
-              to={`/submissions/${event.submissionId}/edit`}
-            >
-              <Pencil size={15} />
-              제보 수정
-            </Link>
+            <>
+              <Link
+                className="text-button"
+                to={`/submissions/${event.submissionId}/edit`}
+              >
+                <Pencil size={15} />
+                제보 수정
+              </Link>
+              <button
+                className="text-button muted"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 size={15} />내 제보 삭제
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -413,14 +442,6 @@ function EventDetail({ event }: { event: EventView }) {
               <Flag size={14} />이 행사 신고 및 제보
             </ReportButton>
           )}
-          {event.submissionId && (
-            <button
-              className="text-button muted delete-submission"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 size={14} />내 제보 삭제
-            </button>
-          )}
         </div>
       </div>
       {deleteOpen && (
@@ -429,8 +450,7 @@ function EventDetail({ event }: { event: EventView }) {
           onClose={() => setDeleteOpen(false)}
         >
           <p className="muted">
-            내 제보 목록에서 이 제보가 삭제돼요. 행사에 남긴 후기는 별도로
-            관리됩니다.
+            제보를 삭제하면 다시 복구할 수 없습니다. 삭제하시겠습니까?
           </p>
           <FormError message={error} />
           <div className="form-actions">
@@ -448,6 +468,14 @@ function EventDetail({ event }: { event: EventView }) {
                 try {
                   await api.deleteSubmission(event.submissionId!);
                   toast("제보를 삭제했어요.");
+                  void api
+                    .me()
+                    .then(setMember)
+                    .catch(() =>
+                      toast(
+                        "삭제는 완료됐어요. 회원 등급은 새로고침 후 확인해 주세요.",
+                      ),
+                    );
                   navigate("/mypage?tab=submissions");
                 } catch (e) {
                   setError(errorText(e));

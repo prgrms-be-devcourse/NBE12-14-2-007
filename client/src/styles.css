@@ -1731,6 +1731,28 @@ select {
   border-color: #d3ddc7;
   box-shadow: var(--shadow);
 }
+.submission-row.is-deleted {
+  background: var(--cream);
+  color: var(--muted);
+}
+.submission-row.is-deleted h3,
+.deleted-event-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.submission-row.is-deleted > img {
+  filter: grayscale(1);
+}
+.festival-deletion-notice {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 20px 0;
+  color: var(--muted);
+}
+.festival-deletion-notice p {
+  overflow-wrap: anywhere;
+}
 .submission-row > img,
 .submission-row > .photo-fallback {
   width: 165px;

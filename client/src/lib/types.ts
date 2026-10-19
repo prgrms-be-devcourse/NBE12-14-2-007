@@ -16,6 +16,8 @@ export interface Member {
   updatedAt: string;
 }
 export interface Festival {
+  /** 내 제보 이력에서 제공하는 현재 삭제 정보. 공개 행사 응답에는 없다. */
+  deletion?: FestivalDeletion | null;
   festivalId: number;
   title: string;
   category: string;
@@ -134,6 +136,7 @@ export interface SubmissionInput {
   hostInstNm?: string;
 }
 export interface SubmissionSummary {
+  deletion?: FestivalDeletion | null;
   festivalSubmissionId: string;
   festivalId: number;
   title: string;
@@ -143,6 +146,11 @@ export interface SubmissionSummary {
   endDe: string;
   createdAt: string;
   status: "OPEN" | "CLOSED";
+}
+export interface FestivalDeletion {
+  deletedAt: string;
+  type: "AUTHOR" | "ADMIN" | "UNKNOWN";
+  reason: string;
 }
 export interface SubmissionDetail {
   submission: {
@@ -368,6 +376,7 @@ export interface AdminFestivalDetail {
  * 공개 목록과 달리 deletedAt이 있어 삭제된 행사를 구분할 수 있다.
  */
 export interface AdminFestivalListItem {
+  deletion?: FestivalDeletion | null;
   festivalId: number;
   providerType: "PUBLIC" | "MEMBER";
   title: string;

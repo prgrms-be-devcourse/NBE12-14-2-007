@@ -63,6 +63,9 @@ public class FestivalSubmissionResponse {
 		@Schema(description = "행사 제보 일시")
 		LocalDateTime createdAt,
 
+		@Schema(description = "삭제 정보. 삭제되지 않았으면 null")
+		FestivalDeletionResponse.Info deletion,
+
 		@Schema(description = "행사 상태", example = "OPEN")
 		FestivalStatus status
 	) {
@@ -79,6 +82,7 @@ public class FestivalSubmissionResponse {
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
 				.createdAt(festivalSubmission.getCreatedAt())
+				.deletion(FestivalDeletionResponse.Info.from(festival))
 				.status(FestivalStatus.from(festival.getEndDe()))
 				.build();
 		}
@@ -175,6 +179,9 @@ public class FestivalSubmissionResponse {
 		@Schema(description = "행사 등록 일시")
 		LocalDateTime writngDe,
 
+		@Schema(description = "삭제 정보. 삭제되지 않았으면 null")
+		FestivalDeletionResponse.Info deletion,
+
 		@Schema(description = "행사 상태", example = "OPEN")
 		FestivalStatus status
 	) {
@@ -197,6 +204,7 @@ public class FestivalSubmissionResponse {
 				.telnoInfo(festival.getTelnoInfo())
 				.hostInstNm(festival.getHostInstNm())
 				.writngDe(festival.getWritngDe())
+				.deletion(FestivalDeletionResponse.Info.from(festival))
 				.status(FestivalStatus.from(festival.getEndDe()))
 				.build();
 		}

@@ -1524,3 +1524,17 @@ img.adm-avatar {
   font-size: 13px;
   color: #54734b;
 }
+.badge.admin-event-ended {
+  background: #fcebea;
+  color: #a83232;
+}
+.badge.admin-event-deleted {
+  background: #fff3c4;
+  color: #795b00;
+}
+.adm-restore-hint {
+  display: block;
+  margin-top: 6px;
+  color: #795b00;
+  font-size: 12px;
+}

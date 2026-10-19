@@ -916,13 +916,14 @@ export function createApi(mode: Mode) {
       );
     },
     /** [ADMIN] 행사 삭제. 행을 지우지 않고 삭제 시각만 남긴다. */
-    async deleteFestival(festivalId: string | number) {
+    async deleteFestival(festivalId: string | number, reason: string) {
       return transport<void>(
         `/admin/festivals/${encodeURIComponent(String(festivalId))}`,
         "DELETE",
+        { reason: reason.trim() },
       );
     },
-    /** [ADMIN] 삭제된 행사 복구. 회원 제보는 서버가 403으로 거부한다. */
+    /** [ADMIN] 관리자가 삭제한 행사만 복구한다. */
     async restoreFestival(festivalId: string | number) {
       return transport<void>(
         `/admin/festivals/${encodeURIComponent(String(festivalId))}/restore`,

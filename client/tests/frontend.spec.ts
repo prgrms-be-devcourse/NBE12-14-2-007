@@ -51,6 +51,53 @@ const ok = (data: unknown) => ({
   message: "",
   data,
 });
+
+test("deleted submission history shows reason and blocks editing", async ({
+  page,
+}) => {
+  const deletion = {
+    deletedAt: "2026-10-19T10:00:00",
+    type: "ADMIN",
+    reason: "행사 취소 확인",
+  };
+  await apiMode(page, async (route, path) => {
+    if (path === "/members/me/submissions") {
+      await json(route, ok([{ ...summary, deletion }]));
+      return true;
+    }
+    if (path === `/members/me/submissions/${submissionId}`) {
+      await json(
+        route,
+        ok({
+          submission: {
+            ...detail.submission,
+            festival: { ...festival, deletion },
+          },
+        }),
+      );
+      return true;
+    }
+    return false;
+  });
+  await page.goto("/mypage?tab=submissions");
+  const row = page.locator(".submission-row");
+  await expect(row).toContainText("삭제된 행사");
+  await expect(row).toContainText("행사 취소 확인");
+  await expect(row).toHaveClass(/is-deleted/);
+  await row.click();
+  await expect(
+    page.getByRole("heading", { name: "삭제된 행사입니다", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "제보 수정", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "내 제보 삭제", exact: true }),
+  ).toBeDisabled();
+  await page.goto(`/submissions/${submissionId}/edit`);
+  await expect(page.getByText("삭제된 행사는 수정할 수 없어요")).toBeVisible();
+  await expect(page.getByLabel("행사 이름")).toHaveCount(0);
+});
 async function json(route: Route, data: unknown, status = 200) {
   await route.fulfill({
     status,
@@ -163,7 +210,26 @@ test("preview submission can be created, edited and deleted", async ({
   page,
 }) => {
   let saved = structuredClone(detail);
+  let deleted = false;
+  const deletion = {
+    deletedAt: "2026-10-19T12:00:00",
+    type: "AUTHOR",
+    reason: "작성자 삭제",
+  };
   await apiMode(page, async (route, path, method) => {
+    if (path === "/members/me/submissions" && method === "GET") {
+      await json(
+        route,
+        ok([
+          {
+            ...summary,
+            title: saved.submission.festival.title,
+            deletion: deleted ? deletion : null,
+          },
+        ]),
+      );
+      return true;
+    }
     if (path === "/festivals/submissions" && method === "POST") {
       const input = route.request().postDataJSON();
       saved.submission.festival.title = input.title;
@@ -191,6 +257,7 @@ test("preview submission can be created, edited and deleted", async ({
         return true;
       }
       if (method === "DELETE") {
+        deleted = true;
         await route.fulfill({ status: 204 });
         return true;
       }
@@ -203,9 +270,7 @@ test("preview submission can be created, edited and deleted", async ({
   await page.getByLabel(/^행사 소개/).fill("제보 작성 흐름 검증");
   await page.getByLabel("시작일").fill("2026-10-10");
   await page.getByLabel("종료일").fill("2026-10-10");
-  await page
-    .getByLabel("지역", { exact: false })
-    .selectOption("GYEONGGI_SUWON");
+  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
   await page.getByLabel("운영 시간 안내").fill("10시부터 18시");
   await page.getByLabel("상세 주소").fill("테스트 공원");
   await page.getByLabel("행사 참고 링크").fill("https://example.com/event");
@@ -229,9 +294,11 @@ test("preview submission can be created, edited and deleted", async ({
     .getByRole("button", { name: "제보 삭제", exact: true })
     .click();
   await expect(page).toHaveURL("/mypage?tab=submissions");
-  await expect(page.locator(".submission-list")).not.toContainText(
+  await expect(page.locator(".submission-list")).toContainText(
     "수정한 검증 행사",
   );
+  await expect(page.locator(".submission-row")).toHaveClass(/is-deleted/);
+  await expect(page.locator(".submission-row")).toContainText("작성자 삭제");
 });
 
 test("preview review, comment and like lifecycle works", async ({ page }) => {
