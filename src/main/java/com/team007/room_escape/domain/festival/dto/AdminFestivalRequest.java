@@ -55,10 +55,6 @@ public class AdminFestivalRequest {
 	@Schema(name = "AdminFestivalUpdateRequest", description = "관리자 행사 수정 요청")
 	public record Update(
 
-		@Size(max = 255)
-		@Schema(description = "기관명", example = "경기문화재단")
-		String instNm,
-
 		@NotBlank(message = "행사 이름은 필수입니다.")
 		@Size(max = 255, message = "행사 이름은 255자 이하여야 합니다.")
 		@Schema(description = "행사 이름", example = "수원 화성 문화제")
@@ -97,20 +93,12 @@ public class AdminFestivalRequest {
 		LocalDateTime endDe,
 
 		@Size(max = 255)
-		@Schema(description = "행사 시간 정보", example = "10:00~18:00")
-		String eventTmInfo,
-
-		@Size(max = 255)
 		@Schema(description = "참가 비용 정보", example = "무료")
 		String partcptExpnInfo,
 
 		@Size(max = 255)
 		@Schema(description = "전화번호", example = "031-123-4567")
-		String telnoInfo,
-
-		@Size(max = 255)
-		@Schema(description = "주최 기관명", example = "수원시")
-		String hostInstNm
+		String telnoInfo
 	) {
 
 		/** 종료일이 시작일보다 앞서면 진행 상태 계산이 틀어진다. */
