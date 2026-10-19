@@ -179,26 +179,12 @@ public class FestivalSubmissionService {
 			FestivalRegion region,
 			String referenceUrl
 	) {
-		// 날짜 기준으로 비교하고, 같은 조건의 동시 요청은 잠금으로 순서대로 처리한다.
-		long lockKey = java.util.Objects.hash(beginDe.toLocalDate(), endDe.toLocalDate(), region.name(), referenceUrl);
-		festivalRepository.lockSubmissionDuplicateKey(lockKey);
-		boolean duplicated = festivalRepository.existsSubmissionDuplicate(
-				currentFestivalId,
-				beginDe.toLocalDate().atStartOfDay(),
-				beginDe.toLocalDate().plusDays(1).atStartOfDay(),
-				endDe.toLocalDate().atStartOfDay(),
-				endDe.toLocalDate().plusDays(1).atStartOfDay(),
-				region.name(), referenceUrl);
-
-		if (duplicated) {
-			throw new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
-		}
+		FestivalDuplicateValidator.validate(festivalRepository, currentFestivalId,
+			beginDe, endDe, region, referenceUrl);
 	}
 
 	private String normalizeReferenceUrl(String referenceUrl) {
-		return referenceUrl
-				.trim()
-				.replaceFirst("/+$", "");
+		return FestivalDuplicateValidator.normalizeReferenceUrl(referenceUrl);
 	}
 
 	private Festival saveFestival(Festival festival) {

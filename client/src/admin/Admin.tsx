@@ -268,6 +268,10 @@ function PanelTitle({
     </div>
   );
 }
+function canRestoreEvent(item: ContentItem) {
+  return !!item.deletedAt && item.deletion?.type === "ADMIN";
+}
+
 function Status({ status }: { status: Visibility | RunState }) {
   return (
     <Badge
@@ -1253,11 +1257,9 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
                   관리하기
                   <ChevronRight size={14} />
                 </button>
-                {isEvent &&
-                  item.deletedAt &&
-                  item.deletion?.type === "ADMIN" && (
-                    <span className="adm-restore-hint">복구 가능</span>
-                  )}
+                {isEvent && canRestoreEvent(item) && (
+                  <span className="adm-restore-hint">복구 가능</span>
+                )}
               </td>
             </tr>
           ))}
@@ -1595,7 +1597,7 @@ function EventActions({
   const [deletionReason, setDeletionReason] = useState("");
   const [busy, setBusy] = useState(false);
   const deleted = !!item.deletedAt;
-  const canRestore = deleted && item.deletion?.type === "ADMIN";
+  const canRestore = canRestoreEvent(item);
   async function run(action: () => Promise<void>) {
     setBusy(true);
     try {

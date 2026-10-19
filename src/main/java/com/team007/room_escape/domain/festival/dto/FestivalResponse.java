@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalDeletionType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
@@ -14,6 +15,25 @@ import java.util.List;
 import lombok.Builder;
 
 public class FestivalResponse {
+
+	@Builder
+	@Schema(name = "FestivalDeletionInfo", description = "현재 삭제 상태. 삭제되지 않았으면 null")
+	public record DeletionInfo(
+		@Schema(description = "행사 삭제 시각") LocalDateTime deletedAt,
+		@Schema(description = "삭제 주체 구분. AUTHOR, ADMIN, UNKNOWN") FestivalDeletionType type,
+		@Schema(description = "작성자에게 안내하는 삭제 사유") String reason
+	) {
+		public static DeletionInfo from(Festival festival) {
+			if (!festival.isDeleted()) {
+				return null;
+			}
+			return DeletionInfo.builder()
+				.deletedAt(festival.getDeletedAt())
+				.type(festival.getDeletionType())
+				.reason(festival.getDeletionReason())
+				.build();
+		}
+	}
 
 	private FestivalResponse() {
 	}

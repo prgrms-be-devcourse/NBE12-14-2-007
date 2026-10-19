@@ -6,9 +6,7 @@ import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.global.exception.BusinessException;
-import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
-import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,12 +28,7 @@ public class FestivalDeletionService {
 
 	@Transactional
 	public void restore(Festival festival) {
-		if (!festival.isDeleted()) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
-		}
-		if (festival.getDeletionType() != FestivalDeletionType.ADMIN) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_RESTORE_FORBIDDEN);
-		}
+		festival.validateRestorable();
 		validateRestoreDuplicate(festival);
 		festival.restoreByAdmin();
 		refreshGrade(festival);
@@ -50,15 +43,8 @@ public class FestivalDeletionService {
 			|| festival.getRegion() == null || festival.getUrl() == null || festival.getUrl().isBlank()) {
 			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
 		}
-		var begin = festival.getBeginDe().toLocalDate();
-		var end = festival.getEndDe().toLocalDate();
-		String url = festival.getUrl().trim().replaceFirst("/+$", "");
-		festivalRepository.lockSubmissionDuplicateKey(Objects.hash(begin, end, festival.getRegion().name(), url));
-		if (festivalRepository.existsSubmissionDuplicate(festival.getId(), begin.atStartOfDay(),
-			begin.plusDays(1).atStartOfDay(), end.atStartOfDay(), end.plusDays(1).atStartOfDay(),
-			festival.getRegion().name(), url)) {
-			throw new BusinessException(FestivalExceptionCode.DUPLICATE_FESTIVAL);
-		}
+		FestivalDuplicateValidator.validate(festivalRepository, festival.getId(),
+			festival.getBeginDe(), festival.getEndDe(), festival.getRegion(), festival.getUrl());
 	}
 
 	private void refreshGrade(Festival festival) {

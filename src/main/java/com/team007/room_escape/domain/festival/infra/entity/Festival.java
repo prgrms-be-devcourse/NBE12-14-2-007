@@ -122,16 +122,20 @@ public class Festival extends SoftDeletableEntity {
 	}
 
 	public void restoreByAdmin() {
+		validateRestorable();
+		super.restore();
+		this.deletedBy = null;
+		this.deletionType = null;
+		this.deletionReason = null;
+	}
+
+	public void validateRestorable() {
 		if (!isDeleted()) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
 		}
 		if (deletionType != FestivalDeletionType.ADMIN) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_RESTORE_FORBIDDEN);
 		}
-		super.restore();
-		this.deletedBy = null;
-		this.deletionType = null;
-		this.deletionReason = null;
 	}
 
 	// TODO 인자가 많아서 정리 필요

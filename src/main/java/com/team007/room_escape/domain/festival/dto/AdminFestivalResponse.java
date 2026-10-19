@@ -54,7 +54,7 @@ public class AdminFestivalResponse {
 		LocalDateTime deletedAt,
 
 		@Schema(description = "삭제 주체 구분 및 안내 사유")
-		FestivalDeletionResponse.Info deletion
+		FestivalResponse.DeletionInfo deletion
 	) {
 
 		public static ListItem from(Festival festival) {
@@ -70,7 +70,7 @@ public class AdminFestivalResponse {
 				.region(festival.getRegion())
 				.status(festival.getStatus())
 				.deletedAt(festival.getDeletedAt())
-				.deletion(FestivalDeletionResponse.Info.from(festival))
+				.deletion(FestivalResponse.DeletionInfo.from(festival))
 				.build();
 		}
 	}
