@@ -34,8 +34,8 @@ public class InquiryTargetValidator {
 		boolean exists = switch (type) {
 			case FESTIVAL -> festivalRepository.existsByIdAndDeletedAtIsNull(parseLong(targetId));
 			case POST -> postRepository.existsByIdAndDeletedAtIsNull(parseUuid(targetId));
-			// 댓글·커뮤니티 글·댓글은 @SQLRestriction으로 삭제된 행이 자동으로 빠진다.
-			case COMMENT -> commentRepository.existsById(parseLong(targetId));
+			// 커뮤니티 글·댓글은 @SQLRestriction으로 삭제된 행이 자동으로 빠진다.
+			case COMMENT -> commentRepository.existsByIdAndDeletedAtIsNull(parseLong(targetId));
 			case MEMBER -> memberRepository.existsByIdAndDeletedAtIsNull(parseUuid(targetId));
 			case COMMUNITY_POST -> communityPostRepository.existsById(parseUuid(targetId));
 			case COMMUNITY_COMMENT -> communityCommentRepository.existsById(parseLong(targetId));

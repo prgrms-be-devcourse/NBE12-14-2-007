@@ -12,7 +12,9 @@
 		/** 댓글이 존재하지 않을 때*/
 		COMMENT_NOT_FOUND("COMMENT000", HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
 		/** 로그인한 회원이 댓글의 작성자가 아닐 때*/
-		COMMENT_FORBIDDEN("COMMENT001", HttpStatus.FORBIDDEN, "댓글을 수정하거나 삭제할 권한이 없습니다.");
+		COMMENT_FORBIDDEN("COMMENT001", HttpStatus.FORBIDDEN, "댓글을 수정하거나 삭제할 권한이 없습니다."),
+		/** 답글을 달려는 댓글이 다른 후기의 댓글일 때*/
+		COMMENT_PARENT_MISMATCH("COMMENT002", HttpStatus.BAD_REQUEST, "다른 후기의 댓글에는 답글을 달 수 없습니다.");
 
 		private final String code;
 		private final HttpStatus status;

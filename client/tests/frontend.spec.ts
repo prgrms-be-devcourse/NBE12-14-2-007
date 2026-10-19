@@ -252,26 +252,34 @@ test("preview review, comment and like lifecycle works", async ({ page }) => {
   );
   await page.getByLabel("댓글 내용").fill("직접 확인한 댓글");
   await page.getByRole("button", { name: "댓글 남기기" }).click();
-  await expect(page.locator(".comment-row")).toContainText("직접 확인한 댓글");
-  await page
-    .locator(".comment-row")
-    .getByRole("button", { name: "수정", exact: true })
-    .click();
+  const root = page.locator(".comment-thread > .comment-row").first();
+  await expect(root).toContainText("직접 확인한 댓글");
+  await root.getByRole("button", { name: "수정", exact: true }).click();
   await page.getByLabel("수정할 댓글").fill("수정한 댓글");
-  await page
-    .locator(".comment-row")
-    .getByRole("button", { name: "저장", exact: true })
-    .click();
-  await expect(page.locator(".comment-row")).toContainText("수정한 댓글");
-  await page
-    .locator(".comment-row")
-    .getByRole("button", { name: "삭제", exact: true })
-    .click();
+  await root.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(root).toContainText("수정한 댓글");
+  await root.getByRole("button", { name: "답글", exact: true }).click();
+  await page.getByLabel("답글 내용").fill("답글도 남겨요");
+  await page.getByRole("button", { name: "답글 남기기" }).click();
+  const reply = page.locator(".comment-replies .comment-row");
+  await expect(reply).toContainText("답글도 남겨요");
+  // 부모 댓글을 지워도 자리는 "삭제된 댓글입니다"로 남고, 답글은 그대로 보인다.
+  await root.getByRole("button", { name: "삭제", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "삭제", exact: true })
     .click();
-  await expect(page.getByText("첫 번째 댓글을 남겨보세요.")).toBeVisible();
+  await expect(root).toHaveClass(/deleted/);
+  await expect(root).toContainText("삭제된 댓글입니다");
+  await expect(root.getByRole("button")).toHaveCount(0);
+  await expect(reply).toContainText("답글도 남겨요");
+  // 답글을 지워도 같은 문구로 남는다.
+  await reply.getByRole("button", { name: "삭제", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "삭제", exact: true })
+    .click();
+  await expect(reply).toContainText("삭제된 댓글입니다");
   await page.getByRole("link", { name: "수정", exact: true }).click();
   await page.getByLabel("후기 제목").fill("수정한 산책 후기");
   await page.getByRole("button", { name: "수정 내용 저장" }).click();
