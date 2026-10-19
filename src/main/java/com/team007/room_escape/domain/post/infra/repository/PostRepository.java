@@ -51,6 +51,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 			   (:#{#type.name()} = 'TITLE'
 					AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:#{#type.name()} = 'MEMBER_NICKNAME'
+					AND m.deletedAt IS NULL
 					AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:#{#type.name()} = 'FESTIVAL_TITLE'
 					AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -66,6 +67,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 			   (:#{#type.name()} = 'TITLE'
 					AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:#{#type.name()} = 'MEMBER_NICKNAME'
+					AND m.deletedAt IS NULL
 					AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:#{#type.name()} = 'FESTIVAL_TITLE'
 					AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -162,6 +164,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 		  AND ((:searchType = 'TITLE'
 					AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:searchType = 'MEMBER_NICKNAME'
+					AND m.deletedAt IS NULL
 					AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:searchType = 'FESTIVAL_TITLE'
 					AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%'))))
@@ -176,6 +179,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 		  AND ((:searchType = 'TITLE'
 					AND LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:searchType = 'MEMBER_NICKNAME'
+					AND m.deletedAt IS NULL
 					AND LOWER(m.nickname) LIKE LOWER(CONCAT('%', :keyword, '%')))
 			OR (:searchType = 'FESTIVAL_TITLE'
 					AND LOWER(f.title) LIKE LOWER(CONCAT('%', :keyword, '%'))))
