@@ -11,6 +11,7 @@ const allowedTags = [
   "blockquote",
   "br",
   "a",
+  "img",
 ];
 
 function escapeHtml(value: string) {
@@ -45,7 +46,7 @@ function displayHtml(value: string) {
 
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: allowedTags,
-    ALLOWED_ATTR: ["href", "rel"],
+    ALLOWED_ATTR: ["href", "rel", "src", "alt"],
     ALLOWED_URI_REGEXP: /^(?:(?:https?):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   });
 }

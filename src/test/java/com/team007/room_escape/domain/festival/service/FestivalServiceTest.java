@@ -211,12 +211,10 @@ class FestivalServiceTest {
 
 		Festival festival = captureSaved().get(0);
 		assertThat(festival.getProviderType()).isEqualTo(ProviderType.PUBLIC);
-		assertThat(festival.getInstNm()).isEqualTo("경기문화재단");
 		assertThat(festival.getTitle()).isEqualTo("남한산성문화제");
 		assertThat(festival.getCategory()).isEqualTo("행사");
 		assertThat(festival.getUrl()).isEqualTo("https://example.com/1");
 		assertThat(festival.getImgUrl()).isEqualTo("https://example.com/img.jpg");
-		assertThat(festival.getHostInstNm()).isEqualTo("광주시");
 		assertThat(festival.getBeginDe()).isEqualTo(LocalDateTime.of(CURRENT_YEAR, 9, 18, 0, 0));
 		assertThat(festival.getEndDe()).isEqualTo(LocalDateTime.of(2999, 12, 31, 0, 0));
 	}
@@ -377,7 +375,6 @@ class FestivalServiceTest {
 				.providerType(ProviderType.PUBLIC)
 				.title("경기 행사")
 				.category("행사")
-				.instNm("경기문화재단")
 				.beginDe(beginDe)
 				.endDe(endDe)
 				.region(region)
@@ -571,13 +568,9 @@ class FestivalServiceTest {
 			.providerType(ProviderType.PUBLIC)
 			.title("남한산성문화제")
 			.category("행사")
-			.instNm("경기문화재단")
-			.hostInstNm("광주시")
-			.eventTmInfo("10:00~18:00")
 			.partcptExpnInfo("무료")
 			.telnoInfo("031-000-0000")
 			.url("https://example.com/1")
-			.hmpgUrl("https://example.com")
 			.imgUrl("https://example.com/img.jpg")
 			.beginDe(today.minusDays(1).atStartOfDay())
 			.endDe(today.plusDays(1).atStartOfDay())
@@ -590,11 +583,8 @@ class FestivalServiceTest {
 		assertThat(detail.festivalId()).isEqualTo(7L);
 		assertThat(detail.providerType()).isEqualTo(ProviderType.PUBLIC);
 		assertThat(detail.title()).isEqualTo("남한산성문화제");
-		assertThat(detail.hostInstNm()).isEqualTo("광주시");
-		assertThat(detail.eventTmInfo()).isEqualTo("10:00~18:00");
 		assertThat(detail.partcptExpnInfo()).isEqualTo("무료");
 		assertThat(detail.telnoInfo()).isEqualTo("031-000-0000");
-		assertThat(detail.hmpgUrl()).isEqualTo("https://example.com");
 		assertThat(detail.region()).isEqualTo(FestivalRegion.GYEONGGI);
 		assertThat(detail.status()).isEqualTo(FestivalStatus.OPEN);
 	}
@@ -613,9 +603,7 @@ class FestivalServiceTest {
 			.regionDetail("수원시 중앙공원")
 			.beginDe(LocalDate.now().atStartOfDay())
 			.endDe(LocalDate.now().plusDays(1).atStartOfDay())
-			.eventTmInfo("10:00~17:00")
 			.partcptExpnInfo("무료")
-			.hostInstNm("우리동네 모임")
 			.build();
 		when(festivalRepository.findByIdAndDeletedAtIsNull(8L))
 			.thenReturn(java.util.Optional.of(festival));
@@ -626,9 +614,7 @@ class FestivalServiceTest {
 		assertThat(detail.festivalContent()).isEqualTo("이웃과 함께하는 주말 장터");
 		assertThat(detail.referenceUrl()).isEqualTo("https://example.com/market");
 		assertThat(detail.regionDetail()).isEqualTo("수원시 중앙공원");
-		assertThat(detail.eventTmInfo()).isEqualTo("10:00~17:00");
 		assertThat(detail.partcptExpnInfo()).isEqualTo("무료");
-		assertThat(detail.hostInstNm()).isEqualTo("우리동네 모임");
 	}
 
 	@Test

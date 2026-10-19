@@ -60,8 +60,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		  AND (:hasKeyword = false
 				OR LOWER(COALESCE(f.title, ''))
 					LIKE CONCAT('%', :keyword, '%')
-				OR LOWER(COALESCE(f.instNm, ''))
-					LIKE CONCAT('%', :keyword, '%')
 				OR LOWER(COALESCE(f.regionDetail, ''))
 					LIKE CONCAT('%', :keyword, '%'))
 		  AND (:hasRegion = false OR f.region = :region)
@@ -101,8 +99,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		  AND (:hasKeyword = false
 				OR LOWER(COALESCE(f.title, ''))
 					LIKE CONCAT('%', :keyword, '%')
-				OR LOWER(COALESCE(f.instNm, ''))
-					LIKE CONCAT('%', :keyword, '%')
 				OR LOWER(COALESCE(f.regionDetail, ''))
 					LIKE CONCAT('%', :keyword, '%'))
 		  AND (:hasRegion = false OR f.region = :region)
@@ -126,8 +122,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		WHERE f.deletedAt IS NULL
 		  AND (:hasKeyword = false
 				OR LOWER(COALESCE(f.title, ''))
-					LIKE CONCAT('%', :keyword, '%')
-				OR LOWER(COALESCE(f.instNm, ''))
 					LIKE CONCAT('%', :keyword, '%')
 				OR LOWER(COALESCE(f.regionDetail, ''))
 					LIKE CONCAT('%', :keyword, '%'))
@@ -176,8 +170,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		  AND (:hasKeyword = false
 				OR LOWER(COALESCE(f.title, ''))
 					LIKE CONCAT('%', :keyword, '%')
-				OR LOWER(COALESCE(f.instNm, ''))
-					LIKE CONCAT('%', :keyword, '%')
 				OR LOWER(COALESCE(f.regionDetail, ''))
 					LIKE CONCAT('%', :keyword, '%'))
 		  AND (:hasRegion = false OR f.region = :region)
@@ -193,8 +185,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		WHERE f.deletedAt IS NULL
 		  AND (:hasKeyword = false
 				OR LOWER(COALESCE(f.title, ''))
-					LIKE CONCAT('%', :keyword, '%')
-				OR LOWER(COALESCE(f.instNm, ''))
 					LIKE CONCAT('%', :keyword, '%')
 				OR LOWER(COALESCE(f.regionDetail, ''))
 					LIKE CONCAT('%', :keyword, '%'))
@@ -255,7 +245,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		FROM Festival f
 		WHERE (:includeDeleted = true OR f.deletedAt IS NULL)
 		  AND (LOWER(COALESCE(f.title, '')) LIKE CONCAT('%', :keyword, '%')
-			   OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
 			   OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
 		  AND (:providerType IS NULL OR f.providerType = :providerType)
 		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)
@@ -265,7 +254,6 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 		FROM Festival f
 		WHERE (:includeDeleted = true OR f.deletedAt IS NULL)
 		  AND (LOWER(COALESCE(f.title, '')) LIKE CONCAT('%', :keyword, '%')
-			   OR LOWER(COALESCE(f.instNm, '')) LIKE CONCAT('%', :keyword, '%')
 			   OR LOWER(COALESCE(f.regionDetail, '')) LIKE CONCAT('%', :keyword, '%'))
 		  AND (:providerType IS NULL OR f.providerType = :providerType)
 		  AND (:excludeClosed = false OR f.endDe IS NULL OR f.endDe >= CURRENT_TIMESTAMP)

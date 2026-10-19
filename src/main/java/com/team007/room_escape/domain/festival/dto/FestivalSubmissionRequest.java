@@ -17,9 +17,6 @@ public class FestivalSubmissionRequest {
 	@Builder
 	@Schema(name = "FestivalSubmissionUpsertRequest", description = "행사 제보 등록·수정 요청")
 	public record Upsert(
-		@Schema(description = "기관명", example = "방구석탈출")
-		String instNm,
-
 		@NotBlank(message = "행사 이름은 필수입니다.")
 		@Schema(description = "행사 이름", example = "성수 독립 플리마켓")
 		String title,
@@ -57,17 +54,11 @@ public class FestivalSubmissionRequest {
 		@Schema(description = "행사 종료 일시", example = "2026-09-20T18:00:00")
 		LocalDateTime endDe,
 
-		@Schema(description = "행사 시간 정보", example = "10:00~18:00")
-		String eventTmInfo,
-
 		@Schema(description = "참가 비용 정보", example = "무료")
 		String partcptExpnInfo,
 
 		@Schema(description = "전화번호", example = "010-1234-5678")
-		String telnoInfo,
-
-		@Schema(description = "주최기관명", example = "방구석탈출")
-		String hostInstNm
+		String telnoInfo
 	) {
 
 		@AssertTrue(message = "행사 종료 일시는 시작 일시보다 빠를 수 없습니다.")

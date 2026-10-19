@@ -1987,6 +1987,16 @@ select {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.rich-text-editor-content img,
+.rich-text-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.rich-text-editor-content img.ProseMirror-selectednode {
+  outline: 3px solid #d8a77f;
+}
 .rich-text-content {
   white-space: normal;
 }
