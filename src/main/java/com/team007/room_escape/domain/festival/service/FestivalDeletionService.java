@@ -1,10 +1,11 @@
 package com.team007.room_escape.domain.festival.service;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
-import com.team007.room_escape.domain.festival.infra.entity.FestivalDeletionType;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import java.util.UUID;
@@ -19,18 +20,26 @@ public class FestivalDeletionService {
 
 	private final FestivalRepository festivalRepository;
 	private final MemberTrustGradeService memberTrustGradeService;
+	private final DeletionHistoryService deletionHistoryService;
+	private final FestivalDuplicateValidator duplicateValidator;
 
 	@Transactional
-	public void delete(Festival festival, UUID actorId, FestivalDeletionType type, String reason) {
-		festival.deleteBy(actorId, type, reason);
+	public void delete(Festival festival) {
+		festival.delete();
 		refreshGrade(festival);
 	}
 
 	@Transactional
+	public void deleteByAuthor(Festival festival, UUID actorId) {
+		delete(festival);
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.FESTIVAL,
+			festival.getId().toString(), actorId);
+	}
+
+	@Transactional
 	public void restore(Festival festival) {
-		festival.validateRestorable();
 		validateRestoreDuplicate(festival);
-		festival.restoreByAdmin();
+		festival.restore();
 		refreshGrade(festival);
 	}
 
@@ -43,7 +52,7 @@ public class FestivalDeletionService {
 			|| festival.getRegion() == null || festival.getUrl() == null || festival.getUrl().isBlank()) {
 			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
 		}
-		FestivalDuplicateValidator.validate(festivalRepository, festival.getId(),
+		duplicateValidator.validate(festival.getId(),
 			festival.getBeginDe(), festival.getEndDe(), festival.getRegion(), festival.getUrl());
 	}
 

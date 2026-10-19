@@ -8,15 +8,16 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 
 /** 등록·수정·복구에서 같은 중복 기준과 잠금 키를 사용한다. 호출자는 트랜잭션을 유지한다. */
-final class FestivalDuplicateValidator {
-	private FestivalDuplicateValidator() {
-	}
+@org.springframework.stereotype.Component
+@lombok.RequiredArgsConstructor
+public class FestivalDuplicateValidator {
+	private final FestivalRepository repository;
 
-	static String normalizeReferenceUrl(String url) {
+	public String normalizeReferenceUrl(String url) {
 		return url.trim().replaceFirst("/+$", "");
 	}
 
-	static void validate(FestivalRepository repository, Long currentId,
+	public void validate(Long currentId,
 		LocalDateTime beginDe, LocalDateTime endDe, FestivalRegion region, String referenceUrl) {
 		var begin = beginDe.toLocalDate();
 		var end = endDe.toLocalDate();

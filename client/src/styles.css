@@ -6341,3 +6341,36 @@ textarea::placeholder {
   width: 22px;
   height: 22px;
 }
+/* 마이페이지 본인 작성 이력: 삭제된 콘텐츠도 이력으로 남긴다. */
+.my-content-table-wrap {
+  overflow-x: auto;
+}
+.my-content-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.my-content-table th,
+.my-content-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #e6ebe3;
+  text-align: left;
+}
+.my-content-title {
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+.my-content-deleted {
+  color: #737b72;
+  background: #f6f7f4;
+}
+.my-content-deleted .my-content-title {
+  text-decoration: line-through;
+}
+.my-content-pagination {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
+}

@@ -2,6 +2,7 @@ package com.team007.room_escape.domain.festival.service;
 
 import static org.assertj.core.api.Assertions.*;
 import com.team007.room_escape.domain.festival.infra.entity.*;
+import com.team007.room_escape.domain.deletion.infra.entity.*;
 import com.team007.room_escape.global.exception.BusinessException;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -9,39 +10,40 @@ import org.junit.jupiter.api.Test;
 class FestivalDeletionTest {
 
 	@Test
-	void authorDeletionKeepsActorAndCannotBeRestored() {
-		UUID authorId = UUID.randomUUID();
+	void festivalTracksOnlyCurrentDeletionState() {
 		Festival festival = Festival.builder().build();
-		festival.deleteBy(authorId, FestivalDeletionType.AUTHOR, "작성자 삭제");
+		festival.delete();
 		assertThat(festival.isDeleted()).isTrue();
-		assertThat(festival.getDeletedBy()).isEqualTo(authorId);
-		assertThat(festival.getDeletionReason()).isEqualTo("작성자 삭제");
-		assertThatThrownBy(festival::restoreByAdmin).isInstanceOf(BusinessException.class);
+		festival.restore();
+		assertThat(festival.isDeleted()).isFalse();
 	}
 
 	@Test
-	void legacyDeletionCannotBeRestoredWithoutKnownActor() {
+	void repeatedDeletionCannotOverwriteDeletionTime() {
 		Festival festival = Festival.builder().build();
 		festival.delete();
-		assertThatThrownBy(festival::restoreByAdmin).isInstanceOf(BusinessException.class);
+		var deletedAt = festival.getDeletedAt();
+		assertThatThrownBy(festival::delete).isInstanceOf(BusinessException.class);
+		assertThat(festival.getDeletedAt()).isEqualTo(deletedAt);
 		assertThat(festival.isDeleted()).isTrue();
 	}
 
 	@Test
 	void adminDeletionRequiresNonBlankReasonAndValidActor() {
-		Festival festival = Festival.builder().build();
-		assertThatThrownBy(() -> festival.deleteBy(UUID.randomUUID(), FestivalDeletionType.ADMIN, " "))
+		assertThatThrownBy(() -> DeletionHistory.record(DeletionTargetType.FESTIVAL, "1", DeletionAction.DELETE,
+			UUID.randomUUID(), DeletionActorType.ADMIN, DeletionReason.OTHER, " "))
 			.isInstanceOf(BusinessException.class);
-		assertThatThrownBy(() -> festival.deleteBy(null, FestivalDeletionType.ADMIN, "사유"))
+		assertThatThrownBy(() -> DeletionHistory.record(DeletionTargetType.FESTIVAL, "1", DeletionAction.DELETE,
+			null, DeletionActorType.ADMIN, DeletionReason.OTHER, "사유"))
 			.isInstanceOf(BusinessException.class);
-		assertThatThrownBy(() -> festival.deleteBy(UUID.randomUUID(), FestivalDeletionType.ADMIN, "가".repeat(501)))
+		assertThatThrownBy(() -> DeletionHistory.record(DeletionTargetType.FESTIVAL, "1", DeletionAction.DELETE,
+			UUID.randomUUID(), DeletionActorType.ADMIN, DeletionReason.OTHER, "가".repeat(501)))
 			.isInstanceOf(BusinessException.class);
-		assertThat(festival.isDeleted()).isFalse();
 	}
 
 	@Test
 	void activeEventCannotBeRestored() {
-		assertThatThrownBy(() -> Festival.builder().build().restoreByAdmin())
+		assertThatThrownBy(() -> Festival.builder().build().restore())
 			.isInstanceOf(BusinessException.class);
 	}
 }

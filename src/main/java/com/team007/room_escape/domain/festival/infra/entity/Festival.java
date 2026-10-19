@@ -15,10 +15,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
 
 import lombok.*;
 
@@ -81,46 +79,21 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "region_detail", length = 255)
 	private String regionDetail;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "deletion_type", length = 16)
-	private FestivalDeletionType deletionType;
-
-	@Column(name = "deleted_by")
-	private UUID deletedBy;
-
-	@Column(name = "deletion_reason", length = 500)
-	private String deletionReason;
-
-	/** 재삭제로 최초 삭제 이력을 덮어쓰지 않는다. */
-	public void deleteBy(UUID actorId, FestivalDeletionType type, String reason) {
+	/** 삭제 주체·사유는 공통 이력에 기록하며 행사는 현재 삭제 상태만 관리한다. */
+	@Override
+	public void delete() {
 		if (isDeleted()) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
 		}
-		if (actorId == null || type == null || type == FestivalDeletionType.UNKNOWN
-			|| reason == null || reason.isBlank() || reason.strip().length() > 500) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
-		}
 		super.delete();
-		this.deletedBy = actorId;
-		this.deletionType = type;
-		this.deletionReason = reason.strip();
 	}
 
-	public void restoreByAdmin() {
-		validateRestorable();
-		super.restore();
-		this.deletedBy = null;
-		this.deletionType = null;
-		this.deletionReason = null;
-	}
-
-	public void validateRestorable() {
+	@Override
+	public void restore() {
 		if (!isDeleted()) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
 		}
-		if (deletionType != FestivalDeletionType.ADMIN) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_RESTORE_FORBIDDEN);
-		}
+		super.restore();
 	}
 
 	// TODO 인자가 많아서 정리 필요

@@ -16,14 +16,6 @@ public class AdminFestivalRequest {
 	private AdminFestivalRequest() {
 	}
 
-	@Schema(name = "AdminFestivalDelete", description = "관리자 행사 삭제 사유")
-	public record Delete(
-		@NotBlank @Size(max = 500)
-		@Schema(description = "작성자에게 안내할 삭제 사유", example = "행사 취소 확인")
-		String reason
-	) {
-	}
-
 	/** 관리자 행사 검색 조건. 모든 항목이 선택이며, 비우면 전체를 조회한다. */
 	@Schema(name = "AdminFestivalSearchRequest", description = "관리자 행사 검색 조건")
 	public record Search(

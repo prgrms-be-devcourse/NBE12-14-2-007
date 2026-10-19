@@ -26,6 +26,17 @@ public class CommentController {
 
 	private final CommentService commentService;
 
+	@Operation(summary = "[ADMIN] 후기 댓글 관리 목록", description = "삭제된 댓글과 최신 삭제 사유도 조회합니다. 작성일 내림차순이며 일반 사용자용 목록에는 삭제된 댓글을 노출하지 않습니다.")
+	@GetMapping("/admin/posts/{id}/comments")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ApiResponse<List<CommentResponse.AdminInfo>>> getCommentsForAdmin(
+		@PathVariable UUID id,
+		@AuthenticationPrincipal CustomUserDetails user,
+		@PageableDefault(size = 20) Pageable page
+	) {
+		return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsForAdmin(id, user.getId(), page)));
+	}
+
 	@Operation(summary = "댓글 작성", description = "특정 후기에 댓글을 작성합니다.")
 	@PostMapping("/posts/{id}/comments")
 	@PreAuthorize("hasRole('UNVERIFIED')")
@@ -66,13 +77,13 @@ public class CommentController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "댓글 삭제", description = "작성자 본인 또는 관리자가 댓글을 삭제합니다.")
+	@Operation(summary = "댓글 삭제", description = "작성자 본인이 삭제합니다. 관리자의 타인 댓글 삭제는 공통 관리자 조치 API를 사용합니다.")
 	@DeleteMapping("/comments/{id}")
 	public ResponseEntity<ApiResponse<Void>> deleteComment(
 			@PathVariable Long id,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
-		commentService.deleteComment(id, user.getId(), user.isAdmin());
+		commentService.deleteComment(id, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}

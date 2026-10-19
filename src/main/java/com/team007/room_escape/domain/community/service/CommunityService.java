@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.community.service;
 
 import com.team007.room_escape.domain.community.dto.CommunityRequest;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.community.dto.CommunityResponse;
 import com.team007.room_escape.domain.community.infra.entity.CommunityComment;
 import com.team007.room_escape.domain.community.infra.entity.CommunityPost;
@@ -37,6 +39,7 @@ public class CommunityService {
 	private final MemberRepository memberRepository;
 	private final RichTextSanitizer richTextSanitizer;
 	private final ImageUrlResolver imageUrlResolver;
+	private final DeletionHistoryService deletionHistoryService;
 
 	@Transactional(readOnly = true)
 	public Page<CommunityResponse.PostListItem> getPosts(
@@ -110,12 +113,14 @@ public class CommunityService {
 	}
 
 	@Transactional
-	public void deletePost(UUID postId, UUID memberId, boolean isAdmin) {
-		CommunityPost post = getPostEntity(postId);
-		if (!post.getMember().getId().equals(memberId) && !isAdmin) {
+	public void deletePost(UUID postId, UUID memberId) {
+		CommunityPost post = postRepository.findForDeletion(postId)
+			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.POST_NOT_FOUND));
+		if (!post.getMember().getId().equals(memberId)) {
 			throw new BusinessException(CommunityExceptionCode.POST_FORBIDDEN);
 		}
 		post.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.COMMUNITY_POST, postId.toString(), memberId);
 	}
 
 	@Transactional(readOnly = true)
@@ -158,12 +163,14 @@ public class CommunityService {
 	}
 
 	@Transactional
-	public void deleteComment(Long commentId, UUID memberId, boolean isAdmin) {
-		CommunityComment comment = getCommentEntity(commentId);
-		if (!comment.getMember().getId().equals(memberId) && !isAdmin) {
+	public void deleteComment(Long commentId, UUID memberId) {
+		CommunityComment comment = commentRepository.findForDeletion(commentId)
+			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.COMMENT_NOT_FOUND));
+		if (!comment.getMember().getId().equals(memberId)) {
 			throw new BusinessException(CommunityExceptionCode.COMMENT_FORBIDDEN);
 		}
 		comment.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.COMMUNITY_COMMENT, commentId.toString(), memberId);
 	}
 
 	private Member getActiveMember(UUID memberId) {

@@ -65,7 +65,8 @@ public class AdminInquiryService {
 	 */
 	@Transactional
 	public AdminInquiryResponse.Detail answer(UUID inquiryId, AdminInquiryRequest.Answer request) {
-		Inquiry inquiry = findOrThrow(inquiryId);
+		Inquiry inquiry = inquiryRepository.findForProcessing(inquiryId)
+			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
 		if (inquiry.isDeleted()) {
 			throw new BusinessException(InquiryExceptionCode.INQUIRY_ALREADY_DELETED);

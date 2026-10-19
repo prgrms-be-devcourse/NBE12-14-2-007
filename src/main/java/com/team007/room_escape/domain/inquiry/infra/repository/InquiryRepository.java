@@ -15,6 +15,9 @@ import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
 
 public interface InquiryRepository extends JpaRepository<Inquiry, UUID> {
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select i from Inquiry i where i.id = :id")
+	Optional<Inquiry> findForProcessing(@Param("id") UUID id);
 
 	/**
 	 * 내가 쓴 문의 목록. 최신순.

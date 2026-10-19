@@ -1,4 +1,10 @@
 import type {
+  AdminDeletionReason,
+  DeletionTarget,
+  LatestDeletionHistory,
+  MyContentItem,
+} from "./deletion";
+import type {
   Mode,
   Member,
   SignupInput,
@@ -13,6 +19,7 @@ import type {
   AdminPostSummary,
   Page,
   Comment,
+  AdminComment,
   CommunityCategory,
   CommunityComment,
   CommunityPostDetail,
@@ -693,6 +700,11 @@ export function createApi(mode: Mode) {
             `/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=20&sort=createdAt,desc`,
           );
     },
+    async adminComments(postId: string, page = 0) {
+      return transport<AdminComment[]>(
+        `/admin/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=20`,
+      );
+    },
     async createComment(postId: string, content: string) {
       if (!demo)
         return transport<Comment>(
@@ -891,7 +903,7 @@ export function createApi(mode: Mode) {
       const {
         page = 0,
         size = 20,
-        sort = "beginDe,desc",
+        sort = "createdAt,desc",
         excludeClosed,
         includeDeleted,
         ...filters
@@ -916,19 +928,47 @@ export function createApi(mode: Mode) {
       );
     },
     /** [ADMIN] 행사 삭제. 행을 지우지 않고 삭제 시각만 남긴다. */
-    async deleteFestival(festivalId: string | number, reason: string) {
-      return transport<void>(
-        `/admin/festivals/${encodeURIComponent(String(festivalId))}`,
-        "DELETE",
-        { reason: reason.trim() },
+    async adminDeleteContent(
+      targetType: DeletionTarget,
+      targetId: string | number,
+      reasonCode: AdminDeletionReason,
+      reasonDetail?: string,
+      inquiryId?: string,
+    ) {
+      return transport<void>("/admin/deletions", "POST", {
+        targetType,
+        targetId: String(targetId),
+        reasonCode,
+        reasonDetail: reasonDetail?.trim() || undefined,
+        inquiryId,
+      });
+    },
+    /** [ADMIN] 최신 조치를 조회한다. 이력 없음은 null이며 현재 삭제 상태와는 구분한다. */
+    async adminLatestDeletion(
+      targetType: DeletionTarget,
+      targetId: string | number,
+    ) {
+      const query = new URLSearchParams({
+        targetType,
+        targetId: String(targetId),
+      });
+      return transport<LatestDeletionHistory | null>(
+        `/admin/deletions/latest?${query}`,
       );
     },
-    /** [ADMIN] 관리자가 삭제한 행사만 복구한다. */
-    async restoreFestival(festivalId: string | number) {
-      return transport<void>(
-        `/admin/festivals/${encodeURIComponent(String(festivalId))}/restore`,
-        "PATCH",
+    async myContents(comments: boolean, page = 0) {
+      return transport<Page<MyContentItem>>(
+        `/members/me/${comments ? "comments" : "posts"}?page=${page}&size=20`,
       );
+    },
+    async adminRestoreContent(
+      targetType: DeletionTarget,
+      targetId: string | number,
+    ) {
+      return transport<void>("/admin/deletions/restore", "POST", {
+        targetType,
+        targetId: String(targetId),
+      });
     },
     /**
      * [ADMIN] 운영 대시보드 집계.

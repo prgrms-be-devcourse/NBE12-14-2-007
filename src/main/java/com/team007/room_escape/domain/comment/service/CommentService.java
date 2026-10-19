@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.comment.service;
 
 import com.team007.room_escape.domain.comment.dto.CommentRequest;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.comment.dto.CommentResponse;
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.comment.infra.repository.CommentRepository;
@@ -28,6 +30,22 @@ public class CommentService {
 	private final MemberReader memberReader;
 	private final PostRepository postRepository;
 	private final ImageUrlResolver imageUrlResolver;
+	private final DeletionHistoryService deletionHistoryService;
+
+	@Transactional(readOnly = true)
+	public List<CommentResponse.AdminInfo> getCommentsForAdmin(UUID postId, UUID adminId, Pageable page) {
+		if (memberReader.getActiveMember(adminId).getRole() !=
+			com.team007.room_escape.domain.member.infra.entity.MemberRole.ROLE_ADMIN) {
+			throw new org.springframework.security.access.AccessDeniedException("관리자만 삭제된 댓글을 조회할 수 있습니다.");
+		}
+		Post post = postRepository.findById(postId)
+			.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
+		var comments = commentRepository.findAllForAdmin(postId, page.getPageSize(), page.getOffset());
+		var histories = deletionHistoryService.findLatestForTargets(DeletionTargetType.COMMENT,
+			comments.stream().filter(Comment::isDeleted).map(comment -> comment.getId().toString()).toList());
+		return comments.stream().map(comment -> CommentResponse.AdminInfo.from(comment, imageUrlResolver,
+			post.isDeleted(), histories.get(comment.getId().toString()))).toList();
+	}
 
 	@Transactional
 	public CommentResponse.Info createComment(
@@ -84,16 +102,17 @@ public class CommentService {
 	}
 
 	@Transactional
-	public void deleteComment(Long id, UUID memberId, boolean isAdmin) {
-		Comment comment = commentRepository.findById(id)
+	public void deleteComment(Long id, UUID memberId) {
+		Comment comment = commentRepository.findForDeletion(id)
 				.orElseThrow(() -> new BusinessException(CommentExceptionCode.COMMENT_NOT_FOUND));
 
 		boolean isAuthor = comment.getMember().getId().equals(memberId);
 
-		if(!isAuthor && !isAdmin) {
+		if(!isAuthor) {
 			throw new BusinessException(CommentExceptionCode.COMMENT_FORBIDDEN);
 		}
 
 		comment.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.COMMENT, id.toString(), memberId);
 	}
 }

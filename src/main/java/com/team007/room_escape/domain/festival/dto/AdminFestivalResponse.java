@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import java.time.LocalDateTime;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionAction;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
@@ -41,6 +43,9 @@ public class AdminFestivalResponse {
 		@Schema(description = "행사 종료 일시")
 		LocalDateTime endDe,
 
+		@Schema(description = "행사 등록 일시")
+		LocalDateTime createdAt,
+
 		@Schema(description = "행사 지역")
 		FestivalRegion region,
 
@@ -54,7 +59,7 @@ public class AdminFestivalResponse {
 		FestivalResponse.DeletionInfo deletion
 	) {
 
-		public static ListItem from(Festival festival) {
+		public static ListItem from(Festival festival, DeletionHistory latest) {
 			return ListItem.builder()
 				.festivalId(festival.getId())
 				.providerType(festival.getProviderType())
@@ -63,11 +68,19 @@ public class AdminFestivalResponse {
 				.imgUrl(festival.getImgUrl())
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
+				.createdAt(festival.getCreatedAt())
 				.region(festival.getRegion())
 				.status(festival.getStatus())
 				.deletedAt(festival.getDeletedAt())
-				.deletion(FestivalResponse.DeletionInfo.from(festival))
+				.deletion(deletionFromHistory(festival, latest))
 				.build();
+		}
+
+		private static FestivalResponse.DeletionInfo deletionFromHistory(Festival festival, DeletionHistory latest) {
+			if (!festival.isDeleted() || latest == null || latest.getAction() != DeletionAction.DELETE) {
+				return null;
+			}
+			return FestivalResponse.DeletionInfo.from(festival, latest);
 		}
 	}
 }

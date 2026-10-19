@@ -23,12 +23,15 @@ class FestivalSubmissionServiceTest {
 	private final FestivalRepository festivals = mock(FestivalRepository.class);
 	private final FestivalSubmissionRepository submissions = mock(FestivalSubmissionRepository.class);
 	private final MemberReader members = mock(MemberReader.class);
+	private final com.team007.room_escape.domain.deletion.service.DeletionHistoryService deletionHistories =
+		mock(com.team007.room_escape.domain.deletion.service.DeletionHistoryService.class);
 	private final FestivalDeletionService deletion = new FestivalDeletionService(festivals,
 			new MemberTrustGradeService(
 				mock(LikeRepository.class),
-				mock(FestivalAccuracyVoteRepository.class)));
+				mock(FestivalAccuracyVoteRepository.class)),
+			deletionHistories, new FestivalDuplicateValidator(festivals));
 	private final FestivalSubmissionService service = new FestivalSubmissionService(
-			festivals, submissions, members, mock(RichTextSanitizer.class), deletion);
+			festivals, submissions, members, mock(RichTextSanitizer.class), deletion, deletionHistories, new FestivalDuplicateValidator(festivals));
 	private final UUID memberId = UUID.randomUUID();
 	private final UUID submissionId = UUID.randomUUID();
 	private final LocalDateTime begin = LocalDateTime.of(2026, 10, 2, 10, 30);
@@ -74,9 +77,11 @@ class FestivalSubmissionServiceTest {
 		FestivalSubmission submission = FestivalSubmission.builder().festival(festival).build();
 		when(submissions.findByIdAndFestival_Member_Id(submissionId, memberId))
 				.thenReturn(Optional.of(submission));
+		when(festivals.findForDeletion(7L)).thenReturn(Optional.of(festival));
 		service.delete(memberId, submissionId);
 		assertThat(festival.isDeleted()).isTrue();
-		assertThat(festival.getDeletionType()).isEqualTo(FestivalDeletionType.AUTHOR);
+		verify(deletionHistories).recordAuthorDeletion(
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType.FESTIVAL, "7", memberId);
 	}
 
 	@Test
@@ -118,19 +123,25 @@ class FestivalSubmissionServiceTest {
 	@Test
 	void deletedSubmissionRemainsInMyListWithDeletionReason() {
 		Festival festival = Festival.builder().id(7L).title("삭제 이력").build();
-		festival.deleteBy(memberId, FestivalDeletionType.AUTHOR, "작성자 삭제");
+		festival.delete();
 		var submission = FestivalSubmission.builder().id(submissionId).festival(festival).build();
 		when(submissions.findAllByFestival_Member_IdAndFestival_ProviderTypeOrderByCreatedAtDesc(
 				memberId, ProviderType.MEMBER)).thenReturn(java.util.List.of(submission));
+		var record = com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory.record(
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType.FESTIVAL, "7",
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionAction.DELETE, memberId,
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionActorType.AUTHOR,
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionReason.AUTHOR_REQUEST, null);
+		when(deletionHistories.findLatestForTargets(any(), any())).thenReturn(java.util.Map.of("7", record));
 		var history = service.findAllByMemberId(memberId).getFirst();
 		assertThat(history.deletion().deletedAt()).isNotNull();
-		assertThat(history.deletion().reason()).isEqualTo("작성자 삭제");
+		assertThat(history.deletion().reason()).isEqualTo("작성자 직접 삭제");
 	}
 
 	@Test
 	void cannotModifyDeletedEvent() {
 		Festival festival = Festival.builder().build();
-		festival.deleteBy(memberId, FestivalDeletionType.AUTHOR, "작성자 삭제");
+		festival.delete();
 		when(submissions.findByIdAndFestival_Member_Id(submissionId, memberId))
 			.thenReturn(Optional.of(FestivalSubmission.builder().festival(festival).build()));
 		assertThatThrownBy(() -> service.update(memberId, submissionId, request()))

@@ -13,6 +13,22 @@ public class CommentResponse {
 	private CommentResponse() {
 	}
 
+	@Builder
+	@Schema(name = "AdminCommentInfo", description = "삭제된 댓글과 최신 삭제 사유를 포함한 관리자용 댓글")
+	public record AdminInfo(Long id, UUID postId, MemberResponse.MemberInfo member, String content,
+		LocalDateTime date, LocalDateTime deletedAt, boolean parentDeleted,
+		com.team007.room_escape.domain.deletion.dto.DeletionHistoryResponse.Latest deletion) {
+		public static AdminInfo from(Comment comment, ImageUrlResolver imageUrlResolver, boolean parentDeleted,
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory history) {
+			return AdminInfo.builder().id(comment.getId()).postId(comment.getPost().getId())
+				.member(MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver))
+				.content(comment.getContent()).date(comment.getCreatedAt()).deletedAt(comment.getDeletedAt())
+				.parentDeleted(parentDeleted)
+				.deletion(history == null ? null : com.team007.room_escape.domain.deletion.dto.DeletionHistoryResponse.Latest.from(history))
+				.build();
+		}
+	}
+
 	/** 댓글 응답. 작성·목록·수정에서 함께 쓴다. */
 	@Builder
 	@Schema(name = "CommentInfo", description = "후기 댓글")

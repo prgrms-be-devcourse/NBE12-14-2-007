@@ -14,6 +14,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, UUID> {
+	/** 복구 전용: 삭제 필터를 우회하고 대상 행을 잠근다. */
+	@Query(value = "select * from post where id = :id for update", nativeQuery = true)
+	java.util.Optional<Post> findForRestoration(@org.springframework.data.repository.query.Param("id") UUID id);
+
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select p from Post p where p.id = :id and p.deletedAt is null")
+	Optional<Post> findForDeletion(@Param("id") UUID id);
 
 	/** 검색어 없는 목록 개수. 회원은 soft delete라 조인해도 결과가 같아서 조인 없이 센다. (조인 시 1건 0.5초) */
 	String COUNT_NOT_DELETED = """

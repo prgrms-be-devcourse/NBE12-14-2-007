@@ -19,6 +19,10 @@ import java.util.Optional;
 
 public interface FestivalRepository extends JpaRepository<Festival, Long> {
 
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select f from Festival f where f.id = :id")
+	java.util.Optional<Festival> findForDeletion(@Param("id") Long id);
+
 	// PostgreSQL 트랜잭션 종료 시 자동 해제. 같은 중복 조건의 등록/수정을 직렬화한다.
 	@Query(value = "SELECT count(*) FROM pg_advisory_xact_lock(:key)", nativeQuery = true)
 	long lockSubmissionDuplicateKey(@Param("key") long key);

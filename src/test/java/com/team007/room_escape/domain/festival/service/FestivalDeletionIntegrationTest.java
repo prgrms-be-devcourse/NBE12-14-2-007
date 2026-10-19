@@ -1,6 +1,12 @@
 package com.team007.room_escape.domain.festival.service;
 
 import static org.assertj.core.api.Assertions.*;
+import com.team007.room_escape.domain.deletion.service.AdminDeletionFacade;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionReason;
+import com.team007.room_escape.domain.deletion.dto.AdminDeletionRequest;
+import com.team007.room_escape.domain.inquiry.service.InquiryDeletionProcessor;
 import com.team007.room_escape.domain.festival.infra.entity.*;
 import com.team007.room_escape.domain.festival.infra.repository.*;
 import com.team007.room_escape.domain.member.infra.entity.*;
@@ -29,10 +35,12 @@ import org.springframework.test.context.DynamicPropertySource;
 @DataJpaTest(properties = {
 	"spring.datasource.username=roomescape",
 	"spring.datasource.password=roomescape",
-	"spring.flyway.locations=classpath:db/migration"
+	"spring.flyway.locations=classpath:db/migration,classpath:db/migration_v2"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({FestivalDeletionService.class, FestivalSubmissionService.class, AdminFestivalService.class,
+@Import({FestivalDeletionService.class, FestivalSubmissionService.class, AdminDeletionFacade.class,
+	FestivalDuplicateValidator.class,
+	DeletionHistoryService.class, FestivalDeletionHandler.class, InquiryDeletionProcessor.class,
 	MemberReader.class, MemberTrustGradeService.class, RichTextSanitizer.class, FestivalAccuracyVoteService.class})
 class FestivalDeletionIntegrationTest {
 	private static final String TEST_SCHEMA = "festival_deletion_" + UUID.randomUUID().toString().replace("-", "");
@@ -40,7 +48,7 @@ class FestivalDeletionIntegrationTest {
 	@DynamicPropertySource
 	static void isolatedDatabase(DynamicPropertyRegistry properties) {
 		properties.add("spring.datasource.url", () ->
-			"jdbc:postgresql://localhost:5432/roomescape?currentSchema=" + TEST_SCHEMA + ",public");
+			"jdbc:postgresql://localhost:5432/roomescape_policy_test?currentSchema=" + TEST_SCHEMA + ",public");
 		properties.add("spring.flyway.schemas", () -> TEST_SCHEMA);
 		properties.add("spring.jpa.properties.hibernate.default_schema", () -> TEST_SCHEMA);
 	}
@@ -52,7 +60,7 @@ class FestivalDeletionIntegrationTest {
 		}
 	}
 	@Autowired FestivalSubmissionService submissions;
-	@Autowired AdminFestivalService admin;
+	@Autowired AdminDeletionFacade admin;
 	@Autowired FestivalRepository festivals;
 	@Autowired FestivalSubmissionRepository histories;
 	@Autowired MemberRepository members;
@@ -60,6 +68,16 @@ class FestivalDeletionIntegrationTest {
 	@Autowired FestivalAccuracyVoteService accuracy;
 	@Autowired LikeRepository likes;
 	@Autowired FestivalAccuracyVoteRepository votes;
+
+	private UUID operator() {
+		return members.saveAndFlush(Member.builder().email(UUID.randomUUID() + "@example.com")
+			.password("test").nickname("관리자").role(MemberRole.ROLE_ADMIN).build()).getId();
+	}
+
+	private void deleteAsAdmin(Long id, UUID actor, String reason) {
+		admin.delete(actor, new AdminDeletionRequest.Create(DeletionTargetType.FESTIVAL,
+			id.toString(), DeletionReason.OTHER, reason, null));
+	}
 
 	private FestivalSubmission history() {
 		Member author = members.save(Member.builder().email(UUID.randomUUID() + "@example.com")
@@ -81,10 +99,11 @@ class FestivalDeletionIntegrationTest {
 		em.clear();
 		assertThat(festivals.findByIdAndDeletedAtIsNull(eventId)).isEmpty();
 		var item = submissions.findAllByMemberId(owner).getFirst();
-		assertThat(item.deletion().type()).isEqualTo(FestivalDeletionType.AUTHOR);
+		assertThat(item.deletion().type()).isEqualTo(com.team007.room_escape.domain.deletion.infra.entity.DeletionActorType.AUTHOR);
 		assertThat(submissions.findById(owner, id).submission().festival().deletion().reason())
-			.isEqualTo("작성자 삭제");
-		assertThatThrownBy(() -> admin.restore(eventId)).isInstanceOf(BusinessException.class);
+			.isEqualTo("작성자 직접 삭제");
+		UUID operator = operator();
+		assertThatThrownBy(() -> admin.restore(operator, DeletionTargetType.FESTIVAL, eventId.toString())).isInstanceOf(BusinessException.class);
 		assertThatThrownBy(() -> submissions.findById(UUID.randomUUID(), id)).isInstanceOf(BusinessException.class);
 	}
 
@@ -100,13 +119,14 @@ class FestivalDeletionIntegrationTest {
 				.voteType(FestivalAccuracyVoteType.ACCURATE).build());
 		}
 		em.flush();
-		UUID operator = UUID.randomUUID();
+		UUID operator = operator();
 		Long id = history.getFestival().getId();
-		admin.delete(id, operator, "  행사 취소 확인  ");
+		deleteAsAdmin(id, operator, "  행사 취소 확인  ");
 		assertThat(author.getRole()).isEqualTo(MemberRole.ROLE_UNVERIFIED);
 		em.clear();
-		assertThat(festivals.findById(id).orElseThrow().getDeletedBy()).isEqualTo(operator);
-		admin.restore(id);
+		assertThat(admin.latest(operator, DeletionTargetType.FESTIVAL, id.toString()).actorType())
+			.isEqualTo(com.team007.room_escape.domain.deletion.infra.entity.DeletionActorType.ADMIN);
+		admin.restore(operator, DeletionTargetType.FESTIVAL, id.toString());
 		em.flush();
 		em.clear();
 		assertThat(festivals.findByIdAndDeletedAtIsNull(id)).isPresent();
@@ -116,7 +136,8 @@ class FestivalDeletionIntegrationTest {
 	@Test
 	void adminDeletionRequiresReasonWithoutChangingEvent() {
 		FestivalSubmission history = history();
-		assertThatThrownBy(() -> admin.delete(history.getFestival().getId(), UUID.randomUUID(), " "))
+		UUID operator = operator();
+		assertThatThrownBy(() -> deleteAsAdmin(history.getFestival().getId(), operator, " "))
 			.isInstanceOf(BusinessException.class);
 		assertThat(history.getFestival().isDeleted()).isFalse();
 	}
@@ -125,11 +146,12 @@ class FestivalDeletionIntegrationTest {
 	void restoreIsRejectedWhenActiveDuplicateExists() {
 		FestivalSubmission history = history();
 		Festival event = history.getFestival();
-		admin.delete(event.getId(), UUID.randomUUID(), "오등록");
+		UUID operator = operator();
+		deleteAsAdmin(event.getId(), operator, "오등록");
 		festivals.saveAndFlush(Festival.builder().providerType(ProviderType.MEMBER)
 			.url(event.getUrl()).region(event.getRegion())
 			.beginDe(event.getBeginDe().plusHours(1)).endDe(event.getEndDe().plusHours(1)).build());
-		assertThatThrownBy(() -> admin.restore(event.getId())).isInstanceOf(BusinessException.class);
+		assertThatThrownBy(() -> admin.restore(operator, DeletionTargetType.FESTIVAL, event.getId().toString())).isInstanceOf(BusinessException.class);
 		assertThat(event.isDeleted()).isTrue();
 	}
 
@@ -152,18 +174,19 @@ class FestivalDeletionIntegrationTest {
 		// 공공행사는 작성자가 없어도 삭제·복구할 수 있다.
 		Festival publicEvent = festivals.saveAndFlush(Festival.builder().providerType(ProviderType.PUBLIC)
 			.beginDe(event.getBeginDe()).endDe(event.getEndDe()).build());
-		admin.delete(publicEvent.getId(), UUID.randomUUID(), "중복 수집 확인");
-		admin.restore(publicEvent.getId());
+		UUID operator = operator();
+		deleteAsAdmin(publicEvent.getId(), operator, "중복 수집 확인");
+		admin.restore(operator, DeletionTargetType.FESTIVAL, publicEvent.getId().toString());
 		assertThat(publicEvent.isDeleted()).isFalse();
 	}
 
 	@Test
 	void repeatedDeleteDoesNotOverwriteOriginalReason() {
 		Festival event = history().getFestival();
-		UUID operator = UUID.randomUUID();
-		admin.delete(event.getId(), operator, "최초 사유");
-		assertThatThrownBy(() -> admin.delete(event.getId(), operator, "다른 사유"))
+		UUID operator = operator();
+		deleteAsAdmin(event.getId(), operator, "최초 사유");
+		assertThatThrownBy(() -> deleteAsAdmin(event.getId(), operator, "다른 사유"))
 			.isInstanceOf(BusinessException.class);
-		assertThat(event.getDeletionReason()).isEqualTo("최초 사유");
+		assertThat(admin.latest(operator, DeletionTargetType.FESTIVAL, event.getId().toString()).reasonDetail()).isEqualTo("최초 사유");
 	}
 }

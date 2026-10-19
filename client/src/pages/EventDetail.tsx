@@ -50,6 +50,8 @@ import { RichTextContent } from "../components/RichText";
 import { ReportableName, ReportButton } from "../components/ReportButton";
 import { TrustGradeBadge } from "../components/TrustGradeBadge";
 import { FestivalDeletionNotice } from "../components/FestivalDeletionNotice";
+import { DeletionReasonFields } from "../admin/DeletionReasonFields";
+import type { AdminDeletionReason } from "../lib/deletion";
 
 export function EventDetailPage() {
   const { eventId, submissionId } = useParams();
@@ -138,12 +140,22 @@ function SubmissionDetailLoader({ id }: { id: string }) {
   ) : null;
 }
 function EventDetail({ event }: { event: EventView }) {
-  const { api, toast, setMember } = useApp();
+  const { api, toast, setMember, member } = useApp();
   const navigate = useNavigate();
   const [tab, setTab] = useState("about");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [reasonCode, setReasonCode] = useState<AdminDeletionReason>(
+    "INCORRECT_INFORMATION",
+  );
+  const [reasonDetail, setReasonDetail] = useState("");
+  const isAuthor = Boolean(
+    member &&
+    event.source === "MEMBER" &&
+    (event.submissionId || member.id === event.submitter?.id),
+  );
+  const isAdminDeletion = member?.role === "ROLE_ADMIN" && !isAuthor;
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
   const inaccurateVoteCount = event.accuracyVote?.inaccurateCount ?? 0;
@@ -161,6 +173,19 @@ function EventDetail({ event }: { event: EventView }) {
     setHeroLoaded(Boolean(image?.complete && image.naturalWidth > 0));
   }, [heroUrl]);
   const back = event.submissionId ? "/mypage?tab=submissions" : "/explore";
+  async function ownSubmissionId() {
+    if (!isAuthor) throw new Error("본인의 행사 제보만 변경할 수 있습니다.");
+    const id =
+      event.submissionId ??
+      (await api.submissions()).find(
+        (item) => item.festivalId === event.festivalId,
+      )?.festivalSubmissionId;
+    if (!id)
+      throw new Error(
+        "본인의 행사 제보 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.",
+      );
+    return id;
+  }
   async function share() {
     try {
       const publicEventUrl = new URL(
@@ -186,25 +211,42 @@ function EventDetail({ event }: { event: EventView }) {
           <button className="text-button" onClick={share}>
             {copied ? <Check size={16} /> : <Share2 size={16} />}공유하기
           </button>
-          {event.submissionId && (
-            <>
-              <Link
-                className="text-button"
-                to={`/submissions/${event.submissionId}/edit`}
-              >
-                <Pencil size={15} />
-                제보 수정
-              </Link>
-              <button
-                className="text-button muted"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 size={15} />내 제보 삭제
-              </button>
-            </>
+          {isAuthor && (
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  navigate(`/submissions/${await ownSubmissionId()}/edit`);
+                } catch (e) {
+                  setError(errorText(e));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <Pencil size={15} />
+              제보 수정
+            </button>
+          )}
+          {(isAuthor || isAdminDeletion) && (
+            <button
+              className="text-button muted"
+              disabled={busy}
+              onClick={() => {
+                setError("");
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 size={15} />
+              {isAuthor ? "내 제보 삭제" : "행사 삭제"}
+            </button>
           )}
         </div>
       </div>
+      {!deleteOpen && <FormError message={error} />}
       {unverified && (
         <div className="detail-accuracy-warning" role="alert">
           <AlertTriangle size={20} aria-hidden="true" />
@@ -446,27 +488,60 @@ function EventDetail({ event }: { event: EventView }) {
       </div>
       {deleteOpen && (
         <Modal
-          title="행사 제보를 삭제할까요?"
-          onClose={() => setDeleteOpen(false)}
+          title={
+            isAdminDeletion ? "행사를 삭제할까요?" : "행사 제보를 삭제할까요?"
+          }
+          onClose={() => {
+            if (!busy) setDeleteOpen(false);
+          }}
         >
           <p className="muted">
-            제보를 삭제하면 다시 복구할 수 없습니다. 삭제하시겠습니까?
+            {isAdminDeletion
+              ? "공개 행사 목록에서 제외됩니다. 삭제 사유를 선택해 주세요."
+              : "제보를 삭제하면 다시 복구할 수 없습니다. 삭제하시겠습니까?"}
           </p>
+          {isAdminDeletion && (
+            <DeletionReasonFields
+              code={reasonCode}
+              detail={reasonDetail}
+              disabled={busy}
+              onCode={setReasonCode}
+              onDetail={setReasonDetail}
+            />
+          )}
           <FormError message={error} />
           <div className="form-actions">
             <button
               className="btn secondary"
+              disabled={busy}
               onClick={() => setDeleteOpen(false)}
             >
               취소
             </button>
             <button
               className="btn danger"
-              disabled={busy}
+              disabled={
+                busy ||
+                (isAdminDeletion &&
+                  reasonCode === "OTHER" &&
+                  !reasonDetail.trim())
+              }
               onClick={async () => {
                 setBusy(true);
                 try {
-                  await api.deleteSubmission(event.submissionId!);
+                  if (isAdminDeletion) {
+                    await api.adminDeleteContent(
+                      "FESTIVAL",
+                      event.festivalId,
+                      reasonCode,
+                      reasonDetail,
+                    );
+                  } else if (isAuthor) {
+                    // 공개 원문에는 제보 번호가 없으므로 본인의 제보 목록에서 찾는다.
+                    await api.deleteSubmission(await ownSubmissionId());
+                  } else {
+                    throw new Error("삭제 권한이 없습니다.");
+                  }
                   toast("제보를 삭제했어요.");
                   void api
                     .me()
@@ -476,7 +551,9 @@ function EventDetail({ event }: { event: EventView }) {
                         "삭제는 완료됐어요. 회원 등급은 새로고침 후 확인해 주세요.",
                       ),
                     );
-                  navigate("/mypage?tab=submissions");
+                  navigate(
+                    isAdminDeletion ? "/explore" : "/mypage?tab=submissions",
+                  );
                 } catch (e) {
                   setError(errorText(e));
                 } finally {
@@ -484,7 +561,7 @@ function EventDetail({ event }: { event: EventView }) {
                 }
               }}
             >
-              제보 삭제
+              {isAdminDeletion ? "삭제" : "제보 삭제"}
             </button>
           </div>
         </Modal>

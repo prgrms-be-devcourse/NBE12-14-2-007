@@ -149,7 +149,7 @@ export interface SubmissionSummary {
 }
 export interface FestivalDeletion {
   deletedAt: string;
-  type: "AUTHOR" | "ADMIN" | "UNKNOWN";
+  type: "AUTHOR" | "ADMIN" | null;
   reason: string;
 }
 export interface SubmissionDetail {
@@ -208,6 +208,11 @@ export interface Comment {
   member: CommunityMember;
   content: string;
   date: string;
+}
+export interface AdminComment extends Comment {
+  deletedAt: string | null;
+  parentDeleted: boolean;
+  deletion: import("./deletion").LatestDeletionHistory | null;
 }
 
 export type InquiryCategory = "QUESTION" | "REPORT" | "TIP";
@@ -376,6 +381,7 @@ export interface AdminFestivalDetail {
  * 공개 목록과 달리 deletedAt이 있어 삭제된 행사를 구분할 수 있다.
  */
 export interface AdminFestivalListItem {
+  createdAt: string;
   deletion?: FestivalDeletion | null;
   festivalId: number;
   providerType: "PUBLIC" | "MEMBER";

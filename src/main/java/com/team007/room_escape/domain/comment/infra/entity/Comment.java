@@ -17,7 +17,7 @@ import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "`comment`")
-// 삭제된 댓글은 모든 조회에서 자동으로 빠진다.
+// 일반 엔티티 조회에서 삭제 댓글을 제외한다. 관리자 전용 native 조회만 이 필터를 우회한다.
 @SQLRestriction("deleted_at is null")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

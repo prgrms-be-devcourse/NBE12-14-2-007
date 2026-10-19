@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import {
   Activity,
+  AlertTriangle,
   ArrowDownLeft,
   ArrowRight,
   CalendarDays,
@@ -37,6 +38,8 @@ import { RichTextContent } from "../components/RichText";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { useApp, useLoad } from "../lib/context";
 import { ApiError } from "../lib/api";
+import { DeletionReasonFields } from "./DeletionReasonFields";
+import type { AdminDeletionReason } from "../lib/deletion";
 import { errorText, period, regions, safeUrl } from "../lib/format";
 import type { AdminFestivalDetail, InquiryCategory, Role } from "../lib/types";
 import { AdminGuard } from "./AdminAuth";
@@ -1209,7 +1212,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
             isEvent ? "행사 정보" : "후기 / 행사",
             isEvent ? "유입 경로" : "작성자",
             isEvent ? "상태" : "노출 상태",
-            isEvent ? "행사 시작일" : "작성일",
+            isEvent ? "등록일" : "작성일",
             "수정·삭제",
           ]}
           empty={!items.length}
@@ -1249,6 +1252,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
               </td>
               <td>{item.date}</td>
               <td>
+                <div className="adm-row-action-stack">
                 <button
                   className="adm-row-button"
                   aria-label={`${item.title} 관리하기`}
@@ -1260,6 +1264,7 @@ export function AdminContent({ kind }: { kind: "events" | "reviews" }) {
                 {isEvent && canRestoreEvent(item) && (
                   <span className="adm-restore-hint">복구 가능</span>
                 )}
+                </div>
               </td>
             </tr>
           ))}
@@ -1592,19 +1597,23 @@ function EventActions({
   onClose: () => void;
 }) {
   const { deleteEvent, restoreEvent } = useAdmin();
-  const { toast } = useApp();
+  const [actionError, setActionError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [deletionReason, setDeletionReason] = useState("");
+  const [reasonCode, setReasonCode] = useState<AdminDeletionReason>(
+    "INCORRECT_INFORMATION",
+  );
   const [busy, setBusy] = useState(false);
   const deleted = !!item.deletedAt;
   const canRestore = canRestoreEvent(item);
   async function run(action: () => Promise<void>) {
     setBusy(true);
+    setActionError("");
     try {
       await action();
       onClose();
     } catch (error) {
-      toast(errorText(error));
+      setActionError(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -1617,15 +1626,18 @@ function EventActions({
           사라집니다. 이 행사에 달린 후기는 지워지지 않으며, 나중에 복구할 수
           있습니다.
         </p>
-        <Field label="삭제 사유">
-          <textarea
-            value={deletionReason}
-            onChange={(e) => setDeletionReason(e.target.value)}
-            required
-            maxLength={500}
-            disabled={busy}
-          />
-        </Field>
+        <DeletionReasonFields
+          code={reasonCode}
+          detail={deletionReason}
+          disabled={busy}
+          onCode={setReasonCode}
+          onDetail={setDeletionReason}
+          hint={
+            reasonCode === "OTHER"
+              ? "기타를 선택하면 상세 사유를 입력해 주세요."
+              : "추가 설명이 있으면 입력해 주세요."
+          }
+        />
         <div className="adm-dialog-actions">
           <button
             type="button"
@@ -1637,20 +1649,24 @@ function EventActions({
           <button
             type="button"
             className="btn danger"
-            disabled={busy || !deletionReason.trim()}
+            disabled={
+              busy || (reasonCode === "OTHER" && !deletionReason.trim())
+            }
             onClick={() =>
-              run(() => deleteEvent(item.id, deletionReason.trim()))
+              run(() => deleteEvent(item.id, deletionReason.trim(), reasonCode))
             }
           >
             {busy ? "삭제 중…" : "삭제합니다"}
           </button>
         </div>
+        {actionError && <p className="adm-dialog-note" role="alert">{actionError}</p>}
       </>
     );
   }
   return (
     <>
-      <p className="adm-dialog-note">
+      <div className="adm-event-state-summary">
+      <p>
         {deleted
           ? canRestore
             ? "삭제된 행사입니다. 복구하면 다시 서비스에 노출됩니다."
@@ -1658,8 +1674,13 @@ function EventActions({
           : "노출 관리(숨김) 기능은 준비 중입니다. 현재 상태는 종료일로 계산된 진행 상태입니다."}
       </p>
       {deleted && item.deletion && (
-        <p className="adm-dialog-note">삭제 사유: {item.deletion.reason}</p>
+        <p className="adm-event-deletion-reason"><strong>삭제 사유</strong><span>{item.deletion.reason}</span></p>
       )}
+      </div>
+      {actionError && <div className="adm-event-action-error" role="alert">
+        <AlertTriangle size={20} aria-hidden="true" />
+        <div><strong>복구하지 못했습니다</strong><p>{actionError}</p></div>
+      </div>}
       <div className="adm-dialog-actions">
         <button className="btn secondary" type="button" onClick={onClose}>
           닫기
@@ -1752,7 +1773,7 @@ function ContentDialog({
             ? `${item.author} · 행사 번호: ${item.id}`
             : `${item.author} · ${item.date} · ${item.id}`}
         </p>
-        {isEvent && <p>행사 시작일: {item.date}</p>}
+        {isEvent && <p>등록일: {item.date}</p>}
       </div>
       {isEvent && !item.deletedAt ? (
         <EventDetailBody
@@ -1968,14 +1989,21 @@ function InquiryTargetActions({
   kind,
   id,
   targetPostId,
+  inquiryId,
+  onDeleted,
 }: {
   kind: NonNullable<Ticket["target"]>["kind"];
   id: string;
   targetPostId: string | null;
+  inquiryId?: string;
+  onDeleted: () => void;
 }) {
   const { api, toast } = useApp();
-  const { deleteEvent } = useAdmin();
+  const { reloadEvents, reloadMembers } = useAdmin();
   const [deletionReason, setDeletionReason] = useState("");
+  const [reasonCode, setReasonCode] = useState<AdminDeletionReason>(
+    "INCORRECT_INFORMATION",
+  );
   const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1990,6 +2018,31 @@ function InquiryTargetActions({
       throw error;
     }
   }, [kind, id]);
+  const targetType =
+    kind === "events"
+      ? "FESTIVAL"
+      : kind === "reviews"
+        ? "POST"
+        : kind === "communityPosts"
+          ? "COMMUNITY_POST"
+          : kind === "communityComments"
+            ? "COMMUNITY_COMMENT"
+            : kind === "comments"
+              ? "COMMENT"
+              : null;
+  const history = useLoad(
+    () =>
+      targetType
+        ? api.adminLatestDeletion(targetType, id)
+        : Promise.resolve(null),
+    [api, targetType, id, inquiryId],
+  );
+  const historyDeleted = history.data?.action === "DELETE";
+  const canRestore =
+    historyDeleted &&
+    history.data?.actorType === "ADMIN" &&
+    !history.loading &&
+    !history.error;
   const post = useLoad(async () => {
     if (kind !== "reviews" && kind !== "communityPosts") return null;
     try {
@@ -2046,6 +2099,7 @@ function InquiryTargetActions({
     setActionError("");
     try {
       await action();
+      history.reload();
       setDone(message);
       setConfirming(false);
       setEditing(false);
@@ -2060,7 +2114,8 @@ function InquiryTargetActions({
   return (
     <section className="adm-target-actions" aria-label="대상 처리">
       <h4>대상 처리 · {subject}</h4>
-      {(kind === "events" && festival.loading) ||
+      {history.loading ||
+      (kind === "events" && festival.loading) ||
       ((kind === "reviews" || kind === "communityPosts") && post.loading) ? (
         <p className="adm-dialog-copy">대상 내용을 불러오는 중…</p>
       ) : festival.error || post.error ? (
@@ -2071,6 +2126,51 @@ function InquiryTargetActions({
         <>
           {preview && <p className="adm-dialog-copy">{preview}</p>}
           {done && <p className="adm-dialog-note">{done}</p>}
+          {history.error && (
+            <p className="adm-dialog-note" role="alert">
+              삭제 이력을 확인하지 못했습니다. {history.error}
+              <button type="button" onClick={history.reload}>
+                다시 확인
+              </button>
+            </p>
+          )}
+          {historyDeleted && (
+            <p className="adm-dialog-note">
+              {history.data?.actorType === "ADMIN"
+                ? "관리자 삭제"
+                : "작성자 삭제"}{" "}
+              · 사유: {history.data?.reasonLabel}
+              {history.data?.reasonDetail && ` — ${history.data.reasonDetail}`}
+              {!canRestore && " · 작성자 삭제는 복구할 수 없습니다."}
+            </p>
+          )}
+          {!editing && !confirming && historyDeleted && (
+            <div className="adm-dialog-actions">
+              <button
+                type="button"
+                className="btn primary"
+                disabled={busy || !canRestore}
+                onClick={() => {
+                  if (!targetType) return;
+                  void run(async () => {
+                    await api.adminRestoreContent(targetType, id);
+                    reloadEvents();
+                    reloadMembers();
+                    festival.reload();
+                    post.reload();
+                  }, "콘텐츠를 복구했습니다.");
+                }}
+              >
+                {busy ? "복구 중…" : `${subject} 복구`}
+              </button>
+              {canRestore &&
+                (kind === "comments" || kind === "communityComments") && (
+                  <p className="adm-dialog-copy">
+                    부모 글이 게시 중인 경우에만 복구할 수 있습니다.
+                  </p>
+                )}
+            </div>
+          )}
           {missing && !done && (
             <p className="adm-dialog-note">
               이미 삭제된 {subject}입니다.
@@ -2089,23 +2189,21 @@ function InquiryTargetActions({
               onCancel={() => setEditing(false)}
             />
           )}
-          {!editing && confirming && (
+          {!editing && confirming && !historyDeleted && (
             <>
               <p className="adm-dialog-note" role="alert">
                 이 {subject}을(를) 삭제하면 서비스 화면에서 보이지 않습니다.
-                답변은 아래 칸에 따로 남기면 됩니다.
+                {inquiryId
+                  ? " 삭제 사유가 답변으로 등록되고 이 신고가 처리 완료됩니다."
+                  : " 삭제 이력에 사유가 기록됩니다. 기존 문의 답변은 변경하지 않습니다."}
               </p>
-              {kind === "events" && (
-                <Field label="삭제 사유">
-                  <textarea
-                    value={deletionReason}
-                    onChange={(e) => setDeletionReason(e.target.value)}
-                    required
-                    maxLength={500}
-                    disabled={busy}
-                  />
-                </Field>
-              )}
+              <DeletionReasonFields
+                code={reasonCode}
+                detail={deletionReason}
+                disabled={busy}
+                onCode={setReasonCode}
+                onDetail={setDeletionReason}
+              />
               <div className="adm-dialog-actions">
                 <button
                   type="button"
@@ -2118,35 +2216,27 @@ function InquiryTargetActions({
                   type="button"
                   className="btn danger"
                   disabled={
-                    busy || (kind === "events" && !deletionReason.trim())
+                    busy || (reasonCode === "OTHER" && !deletionReason.trim())
                   }
                   onClick={() => {
-                    if (kind === "events") {
-                      void run(
-                        () => deleteEvent(id, deletionReason.trim()),
-                        "행사를 삭제했습니다.",
-                      );
-                    } else if (kind === "reviews") {
-                      void run(
-                        () => api.deletePost(id),
-                        "후기를 삭제했습니다.",
-                      );
-                    } else if (kind === "communityPosts") {
-                      void run(
-                        () => api.deleteCommunityPost(id),
-                        "커뮤니티 글을 삭제했습니다.",
-                      );
-                    } else if (kind === "communityComments") {
-                      void run(
-                        () => api.deleteCommunityComment(Number(id)),
-                        "커뮤니티 댓글을 삭제했습니다.",
-                      );
-                    } else {
-                      void run(
-                        () => api.deleteComment(Number(id)),
-                        "댓글을 삭제했습니다.",
-                      );
-                    }
+                    if (!targetType) return;
+                    void run(
+                      async () => {
+                        await api.adminDeleteContent(
+                          targetType,
+                          id,
+                          reasonCode,
+                          deletionReason,
+                          inquiryId,
+                        );
+                        reloadEvents();
+                        reloadMembers();
+                        onDeleted();
+                      },
+                      inquiryId
+                        ? "콘텐츠를 삭제하고 신고를 처리했습니다."
+                        : "콘텐츠를 삭제했습니다.",
+                    );
                   }}
                 >
                   {busy ? "삭제 중…" : "삭제합니다"}
@@ -2154,7 +2244,7 @@ function InquiryTargetActions({
               </div>
             </>
           )}
-          {!editing && !confirming && !done && (
+          {!editing && !confirming && !done && !historyDeleted && (
             <div className="adm-dialog-actions">
               {kind === "events" && missing ? (
                 <Link className="btn primary" to="/admin/events">
@@ -2200,7 +2290,7 @@ function TicketDialog({
   ticket: Ticket;
   onClose: () => void;
 }) {
-  const { data, answer } = useAdmin();
+  const { data, answer, reloadTickets } = useAdmin();
   const { api } = useApp();
   // 목록 응답에는 본문과 답변이 없다. 상세를 열 때 따로 불러온다.
   const detail = useLoad(() => api.adminInquiry(ticket.id), [ticket.id]);
@@ -2299,11 +2389,20 @@ function TicketDialog({
           댓글 내용을 확인해 주세요.
         </p>
       )}
-      {ticket.target && (
+      {ticket.target && detail.data && !detail.data.deletedAt && (
         <InquiryTargetActions
           kind={ticket.target.kind}
           id={ticket.target.id}
           targetPostId={targetPostId ?? null}
+          inquiryId={
+            ticket.category === "REPORT" && !answered ? ticket.id : undefined
+          }
+          onDeleted={() => {
+            detail.reload();
+            reloadTickets();
+            setEditing(false);
+            setResponse("");
+          }}
         />
       )}
       {answered && !editing ? (
@@ -2357,7 +2456,8 @@ function TicketDialog({
           {ticket.category !== "QUESTION" && ticket.target && (
             <p className="adm-dialog-note">
               대상 삭제나 수정은 위쪽 대상 처리에서 하고, 답변은 작성자에게
-              보이는 안내입니다. 답변만 등록해도 대상이 숨겨지지는 않습니다.
+              보이는 안내입니다. 미처리 신고에서 삭제하면 사유가 자동으로 답변에
+              등록됩니다. 답변만 등록해도 대상이 숨겨지지는 않습니다.
             </p>
           )}
           {saveError && (
