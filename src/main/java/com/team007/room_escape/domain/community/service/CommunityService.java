@@ -16,11 +16,13 @@ import com.team007.room_escape.global.response.code.MemberExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import com.team007.room_escape.global.util.RichTextSanitizer;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +69,7 @@ public class CommunityService {
 			throw new BusinessException(CommunityExceptionCode.POST_NOT_FOUND);
 		}
 		CommunityPost post = getPostEntity(postId);
-		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId), imageUrlResolver);
+		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostIdAndDeletedAtIsNull(postId), imageUrlResolver);
 	}
 
 	@Transactional
@@ -106,7 +108,7 @@ public class CommunityService {
 			request.title().trim(),
 			sanitizeRequiredContent(request.content())
 		);
-		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostId(postId), imageUrlResolver);
+		return CommunityResponse.PostDetail.from(post, commentRepository.countByPostIdAndDeletedAtIsNull(postId), imageUrlResolver);
 	}
 
 	@Transactional
@@ -118,17 +120,28 @@ public class CommunityService {
 		post.delete();
 	}
 
+	/** 일반 댓글을 오래된 순으로 페이지 나누고, 각 댓글 아래에 대댓글을 붙인다. 삭제된 댓글도 자리를 남긴다. */
 	@Transactional(readOnly = true)
 	public Page<CommunityResponse.CommentInfo> getComments(UUID postId, Pageable pageable) {
 		getPostEntity(postId);
-		return commentRepository.findAllByPostId(postId, pageable)
-			.map(comment -> CommunityResponse.CommentInfo.from(comment, imageUrlResolver));
+		// 정렬은 쿼리에 고정돼 있어서 클라이언트가 보낸 sort는 버린다.
+		Page<CommunityComment> roots = commentRepository.findRootsByPostId(
+			postId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()));
+		Map<Long, List<CommunityComment>> repliesByParentId = roots.isEmpty()
+			? Map.of()
+			: commentRepository.findRepliesByParentIds(roots.map(CommunityComment::getId).toList()).stream()
+				.collect(Collectors.groupingBy(reply -> reply.getParent().getId()));
+		return roots.map(root -> CommunityResponse.CommentInfo.of(
+			root,
+			repliesByParentId.getOrDefault(root.getId(), List.of()),
+			imageUrlResolver
+		));
 	}
 
 	@Transactional
 	public CommunityResponse.CommentInfo createComment(
 		UUID postId,
-		CommunityRequest.CommentUpsert request,
+		CommunityRequest.CommentCreate request,
 		UUID memberId
 	) {
 		Member member = getActiveMember(memberId);
@@ -138,6 +151,7 @@ public class CommunityService {
 		CommunityComment comment = CommunityComment.builder()
 			.post(post)
 			.member(member)
+			.parent(findParent(request.parentId(), postId))
 			.content(content)
 			.build();
 		commentRepository.save(comment);
@@ -157,6 +171,7 @@ public class CommunityService {
 		return CommunityResponse.CommentInfo.from(comment, imageUrlResolver);
 	}
 
+	/** 행은 지우지 않고 삭제 시각만 남긴다. 대댓글은 그대로 두고, 목록에는 "삭제된 댓글입니다"로 보인다. */
 	@Transactional
 	public void deleteComment(Long commentId, UUID memberId, boolean isAdmin) {
 		CommunityComment comment = getCommentEntity(commentId);
@@ -180,8 +195,24 @@ public class CommunityService {
 			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.POST_NOT_FOUND));
 	}
 
+	/**
+	 * 답글을 달 부모 댓글. 대댓글에 답글을 달면 그 대댓글의 부모 아래에 붙여 한 단계를 유지한다.
+	 * 삭제된 댓글에는 새 답글을 달 수 없다.
+	 */
+	private CommunityComment findParent(Long parentId, UUID postId) {
+		if (parentId == null) {
+			return null;
+		}
+		CommunityComment parent = getCommentEntity(parentId);
+		if (!parent.getPost().getId().equals(postId)) {
+			throw new BusinessException(CommunityExceptionCode.COMMENT_PARENT_MISMATCH);
+		}
+		return parent.isReply() ? parent.getParent() : parent;
+	}
+
+	/** 삭제되지 않은 댓글. 삭제된 댓글은 수정·삭제·답글 대상이 아니다. */
 	private CommunityComment getCommentEntity(Long commentId) {
-		return commentRepository.findById(commentId)
+		return commentRepository.findByIdAndDeletedAtIsNull(commentId)
 			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.COMMENT_NOT_FOUND));
 	}
 
@@ -212,14 +243,14 @@ public class CommunityService {
 
 	private void checkCommentCreationAllowed(UUID memberId, String content) {
 		LocalDateTime now = LocalDateTime.now();
-		if (commentRepository.existsByMemberIdAndContentAndCreatedAtAfter(
+		if (commentRepository.existsByMemberIdAndContentAndDeletedAtIsNullAndCreatedAtAfter(
 			memberId,
 			content,
 			now.minusSeconds(DUPLICATE_CHECK_SECONDS)
 		)) {
 			throw new BusinessException(CommunityExceptionCode.COMMENT_DUPLICATE);
 		}
-		if (commentRepository.existsByMemberIdAndCreatedAtAfter(
+		if (commentRepository.existsByMemberIdAndDeletedAtIsNullAndCreatedAtAfter(
 			memberId,
 			now.minusSeconds(COMMENT_COOLDOWN_SECONDS)
 		)) {

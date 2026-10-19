@@ -123,12 +123,12 @@ class CommunityServiceTest {
 			.thenReturn(Optional.of(member(memberId)));
 		when(postRepository.findById(postId))
 			.thenReturn(Optional.of(CommunityPost.builder().member(member(UUID.randomUUID())).build()));
-		when(commentRepository.existsByMemberIdAndCreatedAtAfter(any(), any()))
+		when(commentRepository.existsByMemberIdAndDeletedAtIsNullAndCreatedAtAfter(any(), any()))
 			.thenReturn(true);
 
 		assertThatThrownBy(() -> communityService.createComment(
 			postId,
-			new CommunityRequest.CommentUpsert("새 댓글"),
+			new CommunityRequest.CommentCreate("새 댓글", null),
 			memberId
 		)).isInstanceOfSatisfying(BusinessException.class, exception ->
 			assertThat(exception.getExceptionCode())
@@ -143,13 +143,13 @@ class CommunityServiceTest {
 			.thenReturn(Optional.of(member(memberId)));
 		when(postRepository.findById(postId))
 			.thenReturn(Optional.of(CommunityPost.builder().member(member(UUID.randomUUID())).build()));
-		when(commentRepository.existsByMemberIdAndContentAndCreatedAtAfter(
+		when(commentRepository.existsByMemberIdAndContentAndDeletedAtIsNullAndCreatedAtAfter(
 			any(), any(), any()
 		)).thenReturn(true);
 
 		assertThatThrownBy(() -> communityService.createComment(
 			postId,
-			new CommunityRequest.CommentUpsert("같은 댓글"),
+			new CommunityRequest.CommentCreate("같은 댓글", null),
 			memberId
 		)).isInstanceOfSatisfying(BusinessException.class, exception ->
 			assertThat(exception.getExceptionCode())
