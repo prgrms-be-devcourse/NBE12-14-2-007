@@ -75,7 +75,7 @@ class FestivalDeletionMigrationTest {
 		try (var connection = DriverManager.getConnection(url, "roomescape", "roomescape");
 			var select = connection.prepareStatement("""
 				SELECT version, script FROM flyway_schema_history
-				WHERE version IN ('37', '38', '39', '40', '41') AND success = true ORDER BY installed_rank
+				WHERE version IN ('37', '38', '39', '42', '43') AND success = true ORDER BY installed_rank
 				"""); var result = select.executeQuery()) {
 			var applied = new java.util.ArrayList<String>();
 			while (result.next()) applied.add(result.getString("script"));
@@ -83,8 +83,8 @@ class FestivalDeletionMigrationTest {
 				"V37__unify_festival_deletion.sql",
 				"V38__add_festival_culture_info_columns.sql",
 				"V39__drop_festival_legacy_api_only_columns.sql",
-				"V40__create_deletion_history.sql",
-				"V41__remove_legacy_festival_deletion_columns.sql");
+				"V42__create_deletion_history.sql",
+				"V43__remove_legacy_festival_deletion_columns.sql");
 		}
 	}
 }
