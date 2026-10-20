@@ -799,21 +799,26 @@ export function createApi(mode: Mode) {
         "DELETE",
       );
     },
+    /** 정렬은 서버가 오래된 순으로 고정한다. 페이지는 일반 댓글 기준이다. */
     async communityComments(postId: string, page = 0) {
       const params = new URLSearchParams({
         page: String(page),
         size: "20",
-        sort: "createdAt,asc",
       });
       return transport<Page<CommunityComment>>(
         `/community/posts/${encodeURIComponent(postId)}/comments?${params}`,
       );
     },
-    async createCommunityComment(postId: string, content: string) {
+    /** parentId를 넣으면 대댓글이 된다. 대댓글에 단 답글은 서버가 그 부모 아래에 붙인다. */
+    async createCommunityComment(
+      postId: string,
+      content: string,
+      parentId?: number,
+    ) {
       return transport<CommunityComment>(
         `/community/posts/${encodeURIComponent(postId)}/comments`,
         "POST",
-        { content },
+        { content, parentId: parentId ?? null },
       );
     },
     async updateCommunityComment(commentId: number, content: string) {

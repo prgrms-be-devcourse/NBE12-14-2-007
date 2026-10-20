@@ -211,6 +211,9 @@ export function CommunityDetailPage() {
   const [comment, setComment] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  // 답글 입력창이 열린 일반 댓글. 한 번에 하나만 연다.
+  const [replyTo, setReplyTo] = useState<{ rootId: number } | null>(null);
+  const [replyContent, setReplyContent] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function removePost() {
@@ -231,8 +234,9 @@ export function CommunityDetailPage() {
     try {
       await api.createCommunityComment(postId, comment.trim());
       setComment("");
+      // 오래된 순이라 새 댓글은 마지막 페이지 끝에 붙는다. 페이지는 일반 댓글 수로 나뉜다.
       const lastPage = Math.floor(
-        (post.data?.commentCount ?? 0) / COMMUNITY_COMMENT_PAGE_SIZE,
+        (comments.data?.totalElements ?? 0) / COMMUNITY_COMMENT_PAGE_SIZE,
       );
       if (lastPage === commentPage) comments.reload();
       else setCommentPage(lastPage);
@@ -248,6 +252,36 @@ export function CommunityDetailPage() {
     }
   }
 
+  async function submitReply(event: FormEvent) {
+    event.preventDefault();
+    if (!replyTo || !replyContent.trim() || busy) return;
+    setBusy(true);
+    try {
+      await api.createCommunityComment(
+        postId,
+        replyContent.trim(),
+        replyTo.rootId,
+      );
+      setReplyTo(null);
+      setReplyContent("");
+      comments.reload();
+      post.setData((current) =>
+        current
+          ? { ...current, commentCount: current.commentCount + 1 }
+          : current,
+      );
+    } catch (error) {
+      toast(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openReply(rootId: number, mention: string) {
+    setReplyTo({ rootId });
+    setReplyContent(mention);
+  }
+
   async function saveComment(item: CommunityComment) {
     if (!editingContent.trim()) return;
     try {
@@ -259,17 +293,12 @@ export function CommunityDetailPage() {
     }
   }
 
+  // 삭제해도 "삭제된 댓글입니다"로 자리가 남아서 페이지가 당겨지지 않는다.
   async function removeComment(commentId: number) {
     if (!window.confirm("댓글을 삭제할까요?")) return;
     try {
       await api.deleteCommunityComment(commentId);
-      const remainingCount = Math.max(0, (post.data?.commentCount ?? 1) - 1);
-      const lastPage = Math.max(
-        0,
-        Math.ceil(remainingCount / COMMUNITY_COMMENT_PAGE_SIZE) - 1,
-      );
-      if (commentPage > lastPage) setCommentPage(lastPage);
-      else comments.reload();
+      comments.reload();
       post.setData((current) =>
         current
           ? { ...current, commentCount: Math.max(0, current.commentCount - 1) }
@@ -278,6 +307,97 @@ export function CommunityDetailPage() {
     } catch (error) {
       toast(errorText(error));
     }
+  }
+
+  function renderComment(item: CommunityComment, rootId: number) {
+    // 삭제된 댓글은 서버가 내려준 문구만 보여 준다. 작성자도 버튼도 없다.
+    if (item.deleted || !item.member)
+      return (
+        <article key={item.id} className="community-comment deleted">
+          <p>{item.content}</p>
+        </article>
+      );
+    const author = item.member;
+    const commentMine = Boolean(member && author.id === member.id);
+    const canDeleteComment = commentMine || isAdmin;
+    return (
+      <article key={item.id} className="community-comment">
+        <div className="community-comment-heading">
+          <Author nickname={author.nickname} profileImg={author.profileImg} />
+          <span>{dateTimeText(item.createdAt)}</span>
+        </div>
+        {editingId === item.id ? (
+          <div className="community-comment-edit">
+            <textarea
+              value={editingContent}
+              onChange={(event) => setEditingContent(event.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+            <button
+              className="btn primary small"
+              onClick={() => saveComment(item)}
+            >
+              저장
+            </button>
+            <button
+              className="btn secondary small"
+              onClick={() => setEditingId(null)}
+            >
+              취소
+            </button>
+          </div>
+        ) : (
+          <p>{item.content}</p>
+        )}
+        {editingId !== item.id && (
+          <div className="community-comment-actions">
+            {member && (
+              <button
+                onClick={() =>
+                  openReply(
+                    rootId,
+                    item.parentId === null ? "" : `@${author.nickname} `,
+                  )
+                }
+              >
+                답글
+              </button>
+            )}
+            {!commentMine && (
+              <ReportButton
+                className="community-report"
+                ariaLabel={`${author.nickname} 님의 댓글 신고`}
+                target={{
+                  type: "COMMUNITY_COMMENT",
+                  id: String(item.id),
+                  name: `${author.nickname} 님의 댓글 "${item.content.slice(0, 30)}${item.content.length > 30 ? "…" : ""}"`,
+                  details: [
+                    `글 주소: ${window.location.origin}/community/${item.postId}`,
+                    `댓글 내용: ${item.content}`,
+                  ],
+                }}
+              >
+                신고
+              </ReportButton>
+            )}
+            {commentMine && (
+              <button
+                onClick={() => {
+                  setEditingId(item.id);
+                  setEditingContent(item.content);
+                }}
+              >
+                수정
+              </button>
+            )}
+            {canDeleteComment && (
+              <button onClick={() => removeComment(item.id)}>삭제</button>
+            )}
+          </div>
+        )}
+      </article>
+    );
   }
 
   if (post.loading)
@@ -391,83 +511,47 @@ export function CommunityDetailPage() {
           <p className="community-no-comments">첫 댓글을 남겨보세요.</p>
         )}
         <div className="community-comment-list">
-          {comments.data?.content.map((item) => {
-            const commentMine = Boolean(member && item.member.id === member.id);
-            const canDeleteComment = commentMine || isAdmin;
-            return (
-              <article key={item.id} className="community-comment">
-                <div className="community-comment-heading">
-                  <Author
-                    nickname={item.member.nickname}
-                    profileImg={item.member.profileImg}
-                  />
-                  <span>{dateTimeText(item.createdAt)}</span>
+          {comments.data?.content.map((root) => (
+            <div key={root.id} className="community-comment-thread">
+              {renderComment(root, root.id)}
+              {(root.replies.length > 0 || replyTo?.rootId === root.id) && (
+                <div className="community-comment-replies">
+                  {root.replies.map((reply) => renderComment(reply, root.id))}
+                  {replyTo?.rootId === root.id && (
+                    <form
+                      className="community-comment-form community-reply-form"
+                      onSubmit={submitReply}
+                    >
+                      <textarea
+                        aria-label="답글 내용"
+                        value={replyContent}
+                        onChange={(event) =>
+                          setReplyContent(event.target.value)
+                        }
+                        placeholder="답글을 남겨주세요."
+                        maxLength={500}
+                        rows={2}
+                        autoFocus
+                        required
+                      />
+                      <div className="community-reply-actions">
+                        <button
+                          type="button"
+                          className="btn secondary small"
+                          onClick={() => setReplyTo(null)}
+                        >
+                          취소
+                        </button>
+                        <button className="btn primary small" disabled={busy}>
+                          답글 등록
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
-                {editingId === item.id ? (
-                  <div className="community-comment-edit">
-                    <textarea
-                      value={editingContent}
-                      onChange={(event) =>
-                        setEditingContent(event.target.value)
-                      }
-                      maxLength={500}
-                      rows={3}
-                    />
-                    <button
-                      className="btn primary small"
-                      onClick={() => saveComment(item)}
-                    >
-                      저장
-                    </button>
-                    <button
-                      className="btn secondary small"
-                      onClick={() => setEditingId(null)}
-                    >
-                      취소
-                    </button>
-                  </div>
-                ) : (
-                  <p>{item.content}</p>
-                )}
-                {editingId !== item.id && (
-                  <div className="community-comment-actions">
-                    {!commentMine && (
-                      <ReportButton
-                        className="community-report"
-                        ariaLabel={`${item.member.nickname} 님의 댓글 신고`}
-                        target={{
-                          type: "COMMUNITY_COMMENT",
-                          id: String(item.id),
-                          name: `${item.member.nickname} 님의 댓글 "${item.content.slice(0, 30)}${item.content.length > 30 ? "…" : ""}"`,
-                          details: [
-                            `글 주소: ${window.location.origin}/community/${item.postId}`,
-                            `댓글 내용: ${item.content}`,
-                          ],
-                        }}
-                      >
-                        신고
-                      </ReportButton>
-                    )}
-                    {commentMine && (
-                      <button
-                        onClick={() => {
-                          setEditingId(item.id);
-                          setEditingContent(item.content);
-                        }}
-                      >
-                        수정
-                      </button>
-                    )}
-                    {canDeleteComment && (
-                      <button onClick={() => removeComment(item.id)}>
-                        삭제
-                      </button>
-                    )}
-                  </div>
-                )}
-              </article>
-            );
-          })}
+              )}
+            </div>
+          ))}
         </div>
         {comments.data && (
           <Pagination
