@@ -409,22 +409,29 @@ function ReviewComments({ postId }: { postId: string }) {
             다시 시도
           </button>
         </p>
-      ) : data?.length ? (
+      ) : data?.content.length ? (
         <>
           <ul className="adm-review-comment-list">
-            {data.map((comment) => (
+            {data.content.flatMap((root) => [
               <ReviewCommentRow
-                key={comment.id}
-                comment={comment}
+                key={root.id}
+                comment={root}
                 onDeleted={reload}
-              />
-            ))}
+              />,
+              ...root.replies.map((reply) => (
+                <ReviewCommentRow
+                  key={reply.id}
+                  comment={reply}
+                  onDeleted={reload}
+                />
+              )),
+            ])}
           </ul>
           <div className="adm-dialog-actions">
             <button
               type="button"
               className="btn secondary"
-              disabled={page === 0}
+              disabled={data.first}
               onClick={() => setPage(page - 1)}
             >
               이전
@@ -432,7 +439,7 @@ function ReviewComments({ postId }: { postId: string }) {
             <button
               type="button"
               className="btn secondary"
-              disabled={data.length < 20}
+              disabled={data.last}
               onClick={() => setPage(page + 1)}
             >
               다음
@@ -475,10 +482,22 @@ function ReviewCommentRow({
     }
   }
 
+  const reply = comment.parentId !== null;
+  // 삭제된 댓글은 서버가 내려준 문구만 남는다. 다시 지울 것도 없다.
+  if (comment.deleted || !comment.member)
+    return (
+      <li className={reply ? "is-reply is-deleted" : "is-deleted"}>
+        <div className="adm-review-comment-body">
+          <p>{comment.content}</p>
+        </div>
+      </li>
+    );
+
   return (
-    <li>
+    <li className={reply ? "is-reply" : undefined}>
       <div className="adm-review-comment-body">
         <div className="adm-review-comment-meta">
+          {reply && <span aria-label="답글">↳</span>}
           <strong>{comment.member.nickname}</strong>
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
         </div>

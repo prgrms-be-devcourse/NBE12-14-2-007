@@ -131,7 +131,8 @@ test("comment timestamps show Seoul hours and minutes for local and UTC data", a
     .locator(".comment-row")
     .filter({ hasText: "시간 표시를 확인하는 댓글입니다." });
   await expect(comment.locator("time")).toHaveText("2026.09.21 15:24");
-  await expect(page.locator(".comment-row").first()).toContainText(
+  // 오래된 순이라 새 댓글은 맨 아래에 붙는다.
+  await expect(page.locator(".comment-row").last()).toContainText(
     "시간 표시를 확인하는 댓글입니다.",
   );
   await page.setViewportSize({ width: 320, height: 900 });
