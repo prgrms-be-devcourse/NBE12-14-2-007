@@ -40,6 +40,9 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "provider_type", nullable = false, length = 32)
 	private ProviderType providerType;
 
+	@Column(name = "external_id", length = 64)
+	private String externalId;
+
 	private String title;
 
 	private String category;
@@ -77,6 +80,11 @@ public class Festival extends SoftDeletableEntity {
 
 	@Column(name = "region_detail", length = 255)
 	private String regionDetail;
+
+	private String place;
+
+	@Column(name = "place_address", length = 255)
+	private String placeAddress;
 
 	// TODO 인자가 많아서 정리 필요
 	public void updateDetails(
