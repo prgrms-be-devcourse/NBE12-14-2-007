@@ -2,9 +2,9 @@ package com.team007.room_escape.domain.festival.service;
 
 import com.team007.room_escape.domain.festival.dto.FestivalResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSearchRequest;
-import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClient;
-import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
-import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
+import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClientV2;
+import com.team007.room_escape.domain.festival.infra.dto.CultureInfoDetailRow;
+import com.team007.room_escape.domain.festival.infra.dto.CultureInfoPeriodRow;
 import com.team007.room_escape.domain.festival.infra.dto.FestivalVoteCount;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -44,14 +45,14 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class FestivalService {
 
-	private static final int MAX_PAGE_SIZE = 1000; // API 문서상 1회 요청 최대 건수
+	private static final int CULTURE_INFO_PAGE_SIZE = 9999;
 	private static final int LEGACY_IMAGE_BATCH_SIZE = 30;
 
 	private final FestivalRepository festivalRepository;
 	private final FestivalAccuracyVoteRepository accuracyVoteRepository;
 	private final LikeRepository likeRepository;
 	private final PublicFestivalSourceRepository publicFestivalSourceRepository; /** 원본 저장용 **/
-	private final FestivalPublicApiClient festivalPublicApiClient;
+	private final FestivalPublicApiClientV2 festivalPublicApiClientV2;
 	private final ObjectMapper objectMapper;
 	private final ImageUrlResolver imageUrlResolver;
 	private final FestivalImageProcessor festivalImageProcessor;
@@ -64,27 +65,21 @@ public class FestivalService {
 		List<FestivalResponse.SyncedFestival> closedFestivals = transactionTemplate.execute(
 			status -> closeExpiredFestivals());
 
-		List<FestivalApiRow> allRows = fetchAllRows();
+		int currentYear = LocalDate.now().getYear();
+		List<CultureInfoPeriodRow> allRows = fetchAllRows(currentYear + "0101", currentYear + "1231");
 
-		// 신규 저장이 실패해도 원본은 남기려고 먼저 저장한다.
+		// 원본 스냅샷 저장
 		saveRawSource(allRows);
 
-		int currentYear = LocalDate.now().getYear();
-		// 올해 시작하는 행사만 남긴다.
-		List<FestivalApiRow> currentYearRows = allRows.stream()
-			.filter(row -> isInYear(row.beginDe(), currentYear))
+		// seq 존재 여부로 신규 행사를 정확히 판별한다 (건수 비교보다 API 응답 순서에 안전하다).
+		List<String> seqs = allRows.stream().map(CultureInfoPeriodRow::seq).toList(); // 14,592건에서 seq 값들만 뽑아서 리스트로 만듦
+		List<String> existingSeqs = festivalRepository.findExistingExternalIds(ProviderType.PUBLIC, seqs); //seq들 중 이미 DB에 저장된 것만 조회
+		List<String> newSeqs = seqs.stream() //seqs에서 existingSeqs에 없는 것만 걸러냄 → 신규 행사
+			.filter(seq -> !existingSeqs.contains(seq))
 			.toList();
 
-		// DB 건수도 같은 연도 범위로 세야 비교가 맞다.
-		LocalDateTime yearStart = LocalDateTime.of(currentYear, 1, 1, 0, 0);
-		LocalDateTime yearEnd = yearStart.plusYears(1);
-		// TODO: 다른 지역 API 추가 시 지역별로 건수를 세도록 변경
-		long dbCount = festivalRepository.countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
-			ProviderType.PUBLIC, yearStart, yearEnd);
-
-		int n = (int) (currentYearRows.size() - dbCount);
-		if (n <= 0) {
-			log.info("신규 행사 없음 ({}년 {}건, 저장된 {}건)", currentYear, currentYearRows.size(), dbCount);
+		if (newSeqs.isEmpty()) {
+			log.info("신규 행사 없음 ({}년 전체 {}건, 신규 0건)", currentYear, allRows.size());
 			migrateLegacyImages();
 			return new FestivalResponse.SyncResponse(closedFestivals, List.of());
 		}
@@ -92,9 +87,11 @@ public class FestivalService {
 		List<FestivalResponse.SyncedFestival> savedFestivals = List.of();
 		// 원본 스냅샷은 이미 커밋돼서 여기서 실패해도 남는다.
 		try {
-			List<Festival> festivals = currentYearRows.stream()
-				.limit(n) // 필터링된 목록의 앞에서부터 N건만 신규로 간주
-				.map(this::toGyeonggiFestival) // 이미지 다운로드·업로드가 여기서 일어난다
+			// 신규 건만 상세조회(가격 등 포함)까지 받아서 엔티티로 변환한다.
+			List<Festival> festivals = newSeqs.stream()
+				.map(festivalPublicApiClientV2::fetchDetail)
+				.filter(Objects::nonNull) // 상세 조회가 빈 값으로 오는 경우 방어
+				.map(this::toCultureInfoFestival) // 이미지 다운로드·업로드가 여기서 일어난다
 				.toList();
 
 			// 이미지 처리 후 저장만 한 트랜잭션으로 묶는다.
@@ -291,29 +288,27 @@ public class FestivalService {
 		return closed;
 	}
 
-	/** totalCount에 도달할 때까지 페이지를 넘기며 전부 받는다. (1회 최대 1000개) */
-	private List<FestivalApiRow> fetchAllRows() {
-		FestivalApiResult firstPage = festivalPublicApiClient.fetch(1, MAX_PAGE_SIZE);
-		int totalCount = firstPage.totalCount();
-
-		List<FestivalApiRow> rows = new ArrayList<>(firstPage.rows());
-		int fetched = firstPage.rows().size();
-		int pIndex = 2;
-
-		while (fetched < totalCount) {
-			FestivalApiResult page = festivalPublicApiClient.fetch(pIndex, MAX_PAGE_SIZE);
-			if (page.rows().isEmpty()) {
-				break; // 안전장치: totalCount만큼 못 채워도 빈 페이지가 오면 무한루프 방지하고 중단
+	/** 받은 건수가 요청한 페이지 크기보다 적을 때까지(=마지막 페이지) 전부 받는다. */
+	private List<CultureInfoPeriodRow> fetchAllRows(String from, String to) {
+		List<CultureInfoPeriodRow> rows = new ArrayList<>();
+		int pageNo = 1;
+		while (true) {
+			List<CultureInfoPeriodRow> page =
+				festivalPublicApiClientV2.fetchPeriod(pageNo, CULTURE_INFO_PAGE_SIZE, from, to);
+			if (page.isEmpty()) {
+				break;
 			}
-			rows.addAll(page.rows());
-			fetched += page.rows().size();
-			pIndex++;
+			rows.addAll(page);
+			if (page.size() < CULTURE_INFO_PAGE_SIZE) {
+				break; // 요청한 개수보다 적게 왔으면 마지막 페이지
+			}
+			pageNo++;
 		}
 		return rows;
 	}
 
 	/** 원본 스냅샷은 누적하지 않고 최신 1건만 유지한다. */
-	private void saveRawSource(List<FestivalApiRow> rows) {
+	private void saveRawSource(List<CultureInfoPeriodRow> rows) {
 		try {
 			String json = objectMapper.writeValueAsString(rows);
 			// 지우기와 저장을 한 트랜잭션으로 묶어 스냅샷이 비지 않게 한다.
@@ -326,11 +321,6 @@ public class FestivalService {
 			// 원본 저장은 부가 기능이라 실패해도 배치를 막지 않는다.
 			log.warn("원본 데이터 저장 실패, 배치는 계속 진행", e);
 		}
-	}
-
-	/** yyyyMMdd 문자열이 주어진 연도로 시작하는지 확인한다. null은 제외한다. */
-	private boolean isInYear(String yyyyMMdd, int year) {
-		return yyyyMMdd != null && yyyyMMdd.startsWith(String.valueOf(year));
 	}
 
 	/** R2로 옮겨지지 않은 기존 행사 이미지를 배치마다 조금씩 이관한다. 실패해도 동기화는 계속한다. */
@@ -351,10 +341,9 @@ public class FestivalService {
 		}
 	}
 
-	// TODO: 서울 API 연동 시 toSeoulFestival() 추가
-	/** 경기도 API 행을 엔티티로 바꾼다. 이미지 다운로드·R2 업로드는 여기서 한다. */
-	private Festival toGyeonggiFestival(FestivalApiRow row) {
-		return row.toFestival(festivalImageProcessor.process(row.imageUrl()));
+	/** 전국 문화정보 API 상세 행을 엔티티로 바꾼다. 이미지 다운로드·R2 업로드는 여기서 한다. */
+	private Festival toCultureInfoFestival(CultureInfoDetailRow row) {
+		return row.toFestival(festivalImageProcessor.process(row.imgUrl()));
 	}
 
 	/** 입력값의 앞뒤 공백을 제거하고, 빈 문자열은 검색 조건에서 제외한다. */
