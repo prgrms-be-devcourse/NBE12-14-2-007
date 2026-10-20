@@ -254,6 +254,8 @@ const initial: DemoState = {
     {
       id: 1,
       postId: "demo-post-1",
+      parentId: null,
+      deleted: false,
       member: {
         id: "demo-neighbor-2",
         nickname: "주말 수집가",
@@ -262,6 +264,7 @@ const initial: DemoState = {
       },
       content: "저녁 산책 코스로 기억해 둘게요! (예시 댓글)",
       date: "2026-09-21T09:00:00",
+      replies: [],
     },
   ],
   inquiries: [],

@@ -202,14 +202,26 @@ export interface Page<T> {
   last: boolean;
   first: boolean;
 }
+/** 후기 댓글. 목록에서는 일반 댓글 아래에 대댓글이 replies로 붙는다. */
 export interface Comment {
   id: number;
   postId: string;
-  member: CommunityMember;
+  /** 대댓글이면 부모 댓글 ID, 일반 댓글이면 null */
+  parentId: number | null;
+  /** 삭제된 댓글이면 true. content는 "삭제된 댓글입니다", member는 null로 온다. */
+  deleted: boolean;
+  member: CommunityMember | null;
   content: string;
   date: string;
+  /** 대댓글. 오래된 순. 대댓글 자신은 빈 배열 */
+  replies: Comment[];
 }
-export interface AdminComment extends Comment {
+export interface AdminComment extends Omit<
+  Comment,
+  "member" | "replies" | "deleted"
+> {
+  member: CommunityMember;
+  replies: AdminComment[];
   deletedAt: string | null;
   parentDeleted: boolean;
   deletion: import("./deletion").LatestDeletionHistory | null;
@@ -249,13 +261,20 @@ export interface CommunityPostDetail extends CommunityPostSummary {
   content: string;
   updatedAt: string;
 }
+/** 커뮤니티 댓글. 목록에서는 일반 댓글 아래에 대댓글이 replies로 붙는다. */
 export interface CommunityComment {
   id: number;
   postId: string;
-  member: CommunityMember;
+  /** 대댓글이면 부모 댓글 ID, 일반 댓글이면 null */
+  parentId: number | null;
+  /** 삭제된 댓글이면 true. content는 "삭제된 댓글입니다", member는 null로 온다. */
+  deleted: boolean;
+  member: CommunityMember | null;
   content: string;
   createdAt: string;
   updatedAt: string;
+  /** 대댓글. 오래된 순. 대댓글 자신은 빈 배열 */
+  replies: CommunityComment[];
 }
 
 export interface InquiryInput {

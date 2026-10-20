@@ -67,7 +67,7 @@ class DeletionHistoryRepositoryTest {
 	com.team007.room_escape.global.storage.R2StorageService storageService;
 
 	@Test
-	void administratorCommentListKeepsDeletedCommentsAndLatestReasonWhilePublicListHidesThem() {
+	void administratorCommentListKeepsOriginalAndHistoryWhilePublicListRedactsDeletedComments() {
 		Member admin = Member.builder().email(UUID.randomUUID() + "@example.com").password("test")
 			.nickname("관리자").role(MemberRole.ROLE_ADMIN).build();
 		Member author = Member.builder().email(UUID.randomUUID() + "@example.com").password("test")
@@ -83,16 +83,19 @@ class DeletionHistoryRepositoryTest {
 			DeletionTargetType.COMMENT, comment.getId().toString(), DeletionReason.SPAM, "반복 게시 확인", null));
 		entityManager.flush(); entityManager.clear();
 		var page = org.springframework.data.domain.PageRequest.of(0, 20);
-		var removed = commentService.getCommentsForAdmin(post.getId(), admin.getId(), page).getFirst();
+		var removed = commentService.getCommentsForAdmin(post.getId(), admin.getId(), page).getContent().getFirst();
 		assertThat(removed.content()).isEqualTo("삭제 후에도 관리자가 확인할 댓글");
 		assertThat(removed.deletedAt()).isNotNull();
 		assertThat(removed.deletion().actorType()).isEqualTo(DeletionActorType.ADMIN);
 		assertThat(removed.deletion().reasonDetail()).isEqualTo("반복 게시 확인");
 		assertThat(removed.parentDeleted()).isFalse();
-		assertThat(commentService.getComments(post.getId(), page)).isEmpty();
+		var publicComment = commentService.getComments(post.getId(), page).getContent().getFirst();
+		assertThat(publicComment.deleted()).isTrue();
+		assertThat(publicComment.content()).isEqualTo("삭제된 댓글입니다");
+		assertThat(publicComment.member()).isNull();
 		facade.restore(admin.getId(), DeletionTargetType.COMMENT, comment.getId().toString());
 		entityManager.flush(); entityManager.clear();
-		assertThat(commentService.getCommentsForAdmin(post.getId(), admin.getId(), page).getFirst().deletedAt()).isNull();
+		assertThat(commentService.getCommentsForAdmin(post.getId(), admin.getId(), page).getContent().getFirst().deletedAt()).isNull();
 		assertThat(commentService.getComments(post.getId(), page)).hasSize(1);
 	}
 
@@ -112,12 +115,51 @@ class DeletionHistoryRepositoryTest {
 		commentService.deleteComment(comment.getId(), author.getId());
 		post.delete(); entityManager.flush(); entityManager.clear();
 		var page = org.springframework.data.domain.PageRequest.of(0, 20);
-		var removed = commentService.getCommentsForAdmin(post.getId(), admin.getId(), page).getFirst();
+		var removed = commentService.getCommentsForAdmin(post.getId(), admin.getId(), page).getContent().getFirst();
 		assertThat(removed.parentDeleted()).isTrue();
 		assertThat(removed.deletion().actorType()).isEqualTo(DeletionActorType.AUTHOR);
 		assertThat(commentService.getCommentsForAdmin(post.getId(), admin.getId(), org.springframework.data.domain.PageRequest.of(1, 20))).isEmpty();
 		org.assertj.core.api.Assertions.assertThatThrownBy(() -> commentService.getCommentsForAdmin(post.getId(), author.getId(), page))
 			.isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+	}
+
+	@Test
+	void adminReplyRestorationPreservesThreadAndIndependentDeletionAfterParentPostRestoration() {
+		Member admin = Member.builder().email(UUID.randomUUID() + "@example.com").password("test")
+			.nickname("관리자").role(MemberRole.ROLE_ADMIN).build();
+		Member author = Member.builder().email(UUID.randomUUID() + "@example.com").password("test")
+			.nickname("작성자").role(MemberRole.ROLE_UNVERIFIED).build();
+		entityManager.persist(admin); entityManager.persist(author);
+		var post = com.team007.room_escape.domain.post.infra.entity.Post.builder()
+			.member(author).title("대댓글 복구 검증").content("본문").build();
+		entityManager.persist(post);
+		var root = com.team007.room_escape.domain.comment.infra.entity.Comment.builder()
+			.member(author).post(post).content("부모 댓글").build();
+		entityManager.persist(root);
+		var reply = com.team007.room_escape.domain.comment.infra.entity.Comment.builder()
+			.member(author).post(post).parent(root).content("관리자가 삭제할 답글").build();
+		entityManager.persist(reply); entityManager.flush();
+		facade.delete(admin.getId(), new com.team007.room_escape.domain.deletion.dto.AdminDeletionRequest.Create(
+			DeletionTargetType.COMMENT, reply.getId().toString(), DeletionReason.SPAM, "답글 삭제 사유", null));
+		facade.delete(admin.getId(), new com.team007.room_escape.domain.deletion.dto.AdminDeletionRequest.Create(
+			DeletionTargetType.POST, post.getId().toString(), DeletionReason.SPAM, null, null));
+		facade.restore(admin.getId(), DeletionTargetType.POST, post.getId().toString());
+		entityManager.flush(); entityManager.clear();
+		var page = org.springframework.data.domain.PageRequest.of(0, 1);
+		var adminPage = commentService.getCommentsForAdmin(post.getId(), admin.getId(), page);
+		assertThat(adminPage.getTotalElements()).isEqualTo(1);
+		var replyInfo = adminPage.getContent().getFirst().replies().getFirst();
+		assertThat(replyInfo.parentId()).isEqualTo(root.getId());
+		assertThat(replyInfo.deletedAt()).isNotNull();
+		assertThat(replyInfo.content()).isEqualTo("관리자가 삭제할 답글");
+		assertThat(replyInfo.deletion().reasonDetail()).isEqualTo("답글 삭제 사유");
+		var publicReply = commentService.getComments(post.getId(), page).getContent().getFirst().replies().getFirst();
+		assertThat(publicReply.content()).isEqualTo("삭제된 댓글입니다");
+		assertThat(publicReply.member()).isNull();
+		facade.restore(admin.getId(), DeletionTargetType.COMMENT, reply.getId().toString());
+		entityManager.flush(); entityManager.clear();
+		assertThat(commentService.getComments(post.getId(), page).getContent().getFirst().replies().getFirst().content())
+			.isEqualTo("관리자가 삭제할 답글");
 	}
 
 	@Test

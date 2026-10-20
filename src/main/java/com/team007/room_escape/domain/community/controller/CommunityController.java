@@ -92,24 +92,24 @@ public class CommunityController {
 		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 
-	@Operation(summary = "커뮤니티 댓글 목록")
+	@Operation(summary = "커뮤니티 댓글 목록", description = "댓글을 오래된 순으로 조회한다. "
+		+ "페이지는 일반 댓글 기준이고, 대댓글은 각 댓글의 replies에 담긴다. 삭제된 댓글은 \"삭제된 댓글입니다\"로 내려간다.")
 	@GetMapping("/posts/{postId}/comments")
 	public ResponseEntity<ApiResponse<Page<CommunityResponse.CommentInfo>>> getComments(
 		@PathVariable UUID postId,
-		@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC)
-		Pageable pageable
+		@PageableDefault(size = 20) Pageable pageable
 	) {
 		return ResponseEntity.ok(ApiResponse.success(
 			communityService.getComments(postId, pageable)
 		));
 	}
 
-	@Operation(summary = "커뮤니티 댓글 작성")
+	@Operation(summary = "커뮤니티 댓글 작성", description = "parentId를 넣으면 그 댓글의 대댓글이 된다.")
 	@PostMapping("/posts/{postId}/comments")
 	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<CommunityResponse.CommentInfo>> createComment(
 		@PathVariable UUID postId,
-		@Valid @RequestBody CommunityRequest.CommentUpsert request,
+		@Valid @RequestBody CommunityRequest.CommentCreate request,
 		@AuthenticationPrincipal CustomUserDetails user
 	) {
 		return ResponseEntity.ok(ApiResponse.success(

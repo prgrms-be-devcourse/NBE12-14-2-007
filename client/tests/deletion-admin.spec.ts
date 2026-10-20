@@ -204,7 +204,7 @@ test("classified deletion does not require optional detail", async ({
   });
 });
 
-test("review and comment deletion send classified reasons to the common API", async ({
+test("review and reply deletion preserve threads and use common deletion APIs", async ({
   page,
 }) => {
   await setup(page, null);
@@ -225,28 +225,47 @@ test("review and comment deletion send classified reasons to the common API", as
   await page.route("**/api/v1/posts/review-42", (route) =>
     route.fulfill({ json: ok(post) }),
   );
+  await page.route("**/api/v1/posts/review-42/likes", (route) =>
+    route.fulfill({ json: ok(0) }),
+  );
   await page.route("**/api/v1/admin/posts/review-42/comments?*", (route) =>
     route.fulfill({
-      json: ok([
-        {
-          id: 17,
-          member: post.member,
-          content: "삭제할 댓글",
-          date: post.date,
-          deletedAt: deletedComment ? post.date : null,
-          parentDeleted: false,
-          deletion: deletedComment
-            ? {
-                action: "DELETE",
-                actorType: "ADMIN",
-                reasonCode: "SPAM",
-                reasonLabel: "도배·스팸",
-                reasonDetail: null,
-                createdAt: post.date,
-              }
-            : null,
-        },
-      ]),
+      json: ok(
+        pageOf([
+          {
+            id: 5,
+            parentId: null,
+            member: post.member,
+            content: "보존할 부모 댓글",
+            date: post.date,
+            deletedAt: null,
+            parentDeleted: false,
+            deletion: null,
+            replies: [
+              {
+                id: 17,
+                parentId: 5,
+                replies: [],
+                member: post.member,
+                content: "삭제할 댓글",
+                date: post.date,
+                deletedAt: deletedComment ? post.date : null,
+                parentDeleted: false,
+                deletion: deletedComment
+                  ? {
+                      action: "DELETE",
+                      actorType: "ADMIN",
+                      reasonCode: "SPAM",
+                      reasonLabel: "도배·스팸",
+                      reasonDetail: null,
+                      createdAt: post.date,
+                    }
+                  : null,
+              },
+            ],
+          },
+        ]),
+      ),
     }),
   );
   await page.route("**/api/v1/admin/deletions", (route) => {
@@ -269,6 +288,10 @@ test("review and comment deletion send classified reasons to the common API", as
   await comment.getByLabel("삭제 사유 분류").selectOption("SPAM");
   await comment.getByRole("button", { name: "삭제", exact: true }).click();
   await expect(comment).toContainText("삭제됨");
+  await expect(comment).toHaveClass(/is-reply/);
+  await expect(
+    dialog.getByText("보존할 부모 댓글", { exact: true }),
+  ).toBeVisible();
   await expect(comment.getByText("삭제할 댓글", { exact: true })).toHaveCSS(
     "text-decoration-line",
     "line-through",
@@ -329,43 +352,51 @@ test("deleted comments explain why restoration is unavailable", async ({
   );
   await page.route("**/api/v1/admin/posts/review-42/comments?*", (route) =>
     route.fulfill({
-      json: ok([
-        {
-          id: 1,
-          member: post.member,
-          content: "작성자 삭제 댓글",
-          date: post.date,
-          deletedAt: post.date,
-          parentDeleted: false,
-          deletion: {
-            action: "DELETE",
-            actorType: "AUTHOR",
-            reasonLabel: "작성자 직접 삭제",
+      json: ok(
+        pageOf([
+          {
+            id: 1,
+            parentId: null,
+            replies: [],
+            member: post.member,
+            content: "작성자 삭제 댓글",
+            date: post.date,
+            deletedAt: post.date,
+            parentDeleted: false,
+            deletion: {
+              action: "DELETE",
+              actorType: "AUTHOR",
+              reasonLabel: "작성자 직접 삭제",
+            },
           },
-        },
-        {
-          id: 2,
-          member: post.member,
-          content: "부모 삭제 댓글",
-          date: post.date,
-          deletedAt: post.date,
-          parentDeleted: true,
-          deletion: {
-            action: "DELETE",
-            actorType: "ADMIN",
-            reasonLabel: "도배·스팸",
+          {
+            id: 2,
+            parentId: null,
+            replies: [],
+            member: post.member,
+            content: "부모 삭제 댓글",
+            date: post.date,
+            deletedAt: post.date,
+            parentDeleted: true,
+            deletion: {
+              action: "DELETE",
+              actorType: "ADMIN",
+              reasonLabel: "도배·스팸",
+            },
           },
-        },
-        {
-          id: 3,
-          member: post.member,
-          content: "이력 없는 댓글",
-          date: post.date,
-          deletedAt: post.date,
-          parentDeleted: false,
-          deletion: null,
-        },
-      ]),
+          {
+            id: 3,
+            parentId: null,
+            replies: [],
+            member: post.member,
+            content: "이력 없는 댓글",
+            date: post.date,
+            deletedAt: post.date,
+            parentDeleted: false,
+            deletion: null,
+          },
+        ]),
+      ),
     }),
   );
   await page.getByRole("link", { name: "후기 관리", exact: true }).click();
@@ -392,6 +423,122 @@ test("deleted comments explain why restoration is unavailable", async ({
     page.getByText("삭제 이력이 없어 복구할 수 없습니다.", { exact: true }),
   ).toBeVisible();
 });
+
+for (const targetType of [
+  "POST",
+  "COMMENT",
+  "COMMUNITY_POST",
+  "COMMUNITY_COMMENT",
+] as const) {
+  test(`public administrator deletion uses classified history API for ${targetType}`, async ({
+    page,
+  }) => {
+    await setup(page, null);
+    const member = {
+      id: "writer",
+      nickname: "작성자",
+      profileImg: null,
+      role: "ROLE_UNVERIFIED",
+    };
+    const post = {
+      id: "review-42",
+      member,
+      title: "관리할 원문",
+      content: "본문",
+      category: "FREE",
+      date: "2026-10-20T10:00:00",
+      createdAt: "2026-10-20T10:00:00",
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 1,
+      festivalId: 42,
+    };
+    const comment = {
+      id: 17,
+      postId: post.id,
+      member,
+      content: "관리할 답글",
+      parentId: 5,
+      deleted: false,
+      replies: [],
+      date: post.date,
+      createdAt: post.date,
+    };
+    await page.route("**/api/v1/posts/review-42/likes", (route) =>
+      route.fulfill({ json: ok(0) }),
+    );
+    await page.route("**/api/v1/posts/review-42", (route) =>
+      route.fulfill({ json: ok(post) }),
+    );
+    await page.route("**/api/v1/community/posts/review-42", (route) =>
+      route.fulfill({ json: ok(post) }),
+    );
+    for (const path of [
+      "posts/review-42/comments",
+      "community/posts/review-42/comments",
+    ]) {
+      await page.route(`**/api/v1/${path}?*`, (route) =>
+        route.fulfill({
+          json: ok(
+            pageOf([
+              {
+                ...comment,
+                id: 5,
+                parentId: null,
+                content: "부모 댓글",
+                replies: [comment],
+              },
+            ]),
+          ),
+        }),
+      );
+    }
+    let sent: unknown;
+    await page.route("**/api/v1/admin/deletions", (route) => {
+      sent = route.request().postDataJSON();
+      return route.fulfill({ json: ok(null) });
+    });
+    await page.goto(
+      targetType.startsWith("COMMUNITY")
+        ? "/community/review-42"
+        : "/reviews/review-42",
+    );
+    if (targetType.endsWith("COMMENT")) {
+      const css =
+        targetType === "COMMENT" ? ".comment-row" : ".community-comment";
+      await page
+        .locator(css)
+        .filter({ has: page.getByText("관리할 답글", { exact: true }) })
+        .getByRole("button", { name: "삭제", exact: true })
+        .click();
+    } else {
+      await page
+        .locator(
+          targetType === "POST"
+            ? ".article-actions"
+            : ".community-owner-actions",
+        )
+        .getByRole("button", { name: "삭제", exact: true })
+        .click();
+    }
+    const dialog = page.getByRole("dialog");
+    await expect(
+      dialog.getByRole("heading", { name: "관리자 권한으로 삭제할까요?" }),
+    ).toBeVisible();
+    await dialog.getByLabel("삭제 사유 분류").selectOption("SPAM");
+    const response = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/admin/deletions") && r.request().method() === "POST",
+    );
+    await dialog.getByRole("button", { name: "삭제", exact: true }).click();
+    await response;
+    expect(sent).toEqual({
+      targetType,
+      targetId: targetType.endsWith("COMMENT") ? "17" : "review-42",
+      reasonCode: "SPAM",
+    });
+  });
+}
 
 for (const actor of ["ADMIN", "AUTHOR", "RESTORED", "NO_HISTORY"] as const) {
   test(`deleted review restoration is based on server history ${actor}`, async ({
@@ -612,17 +759,33 @@ for (const targetType of [
   });
 }
 
-test("duplicate restoration error stays visible inside event management dialog", async ({page}) => {
+test("duplicate restoration error stays visible inside event management dialog", async ({
+  page,
+}) => {
   await setup(page, "ADMIN");
-  await page.route("**/api/v1/admin/deletions/restore", route => route.fulfill({
-    status: 409, json: {success: false, code: "FESTIVAL006", message: "이미 등록된 행사입니다.", data: null},
-  }));
+  await page.route("**/api/v1/admin/deletions/restore", (route) =>
+    route.fulfill({
+      status: 409,
+      json: {
+        success: false,
+        code: "FESTIVAL006",
+        message: "이미 등록된 행사입니다.",
+        data: null,
+      },
+    }),
+  );
   await page.getByLabel("삭제된 행사 포함").check();
-  await page.getByRole("button", {name: "삭제 정책 테스트 행사 관리하기"}).click();
+  await page
+    .getByRole("button", { name: "삭제 정책 테스트 행사 관리하기" })
+    .click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", {name: "복구", exact: true}).click();
-  await expect(dialog.getByRole("alert")).toContainText("이미 등록된 행사입니다.");
-  await expect(dialog.getByRole("button", {name: "복구", exact: true})).toBeEnabled();
+  await dialog.getByRole("button", { name: "복구", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "이미 등록된 행사입니다.",
+  );
+  await expect(
+    dialog.getByRole("button", { name: "복구", exact: true }),
+  ).toBeEnabled();
 });
 
 for (const type of ["ADMIN", "AUTHOR", "UNKNOWN"] as const) {

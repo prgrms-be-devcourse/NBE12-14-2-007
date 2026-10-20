@@ -1437,6 +1437,13 @@ img.adm-avatar {
   border-bottom: 1px solid #eef1e8;
   padding: 8px 0;
 }
+.adm-review-comment-list li.is-reply {
+  padding-left: 20px;
+}
+.adm-review-comment-list li.is-deleted p {
+  color: #8a9480;
+  font-style: italic;
+}
 .adm-review-comment-body {
   min-width: 0;
 }

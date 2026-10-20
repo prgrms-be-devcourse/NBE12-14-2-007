@@ -2250,6 +2250,30 @@ select {
 .community-comments > h2 span {
   color: var(--orange);
 }
+/* 커뮤니티 대댓글: 부모 댓글 아래 들여쓰기 */
+.community-comment-replies {
+  margin-left: 32px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+.community-comment.deleted p {
+  color: var(--muted);
+  font-style: italic;
+}
+.community-comment-form.community-reply-form {
+  margin: 12px 0;
+}
+.community-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .community-comment-replies {
+    margin-left: 8px;
+    padding-left: 12px;
+  }
+}
 .community-comment-form {
   display: flex;
   align-items: flex-end;
@@ -3706,6 +3730,38 @@ button.post-thumbnail {
 .comment-row .prose {
   font-size: 12px;
   line-height: 1.9;
+}
+/* 대댓글: 부모 댓글 아래 들여쓰기 */
+.comment-replies {
+  margin-left: 44px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+.comment-replies .comment-row {
+  padding: 16px 0;
+}
+.comment-replies .comment-row:last-child {
+  border-bottom: 0;
+}
+.comment-row.deleted .prose {
+  color: var(--muted);
+  font-style: italic;
+}
+.comment-row.deleted .avatar {
+  background: var(--line);
+}
+.reply-form {
+  margin: 12px 0 16px;
+}
+.reply-form .form-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .comment-replies {
+    margin-left: 12px;
+    padding-left: 12px;
+  }
 }
 .empty-comments {
   text-align: center;
