@@ -19,7 +19,7 @@ public class CommunityPostDeletionHandler implements DeletionHandler {
 
 	@Override
 	public void restore(DeletionHistory history) {
-		var target = posts.findForRestoration(java.util.UUID.fromString(history.getTargetId()))
+		var target = posts.findForRestoration(UUID.fromString(history.getTargetId()))
 			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.POST_NOT_FOUND));
 		if (!target.isDeleted()) {
 			throw new BusinessException(CommunityExceptionCode.POST_NOT_FOUND);

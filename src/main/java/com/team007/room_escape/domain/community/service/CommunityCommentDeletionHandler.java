@@ -1,5 +1,6 @@
 package com.team007.room_escape.domain.community.service;
 
+import com.team007.room_escape.domain.community.infra.repository.CommunityPostRepository;
 import com.team007.room_escape.domain.community.infra.repository.CommunityCommentRepository;
 import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
 import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class CommunityCommentDeletionHandler implements DeletionHandler {
 	private final CommunityCommentRepository comments;
 	private final DeletionHistoryService histories;
-	private final com.team007.room_escape.domain.community.infra.repository.CommunityPostRepository parents;
+	private final CommunityPostRepository parents;
 
 	@Override
 	public void restore(DeletionHistory history) {

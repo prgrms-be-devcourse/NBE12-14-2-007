@@ -1,5 +1,6 @@
 package com.team007.room_escape.domain.festival.service;
 
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.deletion.infra.entity.*;
 import com.team007.room_escape.domain.deletion.service.DeletionHandler;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class FestivalDeletionHandler implements DeletionHandler {
 	private final FestivalRepository festivals;
 	private final FestivalDeletionService deletion;
-	private final com.team007.room_escape.domain.deletion.service.DeletionHistoryService histories;
+	private final DeletionHistoryService histories;
 
 	@Override
 	public void restore(DeletionHistory history) {

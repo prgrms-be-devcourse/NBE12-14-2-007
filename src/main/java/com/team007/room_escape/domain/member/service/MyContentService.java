@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.member.service;
 
+import java.util.Map;
+import java.util.HashMap;
 import com.team007.room_escape.domain.member.dto.MyContentResponse;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -23,7 +25,7 @@ public class MyContentService {
 	public Page<MyContentResponse.Item> findMine(UUID memberId, boolean comments, Pageable pageable) {
 		members.getActiveMember(memberId);
 		Page<MyContentRepository.Row> rows = contents.findMine(memberId, comments, pageable);
-		var latest = new java.util.HashMap<DeletionTargetType, java.util.Map<String, DeletionHistory>>();
+		var latest = new HashMap<DeletionTargetType, Map<String, DeletionHistory>>();
 		for (DeletionTargetType type : DeletionTargetType.values()) {
 			latest.put(type, histories.findLatestForTargets(type, rows.getContent().stream()
 				.filter(row -> row.type() == type && row.deletedAt() != null).map(MyContentRepository.Row::targetId).toList()));

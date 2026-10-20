@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.comment.service;
 
+import org.springframework.security.access.AccessDeniedException;
+import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.comment.dto.CommentRequest;
 import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
 import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
@@ -39,8 +41,8 @@ public class CommentService {
 	@Transactional(readOnly = true)
 	public Page<CommentResponse.AdminInfo> getCommentsForAdmin(UUID postId, UUID adminId, Pageable page) {
 		if (memberReader.getActiveMember(adminId).getRole() !=
-			com.team007.room_escape.domain.member.infra.entity.MemberRole.ROLE_ADMIN) {
-			throw new org.springframework.security.access.AccessDeniedException("관리자만 삭제된 댓글을 조회할 수 있습니다.");
+			MemberRole.ROLE_ADMIN) {
+			throw new AccessDeniedException("관리자만 삭제된 댓글을 조회할 수 있습니다.");
 		}
 		Post post = postRepository.findById(postId)
 			.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));

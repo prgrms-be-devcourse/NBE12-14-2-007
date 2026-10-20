@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
 import java.util.Set;
 
 import org.springframework.data.domain.Page;
@@ -30,7 +32,7 @@ public class AdminFestivalService {
 
 	private final FestivalRepository festivalRepository;
 	private final RichTextSanitizer richTextSanitizer;
-	private final com.team007.room_escape.domain.deletion.service.DeletionHistoryService deletionHistories;
+	private final DeletionHistoryService deletionHistories;
 
 	/** 관리자 행사 검색. 복구 대상을 찾도록 삭제된 행사도 볼 수 있다. */
 	@Transactional(readOnly = true)
@@ -48,7 +50,7 @@ public class AdminFestivalService {
 			pageable
 		);
 		var histories = deletionHistories.findLatestForTargets(
-			com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType.FESTIVAL,
+			DeletionTargetType.FESTIVAL,
 			festivals.getContent().stream().filter(Festival::isDeleted).map(festival -> festival.getId().toString()).toList());
 		return festivals.map(festival -> AdminFestivalResponse.ListItem.from(festival, histories.get(festival.getId().toString())));
 	}

@@ -19,7 +19,7 @@ public class PostDeletionHandler implements DeletionHandler {
 
 	@Override
 	public void restore(DeletionHistory history) {
-		var target = posts.findForRestoration(java.util.UUID.fromString(history.getTargetId()))
+		var target = posts.findForRestoration(UUID.fromString(history.getTargetId()))
 			.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 		if (!target.isDeleted()) {
 			throw new BusinessException(PostExceptionCode.POST_NOT_FOUND);

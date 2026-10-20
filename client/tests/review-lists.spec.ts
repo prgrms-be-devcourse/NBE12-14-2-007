@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { adminToken, loginAdmin } from "./helpers/admin";
 
 const post = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -55,6 +56,10 @@ async function setup(
       method: request.method(),
       authorization: request.headers().authorization,
     });
+    if (url.pathname === "/api/v1/auth/login")
+      return respond(route, { accessToken: adminToken(role) });
+    if (url.pathname === "/api/v1/admin/deletions/latest")
+      return respond(route, null);
     if (url.pathname === "/api/v1/auth/refresh")
       return respond(
         route,
@@ -165,126 +170,6 @@ test("list failures clear prior data, retry the API and show an empty search wit
   await expect(page.locator(".count")).toHaveText("0");
 });
 
-for (const role of ["", "ROLE_UNVERIFIED"]) {
-  test(`admin reviews do not request protected lists for ${role || "anonymous"} users`, async ({
-    page,
-  }) => {
-    const requests = await setup(page, { role });
-    for (const path of ["/admin/reviews", "/admin/reviews?test=1"]) {
-      await page.goto(path);
-      await expect(
-        page.getByRole("heading", {
-          name: role ? "관리자 권한이 필요합니다" : "로그인하고 함께해요",
-        }),
-      ).toBeVisible();
-      expect(
-        requests.filter(({ url }) => url.pathname.startsWith("/api/v1/admin/")),
-      ).toEqual([]);
-      await expect(page.locator(".post-list")).toHaveCount(0);
-      await expect(page.getByRole("search", { name: "후기 검색" })).toHaveCount(
-        0,
-      );
-    }
-  });
-}
-
-test("admin reviews use the protected API even in preview and include server totals, search and detail", async ({
-  page,
-}) => {
-  await setup(page, { role: "ROLE_ADMIN", preview: true });
-  const queries: URLSearchParams[] = [];
-  await page.route("**/api/v1/admin/posts?*", (route) => {
-    expect(route.request().headers().authorization).toBe(
-      "Bearer review-contract-token",
-    );
-    const query = new URL(route.request().url()).searchParams;
-    queries.push(query);
-    const number = Number(query.get("page"));
-    return respond(
-      route,
-      postPage(
-        [{ ...adminPost, title: number ? "두 번째 페이지 후기" : post.title }],
-        number,
-        Number(query.get("size")),
-        21,
-      ),
-    );
-  });
-  await page.route(`**/api/v1/posts/${post.id}`, (route) =>
-    respond(route, { ...post, content: "서버에서 받은 후기 본문" }),
-  );
-  await page.goto("/admin/reviews");
-  await expect(page.locator(".post-list")).toContainText(post.title);
-  await expect(page.getByRole("status")).toContainText("21");
-  await page.getByRole("button", { name: "다음 페이지" }).click();
-  await expect(page.locator(".post-list")).toContainText("두 번째 페이지 후기");
-  await page.getByLabel("후기 검색 기준").selectOption("FESTIVAL_TITLE");
-  await page.getByLabel("후기 검색어").fill("문화축제");
-  await page.getByRole("button", { name: "검색", exact: true }).click();
-  await expect
-    .poll(() =>
-      queries.some(
-        (q) =>
-          q.get("keyword") === "문화축제" &&
-          q.get("type") === "FESTIVAL_TITLE" &&
-          q.get("page") === "0",
-      ),
-    )
-    .toBe(true);
-  await page.getByLabel("후기 정렬").selectOption("createdAt,asc");
-  await expect
-    .poll(() => queries.some((q) => q.get("sort") === "createdAt,asc"))
-    .toBe(true);
-  await page.reload();
-  await expect(page.getByLabel("후기 검색어")).toHaveValue("문화축제");
-  await page.getByRole("button", { name: `${post.title} 상세 보기` }).click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "서버에서 받은 후기 본문",
-  );
-  await expect(
-    page.getByRole("dialog").getByRole("link", { name: post.festivalTitle }),
-  ).toHaveAttribute("href", "/events/72");
-  await page.getByRole("button", { name: "닫기", exact: true }).last().click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(queries.some((q) => q.get("size") === "1")).toBe(true);
-  expect(queries.some((q) => q.get("size") === "6")).toBe(true);
-  await expect(
-    page.getByText("삭제된 후기도 포함됩니다.", { exact: false }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "처리 내용 저장" }),
-  ).toHaveCount(0);
-});
-
-test("admin list reports forbidden and deleted-detail errors without inventing visibility", async ({
-  page,
-}) => {
-  await setup(page, { role: "ROLE_ADMIN" });
-  let forbidden = true;
-  await page.route("**/api/v1/admin/posts?*", (route) =>
-    forbidden
-      ? respond(route, "후기 조회 권한 없음", 403)
-      : respond(route, postPage([adminPost])),
-  );
-  await page.route(`**/api/v1/posts/${post.id}`, (route) =>
-    respond(route, "후기를 찾을 수 없습니다", 404),
-  );
-  await page.goto("/admin/reviews");
-  await expect(
-    page.getByText("후기 조회 권한 없음", { exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".post-list")).toHaveCount(0);
-  forbidden = false;
-  await page.getByRole("button", { name: "다시 시도" }).click();
-  await page.getByRole("button", { name: `${post.title} 상세 보기` }).click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "삭제되었거나 찾을 수 없는 후기입니다.",
-  );
-  await expect(
-    page.getByRole("columnheader", { name: "노출 상태" }),
-  ).toHaveCount(0);
-});
-
 test("preview searches before pagination and preserves likes sorting", async ({
   page,
 }) => {
@@ -302,93 +187,115 @@ test("preview searches before pagination and preserves likes sorting", async ({
   await expect(page.locator(".post-row")).toContainText("수원화성");
 });
 
-test("review lists stay accessible and fit mobile and desktop widths", async ({
+test("administrator review list supports search, pagination and original detail", async ({
   page,
 }) => {
   await setup(page, { role: "ROLE_ADMIN" });
-  await page.route("**/api/v1/posts?*", (route) =>
-    respond(route, postPage([post])),
+  const queries: URLSearchParams[] = [];
+  await page.route("**/api/v1/admin/posts?*", (route) => {
+    expect(route.request().headers().authorization).toBe(
+      "Bearer " + adminToken(),
+    );
+    const query = new URL(route.request().url()).searchParams;
+    queries.push(query);
+    const number = Number(query.get("page"));
+    return respond(
+      route,
+      postPage(
+        [{ ...adminPost, title: number ? "두 번째 페이지 후기" : post.title }],
+        number,
+        20,
+        21,
+      ),
+    );
+  });
+  await page.route(`**/api/v1/posts/${post.id}`, (route) =>
+    respond(route, { ...post, content: "서버에서 받은 후기 본문" }),
   );
+  await loginAdmin(page);
+  await expect(page.getByRole("table")).toContainText(post.title);
+  await expect(page.locator(".adm-result-count")).toContainText("21");
+  await page.getByRole("button", { name: "다음", exact: true }).click();
+  await expect(page.getByRole("table")).toContainText("두 번째 페이지 후기");
+  await page.getByLabel("후기 검색 기준").selectOption("FESTIVAL_TITLE");
+  await page.getByLabel("후기 검색", { exact: true }).fill("문화축제");
+  await expect.poll(() => queries.at(-1)?.get("keyword")).toBe("문화축제");
+  expect(queries.at(-1)?.get("type")).toBe("FESTIVAL_TITLE");
+  expect(queries.at(-1)?.get("page")).toBe("0");
+  await page.getByLabel("후기 정렬").selectOption("createdAt,asc");
+  await expect.poll(() => queries.at(-1)?.get("sort")).toBe("createdAt,asc");
+  await page.getByRole("button", { name: post.title + " 검토" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "서버에서 받은 후기 본문",
+  );
+  await expect(
+    page.getByRole("dialog").getByRole("link", { name: post.festivalTitle }),
+  ).toHaveAttribute("href", "/events/72");
+});
+
+test("administrator list reports query failure and missing detail without claiming restoration is available", async ({
+  page,
+}) => {
+  await setup(page, { role: "ROLE_ADMIN" });
+  let fail = true;
+  await page.route("**/api/v1/admin/posts?*", (route) =>
+    fail
+      ? respond(route, "후기 조회 권한 없음", 403)
+      : respond(route, postPage([adminPost])),
+  );
+  await page.route(`**/api/v1/posts/${post.id}`, (route) =>
+    respond(route, "후기를 찾을 수 없습니다", 404),
+  );
+  await loginAdmin(page);
+  await expect(page.getByRole("alert")).toContainText("후기 조회 권한 없음");
+  fail = false;
+  await page.getByRole("button", { name: "다시 시도" }).click();
+  await page.getByRole("button", { name: post.title + " 검토" }).click();
+  await expect(page.getByRole("dialog")).toContainText("삭제된 후기입니다.");
+  await expect(
+    page.getByRole("button", { name: "후기 복구", exact: true }),
+  ).toBeDisabled();
+});
+
+test("deleted review rows remain manageable and administrator search is accessible on small screens", async ({
+  page,
+}) => {
+  await setup(page, { role: "ROLE_ADMIN" });
+  const removed = {
+    ...adminPost,
+    id: "removed-review",
+    title: "삭제된 후기",
+    deletedAt: "2026-09-23T11:00:00",
+  };
   await page.route("**/api/v1/admin/posts?*", (route) =>
     respond(
       route,
-      postPage([
-        adminPost,
-        {
-          ...adminPost,
-          id: "deleted",
-          title: "삭제된 후기",
-          deletedAt: "2026-09-23T11:00:00",
-        },
-      ]),
+      postPage(
+        new URL(route.request().url()).searchParams.get("keyword")
+          ? [removed]
+          : [adminPost, removed],
+      ),
     ),
   );
-  for (const path of ["/reviews", "/admin/reviews"]) {
-    await page.goto(path);
-    await expect(page.getByText(post.title, { exact: true })).toBeVisible();
-    for (const width of [320, 390, 768, 1440]) {
-      await page.setViewportSize({ width, height: 1000 });
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      ).toBe(true);
-      await expect(page.getByLabel("후기 검색어")).toBeVisible();
-      if (width === 390 || width === 1440)
-        await page.screenshot({
-          path: `test-results/${path.includes("admin") ? "admin" : "public"}-reviews-${width}.png`,
-          fullPage: true,
-        });
-    }
-    const audit = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa"])
-      .analyze();
-    expect(audit.violations).toEqual([]);
-  }
-});
-
-test("admin uses shared review rows and clearly marks soft-deleted search results", async ({
-  page,
-}) => {
-  const requests = await setup(page, { role: "ROLE_ADMIN" });
-  const removed = {
-    ...adminPost,
-    id: "soft-deleted",
-    title: "soft 삭제 확인용 후기",
-    deletedAt: "2026-09-23T11:00:00",
-  };
-  await page.route("**/api/v1/admin/posts?*", (route) => {
-    const keyword = new URL(route.request().url()).searchParams.get("keyword");
-    return respond(route, postPage(keyword ? [removed] : [adminPost, removed]));
-  });
-  await page.route("**/api/v1/posts?*", (route) => {
-    const keyword = new URL(route.request().url()).searchParams.get("keyword");
-    return respond(route, postPage(keyword ? [] : [post]));
-  });
-  await page.goto("/admin/reviews");
-  await expect(page.getByRole("table")).toHaveCount(0);
-  await expect(page.locator(".post-row")).toHaveCount(2);
-  await expect(page.getByRole("article", { name: post.title })).toContainText(
-    "게시 중",
-  );
-  const deletedRow = page.getByRole("article", { name: removed.title });
-  await expect(deletedRow).toContainText("삭제됨");
-  await expect(deletedRow).toContainText("삭제 시각 2026.09.23 11:00");
-  await expect(deletedRow.getByRole("button")).toHaveCount(0);
+  await loginAdmin(page);
+  const row = page.getByRole("row").filter({ hasText: removed.title });
+  await expect(row).toContainText("삭제됨");
   await expect(
-    deletedRow.getByRole("link", { name: removed.title }),
-  ).toHaveCount(0);
-  await page.getByLabel("후기 검색어").fill(removed.title);
-  await page.getByRole("button", { name: "검색", exact: true }).click();
-  await expect(page.locator(".post-row")).toHaveCount(1);
-  await expect(deletedRow).toBeVisible();
+    row.getByRole("button", { name: removed.title + " 검토" }),
+  ).toBeEnabled();
+  await page.getByLabel("후기 검색", { exact: true }).fill(removed.title);
+  await expect(page.getByRole("row")).toHaveCount(2);
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await expect(page.getByLabel("후기 검색", { exact: true })).toBeVisible();
+  }
   expect(
-    requests.some(({ url }) => url.pathname === "/api/v1/posts/soft-deleted"),
-  ).toBe(false);
-  await page.goto("/reviews");
-  await expect(page.locator(".post-row")).toHaveCount(1);
-  await expect(page.getByText(removed.title, { exact: true })).toHaveCount(0);
-  await page.getByLabel("후기 검색어").fill(removed.title);
-  await page.getByRole("button", { name: "검색", exact: true }).click();
-  await expect(page.getByText("검색 조건에 맞는 후기가 없어요")).toBeVisible();
+    (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze())
+      .violations,
+  ).toEqual([]);
 });

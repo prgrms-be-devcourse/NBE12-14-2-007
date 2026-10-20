@@ -1,5 +1,11 @@
 package com.team007.room_escape.domain.deletion.service;
 
+import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.Map;
+import java.util.List;
+import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.domain.deletion.infra.entity.*;
 import com.team007.room_escape.domain.deletion.infra.repository.DeletionHistoryRepository;
 import java.util.Optional;
@@ -31,23 +37,23 @@ public class DeletionHistoryService {
 		return repository.findFirstByTargetTypeAndTargetIdOrderByIdDesc(type, type.normalizeId(targetId));
 	}
 
-	public java.util.Map<String, DeletionHistory> findLatestForTargets(DeletionTargetType type, java.util.List<String> ids) {
+	public Map<String, DeletionHistory> findLatestForTargets(DeletionTargetType type, List<String> ids) {
 		if (ids.isEmpty()) {
-			return java.util.Map.of();
+			return Map.of();
 		}
 		var normalized = ids.stream().map(type::normalizeId).distinct().toList();
 		return repository.findLatestForTargets(type, normalized).stream()
-			.collect(java.util.stream.Collectors.toMap(DeletionHistory::getTargetId, java.util.function.Function.identity()));
+			.collect(Collectors.toMap(DeletionHistory::getTargetId, Function.identity()));
 	}
 
 	/** 대상 행을 잠근 뒤 호출한다. 마지막 조치가 관리자 삭제인지 확인한다. */
 	public void requireAdministratorDeletion(DeletionTargetType type, String targetId) {
 		DeletionHistory latest = findLatest(type, targetId)
-			.orElseThrow(() -> new com.team007.room_escape.global.exception.BusinessException(
-				com.team007.room_escape.global.response.code.CommonExceptionCode.INVALID_INPUT));
+			.orElseThrow(() -> new BusinessException(
+				CommonExceptionCode.INVALID_INPUT));
 		if (latest.getAction() != DeletionAction.DELETE || latest.getActorType() != DeletionActorType.ADMIN) {
-			throw new com.team007.room_escape.global.exception.BusinessException(
-				com.team007.room_escape.global.response.code.CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(
+				CommonExceptionCode.INVALID_INPUT);
 		}
 	}
 }

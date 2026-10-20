@@ -1,5 +1,8 @@
 package com.team007.room_escape.domain.deletion.service;
 
+import org.springframework.security.access.AccessDeniedException;
+import com.team007.room_escape.domain.inquiry.service.InquiryDeletionProcessor;
+import com.team007.room_escape.domain.deletion.dto.DeletionHistoryResponse;
 import com.team007.room_escape.domain.deletion.dto.AdminDeletionRequest;
 import com.team007.room_escape.domain.deletion.infra.entity.*;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
@@ -19,10 +22,10 @@ public class AdminDeletionFacade {
 	private final Map<DeletionTargetType, DeletionHandler> handlers;
 	private final DeletionHistoryService histories;
 	private final MemberReader members;
-	private final com.team007.room_escape.domain.inquiry.service.InquiryDeletionProcessor inquiries;
+	private final InquiryDeletionProcessor inquiries;
 
 	public AdminDeletionFacade(List<DeletionHandler> handlers, DeletionHistoryService histories, MemberReader members,
-		com.team007.room_escape.domain.inquiry.service.InquiryDeletionProcessor inquiries) {
+		InquiryDeletionProcessor inquiries) {
 		this.handlers = handlers.stream().collect(Collectors.toMap(DeletionHandler::supports, Function.identity()));
 		this.histories = histories;
 		this.members = members;
@@ -43,14 +46,14 @@ public class AdminDeletionFacade {
 	}
 
 	@Transactional(readOnly = true)
-	public com.team007.room_escape.domain.deletion.dto.DeletionHistoryResponse.Latest latest(
+	public DeletionHistoryResponse.Latest latest(
 		UUID adminId, DeletionTargetType type, String targetId) {
 		requireAdministrator(adminId, "관리자만 조치 이력을 조회할 수 있습니다.");
 		if (type == null) {
 			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
 		}
 		return histories.findLatest(type, targetId)
-			.map(com.team007.room_escape.domain.deletion.dto.DeletionHistoryResponse.Latest::from).orElse(null);
+			.map(DeletionHistoryResponse.Latest::from).orElse(null);
 	}
 
 	@Transactional
@@ -72,7 +75,7 @@ public class AdminDeletionFacade {
 	/** 기존 토큰의 권한이 아니라 DB의 현재 회원 상태로 판단한다. */
 	private void requireAdministrator(UUID adminId, String message) {
 		if (members.getActiveMember(adminId).getRole() != MemberRole.ROLE_ADMIN) {
-			throw new org.springframework.security.access.AccessDeniedException(message);
+			throw new AccessDeniedException(message);
 		}
 	}
 }

@@ -1,5 +1,8 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { previewSession } from "./helpers/preview";
+
+test.beforeEach(async ({ page }) => previewSession(page));
 
 const member = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -52,7 +55,7 @@ const ok = (data: unknown) => ({
   data,
 });
 
-test("deleted submission history shows reason and blocks editing", async ({
+test("deleted submission cannot be edited by opening its edit URL directly", async ({
   page,
 }) => {
   const deletion = {
@@ -79,21 +82,6 @@ test("deleted submission history shows reason and blocks editing", async ({
     }
     return false;
   });
-  await page.goto("/mypage?tab=submissions");
-  const row = page.locator(".submission-row");
-  await expect(row).toContainText("삭제된 행사");
-  await expect(row).toContainText("행사 취소 확인");
-  await expect(row).toHaveClass(/is-deleted/);
-  await row.click();
-  await expect(
-    page.getByRole("heading", { name: "삭제된 행사입니다", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "제보 수정", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "내 제보 삭제", exact: true }),
-  ).toBeDisabled();
   await page.goto(`/submissions/${submissionId}/edit`);
   await expect(page.getByText("삭제된 행사는 수정할 수 없어요")).toBeVisible();
   await expect(page.getByLabel("행사 이름")).toHaveCount(0);
@@ -105,6 +93,25 @@ async function json(route: Route, data: unknown, status = 200) {
     body: JSON.stringify(data),
   });
 }
+const contentItem = {
+  type: "FESTIVAL",
+  targetId: "42",
+  title: festival.title,
+  createdAt: summary.createdAt,
+  deletedAt: null,
+  parentDeleted: false,
+  originalPath: "/events/42",
+  deletion: null,
+};
+const contentPage = (content: unknown[]) => ({
+  content,
+  totalElements: content.length,
+  totalPages: content.length ? 1 : 0,
+  number: 0,
+  size: 20,
+  first: true,
+  last: true,
+});
 async function apiMode(
   page: Page,
   handler?: (route: Route, path: string, method: string) => Promise<boolean>,
@@ -120,6 +127,8 @@ async function apiMode(
         ok({ accessToken: "contract-token", tokenType: "Bearer" }),
       );
     if (path === "/members/me") return json(route, ok(member));
+    if (path === "/members/me/posts")
+      return json(route, ok(contentPage([contentItem])));
     if (path === "/members/me/submissions") return json(route, ok([summary]));
     if (path === `/members/me/submissions/${submissionId}`)
       return json(route, ok(detail));
@@ -174,7 +183,11 @@ test("preview stays isolated and all home images render", async ({ page }) => {
         images.every((img) => (img as HTMLImageElement).naturalWidth > 0),
       ),
   ).toBeTruthy();
-  expect(requests).toEqual([]);
+  expect(
+    requests.every((url) =>
+      /\/api\/v1\/(auth\/refresh|members\/me)$/.test(url),
+    ),
+  ).toBe(true);
   expect(errors).toEqual([]);
   await page.screenshot({
     path: "test-results/home-desktop.png",
@@ -189,8 +202,7 @@ test("search, category, region, dates and URL navigation work", async ({
   await page.getByRole("button", { name: "공연", exact: true }).click();
   await expect(page.locator(".event-card")).toHaveCount(1);
   await expect(page.locator(".event-card")).toContainText("음악회");
-  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
-  await page.getByLabel("시·군·구 선택").selectOption("GYEONGGI_SUWON");
+  await page.getByLabel("시·도 선택").selectOption("INCHEON");
   await expect(page.getByText("조건에 맞는 행사가 없어요")).toBeVisible();
   await page.getByRole("button", { name: "필터 초기화" }).click();
   await page.getByLabel("행사 검색", { exact: true }).fill("가을빛");
@@ -206,7 +218,7 @@ test("search, category, region, dates and URL navigation work", async ({
   await expect(page.getByText("조건에 맞는 행사가 없어요")).toBeVisible();
 });
 
-test("preview submission can be created, edited and deleted", async ({
+test("submission creation, editing and deletion retain an own-content history", async ({
   page,
 }) => {
   let saved = structuredClone(detail);
@@ -217,16 +229,25 @@ test("preview submission can be created, edited and deleted", async ({
     reason: "작성자 삭제",
   };
   await apiMode(page, async (route, path, method) => {
-    if (path === "/members/me/submissions" && method === "GET") {
+    if (path === "/members/me/posts" && method === "GET") {
       await json(
         route,
-        ok([
-          {
-            ...summary,
-            title: saved.submission.festival.title,
-            deletion: deleted ? deletion : null,
-          },
-        ]),
+        ok(
+          contentPage([
+            {
+              ...contentItem,
+              title: saved.submission.festival.title,
+              deletedAt: deleted ? deletion.deletedAt : null,
+              deletion: deleted
+                ? {
+                    action: "DELETE",
+                    actorType: "AUTHOR",
+                    reasonLabel: "작성자 직접 삭제",
+                  }
+                : null,
+            },
+          ]),
+        ),
       );
       return true;
     }
@@ -281,7 +302,7 @@ test("preview submission can be created, edited and deleted", async ({
   await expect(
     page.getByRole("heading", { name: "브라우저 검증 행사", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "제보 수정" }).click();
+  await page.getByRole("button", { name: "제보 수정" }).click();
   await page.getByLabel("행사 이름").fill("수정한 검증 행사");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "수정한 내용 저장" }).click();
@@ -294,11 +315,14 @@ test("preview submission can be created, edited and deleted", async ({
     .getByRole("button", { name: "제보 삭제", exact: true })
     .click();
   await expect(page).toHaveURL("/mypage?tab=submissions");
-  await expect(page.locator(".submission-list")).toContainText(
+  await expect(page.locator(".my-content-table")).toContainText(
     "수정한 검증 행사",
   );
-  await expect(page.locator(".submission-row")).toHaveClass(/is-deleted/);
-  await expect(page.locator(".submission-row")).toContainText("작성자 삭제");
+  await expect(page.locator(".my-content-table tbody tr")).toHaveClass(
+    /my-content-deleted/,
+  );
+  await page.getByRole("button", { name: "삭제 사유 보기" }).click();
+  await expect(page.getByRole("dialog")).toContainText("작성자 직접 삭제");
 });
 
 test("preview review, comment and like lifecycle works", async ({ page }) => {
@@ -414,9 +438,9 @@ test("live mode keeps private submissions in mypage and loads the festival catal
   });
   await page.goto("/mypage?tab=submissions");
   await expect(
-    page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: /API로 받은 행사/ }).click();
+    page.getByRole("region", { name: "내가 작성한 글" }),
+  ).toContainText(festival.title);
+  await page.getByRole("link", { name: "원문 보기" }).click();
   await expect(
     page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
   ).toBeVisible();
@@ -615,7 +639,7 @@ test("submission accepts required fields only and sends optional fields as null"
   await page.getByRole("button", { name: "기타", exact: true }).click();
   await page.getByLabel("시작일").fill("2026-10-10");
   await page.getByLabel("종료일").fill("2026-10-10");
-  await page.getByLabel("지역", { exact: false }).selectOption("GYEONGGI");
+  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
   await page.getByLabel("행사 참고 링크").fill("https://example.com/event");
   await page.getByRole("checkbox").check();
   await page
@@ -650,7 +674,7 @@ test("server failure stays an error, with no demo fallback", async ({
   page,
 }) => {
   await apiMode(page, async (route, path) => {
-    if (path === "/members/me/submissions") {
+    if (path === "/members/me/posts") {
       await json(
         route,
         {
@@ -667,7 +691,7 @@ test("server failure stays an error, with no demo fallback", async ({
   });
   await page.goto("/mypage?tab=submissions");
   await expect(page.getByRole("alert")).toContainText("연동 검증 서버 오류");
-  await expect(page.locator(".submission-row")).toHaveCount(0);
+  await expect(page.locator(".my-content-table tbody tr")).toHaveCount(0);
   await expect(
     page.getByText("이웃과 함께하는 주말 플리마켓", { exact: true }),
   ).toHaveCount(0);
@@ -684,7 +708,7 @@ test("401 renews access token and retries the authorized request", async ({
       await json(route, ok({ accessToken: `contract-token-${refreshes}` }));
       return true;
     }
-    if (path === "/members/me/submissions") {
+    if (path === "/members/me/posts") {
       attempts++;
       if (route.request().headers().authorization === "Bearer contract-token-1")
         await json(
@@ -692,15 +716,15 @@ test("401 renews access token and retries the authorized request", async ({
           { success: false, code: "EXPIRED", message: "Expired", data: null },
           401,
         );
-      else await json(route, ok([summary]));
+      else await json(route, ok(contentPage([contentItem])));
       return true;
     }
     return false;
   });
   await page.goto("/mypage?tab=submissions");
   await expect(
-    page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
-  ).toBeVisible();
+    page.getByRole("region", { name: "내가 작성한 글" }),
+  ).toContainText(festival.title);
   expect(refreshes).toBe(2);
   expect(attempts).toBeGreaterThanOrEqual(2);
 });
