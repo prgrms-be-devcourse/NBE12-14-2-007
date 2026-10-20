@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +50,7 @@ public class CommentService {
 		var roots = commentRepository.findRootsByPostId(postId, PageRequest.of(page.getPageNumber(), page.getPageSize()));
 		var replies = roots.isEmpty() ? List.<Comment>of()
 			: commentRepository.findRepliesByParentIds(roots.map(Comment::getId).toList());
-		var comments = java.util.stream.Stream.concat(roots.stream(), replies.stream()).toList();
+		var comments = Stream.concat(roots.stream(), replies.stream()).toList();
 		var histories = deletionHistoryService.findLatestForTargets(DeletionTargetType.COMMENT,
 			comments.stream().filter(Comment::isDeleted).map(comment -> comment.getId().toString()).toList());
 		var repliesByParentId = replies.stream().collect(Collectors.groupingBy(reply -> reply.getParent().getId()));

@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.deletion.infra.entity;
 
 import com.team007.room_escape.global.exception.BusinessException;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.response.code.DeletionExceptionCode;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -54,9 +54,12 @@ public class DeletionHistory {
 		DeletionReason reason, String detail) {
 		String text = detail == null || detail.isBlank() ? null : detail.strip();
 		if (targetType == null || action == null || actorId == null || actorType == null || reason == null
-			|| (text != null && text.length() > 500)
-			|| (reason == DeletionReason.OTHER && text == null)) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			|| (text != null && text.length() > 500)) {
+			throw new BusinessException(DeletionExceptionCode.INVALID_DELETION_REQUEST);
+		}
+		// 사유가 '기타'면 무엇이 문제였는지 상세로 남겨야 이력만 보고 판단할 수 있다.
+		if (reason == DeletionReason.OTHER && text == null) {
+			throw new BusinessException(DeletionExceptionCode.REASON_DETAIL_REQUIRED);
 		}
 		boolean valid = action == DeletionAction.RESTORE
 			? actorType == DeletionActorType.ADMIN && reason == DeletionReason.ADMIN_RESTORE
@@ -64,7 +67,7 @@ public class DeletionHistory {
 				? reason == DeletionReason.AUTHOR_REQUEST && text == null
 				: reason != DeletionReason.AUTHOR_REQUEST && reason != DeletionReason.ADMIN_RESTORE;
 		if (!valid) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.INVALID_ACTOR_FOR_ACTION);
 		}
 		DeletionHistory history = new DeletionHistory();
 		history.targetType = targetType;

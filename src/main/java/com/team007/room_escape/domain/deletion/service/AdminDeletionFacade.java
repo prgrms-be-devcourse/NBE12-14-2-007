@@ -8,7 +8,7 @@ import com.team007.room_escape.domain.deletion.infra.entity.*;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.global.exception.BusinessException;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.response.code.DeletionExceptionCode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,7 +39,7 @@ public class AdminDeletionFacade {
 			adminId, DeletionActorType.ADMIN, DeletionReason.ADMIN_RESTORE, null);
 		DeletionHandler handler = handlers.get(type);
 		if (handler == null) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.HANDLER_NOT_REGISTERED);
 		}
 		handler.restore(history);
 		histories.record(history);
@@ -50,7 +50,7 @@ public class AdminDeletionFacade {
 		UUID adminId, DeletionTargetType type, String targetId) {
 		requireAdministrator(adminId, "관리자만 조치 이력을 조회할 수 있습니다.");
 		if (type == null) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.INVALID_TARGET_TYPE);
 		}
 		return histories.findLatest(type, targetId)
 			.map(DeletionHistoryResponse.Latest::from).orElse(null);
@@ -63,7 +63,7 @@ public class AdminDeletionFacade {
 			DeletionAction.DELETE, adminId, DeletionActorType.ADMIN, request.reasonCode(), request.reasonDetail());
 		DeletionHandler handler = handlers.get(history.getTargetType());
 		if (handler == null) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.HANDLER_NOT_REGISTERED);
 		}
 		handler.delete(history);
 		histories.record(history);

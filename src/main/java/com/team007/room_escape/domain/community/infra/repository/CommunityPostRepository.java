@@ -12,13 +12,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface CommunityPostRepository extends JpaRepository<CommunityPost, UUID> {
 	/** 복구 전용: 삭제 필터를 우회하고 대상 행을 잠근다. */
 	@Query(value = "select * from community_post where id = :id for update", nativeQuery = true)
-	java.util.Optional<CommunityPost> findForRestoration(@org.springframework.data.repository.query.Param("id") UUID id);
+	Optional<CommunityPost> findForRestoration(@Param("id") UUID id);
 
-	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select p from CommunityPost p where p.id = :id and p.deletedAt is null")
 	Optional<CommunityPost> findForDeletion(@Param("id") UUID id);
 

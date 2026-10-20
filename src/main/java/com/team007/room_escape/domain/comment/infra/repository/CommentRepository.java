@@ -12,15 +12,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 	/** 복구 대상 행을 잠근다. */
 	@Query(value = "select * from comment where id = :id for update", nativeQuery = true)
-	java.util.Optional<Comment> findForRestoration(@org.springframework.data.repository.query.Param("id") Long id);
+	Optional<Comment> findForRestoration(@Param("id") Long id);
 
-	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select c from Comment c where c.id = :id and c.deletedAt is null")
-	java.util.Optional<Comment> findForDeletion(@org.springframework.data.repository.query.Param("id") Long id);
+	Optional<Comment> findForDeletion(@Param("id") Long id);
 
 	/**
 	 * 후기의 일반 댓글 한 페이지. 페이지는 일반 댓글 기준으로 나눠 대댓글이 두 페이지로 갈리지 않게 한다.

@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.deletion.infra.entity;
 
 import com.team007.room_escape.global.exception.BusinessException;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.response.code.DeletionExceptionCode;
 import java.util.UUID;
 
 /** 신고 대상과 달리 회원·문의는 콘텐츠 삭제 대상에 포함하지 않는다. */
@@ -10,7 +10,7 @@ public enum DeletionTargetType {
 
 	public String normalizeId(String id) {
 		if (id == null || id.isBlank()) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.INVALID_TARGET_ID);
 		}
 		try {
 			if (this == POST || this == COMMUNITY_POST) {
@@ -26,7 +26,7 @@ public enum DeletionTargetType {
 			}
 			return Long.toString(number);
 		} catch (IllegalArgumentException exception) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.INVALID_TARGET_ID);
 		}
 	}
 }

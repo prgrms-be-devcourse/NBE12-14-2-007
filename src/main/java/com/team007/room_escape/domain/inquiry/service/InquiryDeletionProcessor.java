@@ -5,7 +5,6 @@ import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
 import com.team007.room_escape.domain.inquiry.infra.repository.InquiryRepository;
 import com.team007.room_escape.global.exception.BusinessException;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
 import com.team007.room_escape.global.response.code.InquiryExceptionCode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,7 @@ public class InquiryDeletionProcessor {
 			|| inquiry.getTargetType() == null
 			|| !inquiry.getTargetType().name().equals(deletion.getTargetType().name())
 			|| !deletion.getTargetId().equals(deletion.getTargetType().normalizeId(inquiry.getTargetId()))) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(InquiryExceptionCode.INQUIRY_TARGET_MISMATCH);
 		}
 		String answer = "신고된 콘텐츠를 삭제했습니다. 사유: " + deletion.getReason().getDescription();
 		if (deletion.getReasonDetail() != null) {

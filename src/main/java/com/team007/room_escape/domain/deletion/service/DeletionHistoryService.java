@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 import java.util.function.Function;
 import java.util.Map;
 import java.util.List;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.response.code.DeletionExceptionCode;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.domain.deletion.infra.entity.*;
 import com.team007.room_escape.domain.deletion.infra.repository.DeletionHistoryRepository;
@@ -49,11 +49,9 @@ public class DeletionHistoryService {
 	/** 대상 행을 잠근 뒤 호출한다. 마지막 조치가 관리자 삭제인지 확인한다. */
 	public void requireAdministratorDeletion(DeletionTargetType type, String targetId) {
 		DeletionHistory latest = findLatest(type, targetId)
-			.orElseThrow(() -> new BusinessException(
-				CommonExceptionCode.INVALID_INPUT));
+			.orElseThrow(() -> new BusinessException(DeletionExceptionCode.RESTORE_HISTORY_NOT_FOUND));
 		if (latest.getAction() != DeletionAction.DELETE || latest.getActorType() != DeletionActorType.ADMIN) {
-			throw new BusinessException(
-				CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(DeletionExceptionCode.RESTORE_NOT_ALLOWED);
 		}
 	}
 }

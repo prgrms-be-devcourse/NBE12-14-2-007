@@ -7,7 +7,7 @@ import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
 import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
 import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.global.exception.BusinessException;
-import com.team007.room_escape.global.response.code.CommonExceptionCode;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,7 +50,7 @@ public class FestivalDeletionService {
 		}
 		if (festival.getBeginDe() == null || festival.getEndDe() == null
 			|| festival.getRegion() == null || festival.getUrl() == null || festival.getUrl().isBlank()) {
-			throw new BusinessException(CommonExceptionCode.INVALID_INPUT);
+			throw new BusinessException(FestivalExceptionCode.RESTORE_DATA_INCOMPLETE);
 		}
 		duplicateValidator.validate(festival.getId(),
 			festival.getBeginDe(), festival.getEndDe(), festival.getRegion(), festival.getUrl());

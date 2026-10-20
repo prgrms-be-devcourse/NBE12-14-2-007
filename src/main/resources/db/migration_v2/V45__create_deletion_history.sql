@@ -1,4 +1,4 @@
--- 과거 삭제자를 추측해 이관하지 않고 새 조치만 기록한다. 기존 V37은 변경하지 않는다.
+-- 삭제·복구의 주체와 사유는 이 테이블에만 쌓는다. 콘텐츠 테이블에는 deleted_at 만 둔다.
 CREATE TABLE deletion_history (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL CHECK (target_type IN ('FESTIVAL','POST','COMMENT','COMMUNITY_POST','COMMUNITY_COMMENT')),

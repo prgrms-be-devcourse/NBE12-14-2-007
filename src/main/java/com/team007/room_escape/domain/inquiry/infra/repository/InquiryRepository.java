@@ -13,9 +13,11 @@ import org.springframework.data.repository.query.Param;
 import com.team007.room_escape.domain.inquiry.infra.entity.Inquiry;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryCategory;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface InquiryRepository extends JpaRepository<Inquiry, UUID> {
-	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select i from Inquiry i where i.id = :id")
 	Optional<Inquiry> findForProcessing(@Param("id") UUID id);
 

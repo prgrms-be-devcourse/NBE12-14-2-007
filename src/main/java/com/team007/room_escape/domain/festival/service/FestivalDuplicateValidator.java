@@ -6,10 +6,13 @@ import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
 
 /** 등록·수정·복구에서 같은 중복 기준과 잠금 키를 사용한다. 호출자는 트랜잭션을 유지한다. */
-@org.springframework.stereotype.Component
-@lombok.RequiredArgsConstructor
+@Component
+@RequiredArgsConstructor
 public class FestivalDuplicateValidator {
 	private final FestivalRepository repository;
 
