@@ -108,6 +108,11 @@ public-api:
     service-key: ${PUBLIC_FESTIVAL_SERVICE_KEY}
     sync-cron: "0 0 6,14,22 * * *"  #배치 실행 주기 6/14/22시 (임의..)
 
+  # 전국 문화정보 API(한국문화정보원). 아직 festival 동기화에는 연결 안 함 — 클라이언트만 준비.
+  culture-info:
+    url: https://apis.data.go.kr/B553457/cultureinfo
+    service-key: ${CULTURE_INFO_SERVICE_KEY}
+
   weather:
     url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst
     service-key: ${KMA_WEATHER_SERVICE_KEY}
