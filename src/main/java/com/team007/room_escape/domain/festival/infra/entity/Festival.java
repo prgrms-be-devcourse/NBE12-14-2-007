@@ -64,10 +64,10 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "end_de")
 	private LocalDateTime endDe;
 
-	@Column(name = "partcpt_expn_info")
+	@Column(name = "partcpt_expn_info", columnDefinition = "text")
 	private String partcptExpnInfo;
 
-	@Column(name = "telno_info")
+	@Column(name = "telno_info", columnDefinition = "text")
 	private String telnoInfo;
 
 	@Enumerated(EnumType.STRING)
@@ -78,12 +78,13 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "region", length = 32)
 	private FestivalRegion region;
 
-	@Column(name = "region_detail", length = 255)
+	@Column(name = "region_detail", columnDefinition = "text")
 	private String regionDetail;
 
+	@Column(columnDefinition = "text")
 	private String place;
 
-	@Column(name = "place_address", length = 255)
+	@Column(name = "place_address", columnDefinition = "text")
 	private String placeAddress;
 
 	// TODO 인자가 많아서 정리 필요
