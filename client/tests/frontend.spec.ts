@@ -1,5 +1,8 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { previewSession } from "./helpers/preview";
+
+test.beforeEach(async ({ page }) => previewSession(page));
 
 const member = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -51,6 +54,38 @@ const ok = (data: unknown) => ({
   message: "",
   data,
 });
+
+test("deleted submission cannot be edited by opening its edit URL directly", async ({
+  page,
+}) => {
+  const deletion = {
+    deletedAt: "2026-10-19T10:00:00",
+    type: "ADMIN",
+    reason: "행사 취소 확인",
+  };
+  await apiMode(page, async (route, path) => {
+    if (path === "/members/me/submissions") {
+      await json(route, ok([{ ...summary, deletion }]));
+      return true;
+    }
+    if (path === `/members/me/submissions/${submissionId}`) {
+      await json(
+        route,
+        ok({
+          submission: {
+            ...detail.submission,
+            festival: { ...festival, deletion },
+          },
+        }),
+      );
+      return true;
+    }
+    return false;
+  });
+  await page.goto(`/submissions/${submissionId}/edit`);
+  await expect(page.getByText("삭제된 행사는 수정할 수 없어요")).toBeVisible();
+  await expect(page.getByLabel("행사 이름")).toHaveCount(0);
+});
 async function json(route: Route, data: unknown, status = 200) {
   await route.fulfill({
     status,
@@ -58,6 +93,25 @@ async function json(route: Route, data: unknown, status = 200) {
     body: JSON.stringify(data),
   });
 }
+const contentItem = {
+  type: "FESTIVAL",
+  targetId: "42",
+  title: festival.title,
+  createdAt: summary.createdAt,
+  deletedAt: null,
+  parentDeleted: false,
+  originalPath: "/events/42",
+  deletion: null,
+};
+const contentPage = (content: unknown[]) => ({
+  content,
+  totalElements: content.length,
+  totalPages: content.length ? 1 : 0,
+  number: 0,
+  size: 20,
+  first: true,
+  last: true,
+});
 async function apiMode(
   page: Page,
   handler?: (route: Route, path: string, method: string) => Promise<boolean>,
@@ -73,6 +127,8 @@ async function apiMode(
         ok({ accessToken: "contract-token", tokenType: "Bearer" }),
       );
     if (path === "/members/me") return json(route, ok(member));
+    if (path === "/members/me/posts")
+      return json(route, ok(contentPage([contentItem])));
     if (path === "/members/me/submissions") return json(route, ok([summary]));
     if (path === `/members/me/submissions/${submissionId}`)
       return json(route, ok(detail));
@@ -127,7 +183,11 @@ test("preview stays isolated and all home images render", async ({ page }) => {
         images.every((img) => (img as HTMLImageElement).naturalWidth > 0),
       ),
   ).toBeTruthy();
-  expect(requests).toEqual([]);
+  expect(
+    requests.every((url) =>
+      /\/api\/v1\/(auth\/refresh|members\/me)$/.test(url),
+    ),
+  ).toBe(true);
   expect(errors).toEqual([]);
   await page.screenshot({
     path: "test-results/home-desktop.png",
@@ -142,8 +202,7 @@ test("search, category, region, dates and URL navigation work", async ({
   await page.getByRole("button", { name: "공연", exact: true }).click();
   await expect(page.locator(".event-card")).toHaveCount(1);
   await expect(page.locator(".event-card")).toContainText("음악회");
-  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
-  await page.getByLabel("시·군·구 선택").selectOption("GYEONGGI_SUWON");
+  await page.getByLabel("시·도 선택").selectOption("INCHEON");
   await expect(page.getByText("조건에 맞는 행사가 없어요")).toBeVisible();
   await page.getByRole("button", { name: "필터 초기화" }).click();
   await page.getByLabel("행사 검색", { exact: true }).fill("가을빛");
@@ -159,11 +218,39 @@ test("search, category, region, dates and URL navigation work", async ({
   await expect(page.getByText("조건에 맞는 행사가 없어요")).toBeVisible();
 });
 
-test("preview submission can be created, edited and deleted", async ({
+test("submission creation, editing and deletion retain an own-content history", async ({
   page,
 }) => {
   let saved = structuredClone(detail);
+  let deleted = false;
+  const deletion = {
+    deletedAt: "2026-10-19T12:00:00",
+    type: "AUTHOR",
+    reason: "작성자 삭제",
+  };
   await apiMode(page, async (route, path, method) => {
+    if (path === "/members/me/posts" && method === "GET") {
+      await json(
+        route,
+        ok(
+          contentPage([
+            {
+              ...contentItem,
+              title: saved.submission.festival.title,
+              deletedAt: deleted ? deletion.deletedAt : null,
+              deletion: deleted
+                ? {
+                    action: "DELETE",
+                    actorType: "AUTHOR",
+                    reasonLabel: "작성자 직접 삭제",
+                  }
+                : null,
+            },
+          ]),
+        ),
+      );
+      return true;
+    }
     if (path === "/festivals/submissions" && method === "POST") {
       const input = route.request().postDataJSON();
       saved.submission.festival.title = input.title;
@@ -191,6 +278,7 @@ test("preview submission can be created, edited and deleted", async ({
         return true;
       }
       if (method === "DELETE") {
+        deleted = true;
         await route.fulfill({ status: 204 });
         return true;
       }
@@ -203,9 +291,7 @@ test("preview submission can be created, edited and deleted", async ({
   await page.getByLabel(/^행사 소개/).fill("제보 작성 흐름 검증");
   await page.getByLabel("시작일").fill("2026-10-10");
   await page.getByLabel("종료일").fill("2026-10-10");
-  await page
-    .getByLabel("지역", { exact: false })
-    .selectOption("GYEONGGI_SUWON");
+  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
   await page.getByLabel("운영 시간 안내").fill("10시부터 18시");
   await page.getByLabel("상세 주소").fill("테스트 공원");
   await page.getByLabel("행사 참고 링크").fill("https://example.com/event");
@@ -216,7 +302,7 @@ test("preview submission can be created, edited and deleted", async ({
   await expect(
     page.getByRole("heading", { name: "브라우저 검증 행사", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "제보 수정" }).click();
+  await page.getByRole("button", { name: "제보 수정" }).click();
   await page.getByLabel("행사 이름").fill("수정한 검증 행사");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "수정한 내용 저장" }).click();
@@ -229,9 +315,14 @@ test("preview submission can be created, edited and deleted", async ({
     .getByRole("button", { name: "제보 삭제", exact: true })
     .click();
   await expect(page).toHaveURL("/mypage?tab=submissions");
-  await expect(page.locator(".submission-list")).not.toContainText(
+  await expect(page.locator(".my-content-table")).toContainText(
     "수정한 검증 행사",
   );
+  await expect(page.locator(".my-content-table tbody tr")).toHaveClass(
+    /my-content-deleted/,
+  );
+  await page.getByRole("button", { name: "삭제 사유 보기" }).click();
+  await expect(page.getByRole("dialog")).toContainText("작성자 직접 삭제");
 });
 
 test("preview review, comment and like lifecycle works", async ({ page }) => {
@@ -252,26 +343,34 @@ test("preview review, comment and like lifecycle works", async ({ page }) => {
   );
   await page.getByLabel("댓글 내용").fill("직접 확인한 댓글");
   await page.getByRole("button", { name: "댓글 남기기" }).click();
-  await expect(page.locator(".comment-row")).toContainText("직접 확인한 댓글");
-  await page
-    .locator(".comment-row")
-    .getByRole("button", { name: "수정", exact: true })
-    .click();
+  const root = page.locator(".comment-thread > .comment-row").first();
+  await expect(root).toContainText("직접 확인한 댓글");
+  await root.getByRole("button", { name: "수정", exact: true }).click();
   await page.getByLabel("수정할 댓글").fill("수정한 댓글");
-  await page
-    .locator(".comment-row")
-    .getByRole("button", { name: "저장", exact: true })
-    .click();
-  await expect(page.locator(".comment-row")).toContainText("수정한 댓글");
-  await page
-    .locator(".comment-row")
-    .getByRole("button", { name: "삭제", exact: true })
-    .click();
+  await root.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(root).toContainText("수정한 댓글");
+  await root.getByRole("button", { name: "답글", exact: true }).click();
+  await page.getByLabel("답글 내용").fill("답글도 남겨요");
+  await page.getByRole("button", { name: "답글 남기기" }).click();
+  const reply = page.locator(".comment-replies .comment-row");
+  await expect(reply).toContainText("답글도 남겨요");
+  // 부모 댓글을 지워도 자리는 "삭제된 댓글입니다"로 남고, 답글은 그대로 보인다.
+  await root.getByRole("button", { name: "삭제", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "삭제", exact: true })
     .click();
-  await expect(page.getByText("첫 번째 댓글을 남겨보세요.")).toBeVisible();
+  await expect(root).toHaveClass(/deleted/);
+  await expect(root).toContainText("삭제된 댓글입니다");
+  await expect(root.getByRole("button")).toHaveCount(0);
+  await expect(reply).toContainText("답글도 남겨요");
+  // 답글을 지워도 같은 문구로 남는다.
+  await reply.getByRole("button", { name: "삭제", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "삭제", exact: true })
+    .click();
+  await expect(reply).toContainText("삭제된 댓글입니다");
   await page.getByRole("link", { name: "수정", exact: true }).click();
   await page.getByLabel("후기 제목").fill("수정한 산책 후기");
   await page.getByRole("button", { name: "수정 내용 저장" }).click();
@@ -339,9 +438,9 @@ test("live mode keeps private submissions in mypage and loads the festival catal
   });
   await page.goto("/mypage?tab=submissions");
   await expect(
-    page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: /API로 받은 행사/ }).click();
+    page.getByRole("region", { name: "내가 작성한 글" }),
+  ).toContainText(festival.title);
+  await page.getByRole("link", { name: "원문 보기" }).click();
   await expect(
     page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
   ).toBeVisible();
@@ -540,7 +639,7 @@ test("submission accepts required fields only and sends optional fields as null"
   await page.getByRole("button", { name: "기타", exact: true }).click();
   await page.getByLabel("시작일").fill("2026-10-10");
   await page.getByLabel("종료일").fill("2026-10-10");
-  await page.getByLabel("지역", { exact: false }).selectOption("GYEONGGI");
+  await page.getByLabel("시·도 선택").selectOption("GYEONGGI");
   await page.getByLabel("행사 참고 링크").fill("https://example.com/event");
   await page.getByRole("checkbox").check();
   await page
@@ -575,7 +674,7 @@ test("server failure stays an error, with no demo fallback", async ({
   page,
 }) => {
   await apiMode(page, async (route, path) => {
-    if (path === "/members/me/submissions") {
+    if (path === "/members/me/posts") {
       await json(
         route,
         {
@@ -592,7 +691,7 @@ test("server failure stays an error, with no demo fallback", async ({
   });
   await page.goto("/mypage?tab=submissions");
   await expect(page.getByRole("alert")).toContainText("연동 검증 서버 오류");
-  await expect(page.locator(".submission-row")).toHaveCount(0);
+  await expect(page.locator(".my-content-table tbody tr")).toHaveCount(0);
   await expect(
     page.getByText("이웃과 함께하는 주말 플리마켓", { exact: true }),
   ).toHaveCount(0);
@@ -609,7 +708,7 @@ test("401 renews access token and retries the authorized request", async ({
       await json(route, ok({ accessToken: `contract-token-${refreshes}` }));
       return true;
     }
-    if (path === "/members/me/submissions") {
+    if (path === "/members/me/posts") {
       attempts++;
       if (route.request().headers().authorization === "Bearer contract-token-1")
         await json(
@@ -617,15 +716,15 @@ test("401 renews access token and retries the authorized request", async ({
           { success: false, code: "EXPIRED", message: "Expired", data: null },
           401,
         );
-      else await json(route, ok([summary]));
+      else await json(route, ok(contentPage([contentItem])));
       return true;
     }
     return false;
   });
   await page.goto("/mypage?tab=submissions");
   await expect(
-    page.getByRole("heading", { name: "API로 받은 행사", exact: true }),
-  ).toBeVisible();
+    page.getByRole("region", { name: "내가 작성한 글" }),
+  ).toContainText(festival.title);
   expect(refreshes).toBe(2);
   expect(attempts).toBeGreaterThanOrEqual(2);
 });

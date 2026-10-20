@@ -16,6 +16,8 @@ export interface Member {
   updatedAt: string;
 }
 export interface Festival {
+  /** 내 제보 이력에서 제공하는 현재 삭제 정보. 공개 행사 응답에는 없다. */
+  deletion?: FestivalDeletion | null;
   festivalId: number;
   title: string;
   category: string;
@@ -134,6 +136,7 @@ export interface SubmissionInput {
   hostInstNm?: string;
 }
 export interface SubmissionSummary {
+  deletion?: FestivalDeletion | null;
   festivalSubmissionId: string;
   festivalId: number;
   title: string;
@@ -143,6 +146,11 @@ export interface SubmissionSummary {
   endDe: string;
   createdAt: string;
   status: "OPEN" | "CLOSED";
+}
+export interface FestivalDeletion {
+  deletedAt: string;
+  type: "AUTHOR" | "ADMIN" | null;
+  reason: string;
 }
 export interface SubmissionDetail {
   submission: {
@@ -194,12 +202,29 @@ export interface Page<T> {
   last: boolean;
   first: boolean;
 }
+/** 후기 댓글. 목록에서는 일반 댓글 아래에 대댓글이 replies로 붙는다. */
 export interface Comment {
   id: number;
   postId: string;
-  member: CommunityMember;
+  /** 대댓글이면 부모 댓글 ID, 일반 댓글이면 null */
+  parentId: number | null;
+  /** 삭제된 댓글이면 true. content는 "삭제된 댓글입니다", member는 null로 온다. */
+  deleted: boolean;
+  member: CommunityMember | null;
   content: string;
   date: string;
+  /** 대댓글. 오래된 순. 대댓글 자신은 빈 배열 */
+  replies: Comment[];
+}
+export interface AdminComment extends Omit<
+  Comment,
+  "member" | "replies" | "deleted"
+> {
+  member: CommunityMember;
+  replies: AdminComment[];
+  deletedAt: string | null;
+  parentDeleted: boolean;
+  deletion: import("./deletion").LatestDeletionHistory | null;
 }
 
 export type InquiryCategory = "QUESTION" | "REPORT" | "TIP";
@@ -236,13 +261,20 @@ export interface CommunityPostDetail extends CommunityPostSummary {
   content: string;
   updatedAt: string;
 }
+/** 커뮤니티 댓글. 목록에서는 일반 댓글 아래에 대댓글이 replies로 붙는다. */
 export interface CommunityComment {
   id: number;
   postId: string;
-  member: CommunityMember;
+  /** 대댓글이면 부모 댓글 ID, 일반 댓글이면 null */
+  parentId: number | null;
+  /** 삭제된 댓글이면 true. content는 "삭제된 댓글입니다", member는 null로 온다. */
+  deleted: boolean;
+  member: CommunityMember | null;
   content: string;
   createdAt: string;
   updatedAt: string;
+  /** 대댓글. 오래된 순. 대댓글 자신은 빈 배열 */
+  replies: CommunityComment[];
 }
 
 export interface InquiryInput {
@@ -368,6 +400,8 @@ export interface AdminFestivalDetail {
  * 공개 목록과 달리 deletedAt이 있어 삭제된 행사를 구분할 수 있다.
  */
 export interface AdminFestivalListItem {
+  createdAt: string;
+  deletion?: FestivalDeletion | null;
   festivalId: number;
   providerType: "PUBLIC" | "MEMBER";
   title: string;

@@ -15,11 +15,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 
 import lombok.*;
 
 // 삭제된 행사를 참조하는 후기·제보 조회가 깨지지 않게 @SQLRestriction을 걸지 않는다. 목록·상세는 deletedAtIsNull로 거른다.
-// TODO 삭제된 행사는 응답에 "삭제된 행사입니다"로 표시하기
 @Entity
 @Table(name = "festival")
 @Getter
@@ -77,6 +78,23 @@ public class Festival extends SoftDeletableEntity {
 
 	@Column(name = "region_detail", length = 255)
 	private String regionDetail;
+
+	/** 삭제 주체·사유는 공통 이력에 기록하며 행사는 현재 삭제 상태만 관리한다. */
+	@Override
+	public void delete() {
+		if (isDeleted()) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
+		}
+		super.delete();
+	}
+
+	@Override
+	public void restore() {
+		if (!isDeleted()) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
+		}
+		super.restore();
+	}
 
 	// TODO 인자가 많아서 정리 필요
 	public void updateDetails(

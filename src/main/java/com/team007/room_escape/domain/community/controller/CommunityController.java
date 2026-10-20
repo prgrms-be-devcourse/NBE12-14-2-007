@@ -82,34 +82,34 @@ public class CommunityController {
 		));
 	}
 
-	@Operation(summary = "커뮤니티 글 삭제")
+	@Operation(summary = "커뮤니티 글 삭제", description = "작성자 본인만 삭제합니다. 관리자의 타인 글 삭제는 공통 관리자 조치 API를 사용합니다.")
 	@DeleteMapping("/posts/{postId}")
 	public ResponseEntity<ApiResponse<Void>> deletePost(
 		@PathVariable UUID postId,
 		@AuthenticationPrincipal CustomUserDetails user
 	) {
-		communityService.deletePost(postId, user.getId(), user.isAdmin());
+		communityService.deletePost(postId, user.getId());
 		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 
-	@Operation(summary = "커뮤니티 댓글 목록")
+	@Operation(summary = "커뮤니티 댓글 목록", description = "댓글을 오래된 순으로 조회한다. "
+		+ "페이지는 일반 댓글 기준이고, 대댓글은 각 댓글의 replies에 담긴다. 삭제된 댓글은 \"삭제된 댓글입니다\"로 내려간다.")
 	@GetMapping("/posts/{postId}/comments")
 	public ResponseEntity<ApiResponse<Page<CommunityResponse.CommentInfo>>> getComments(
 		@PathVariable UUID postId,
-		@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC)
-		Pageable pageable
+		@PageableDefault(size = 20) Pageable pageable
 	) {
 		return ResponseEntity.ok(ApiResponse.success(
 			communityService.getComments(postId, pageable)
 		));
 	}
 
-	@Operation(summary = "커뮤니티 댓글 작성")
+	@Operation(summary = "커뮤니티 댓글 작성", description = "parentId를 넣으면 그 댓글의 대댓글이 된다.")
 	@PostMapping("/posts/{postId}/comments")
 	@PreAuthorize("hasRole('UNVERIFIED')")
 	public ResponseEntity<ApiResponse<CommunityResponse.CommentInfo>> createComment(
 		@PathVariable UUID postId,
-		@Valid @RequestBody CommunityRequest.CommentUpsert request,
+		@Valid @RequestBody CommunityRequest.CommentCreate request,
 		@AuthenticationPrincipal CustomUserDetails user
 	) {
 		return ResponseEntity.ok(ApiResponse.success(
@@ -130,13 +130,13 @@ public class CommunityController {
 		));
 	}
 
-	@Operation(summary = "커뮤니티 댓글 삭제")
+	@Operation(summary = "커뮤니티 댓글 삭제", description = "작성자 본인만 삭제합니다. 관리자의 타인 댓글 삭제는 공통 관리자 조치 API를 사용합니다.")
 	@DeleteMapping("/comments/{commentId}")
 	public ResponseEntity<ApiResponse<Void>> deleteComment(
 		@PathVariable Long commentId,
 		@AuthenticationPrincipal CustomUserDetails user
 	) {
-		communityService.deleteComment(commentId, user.getId(), user.isAdmin());
+		communityService.deleteComment(commentId, user.getId());
 		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 }

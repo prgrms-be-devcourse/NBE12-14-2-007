@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { previewSession } from "./helpers/preview";
+
+test.beforeEach(async ({ page }) => previewSession(page));
 
 test("API mode retrieves the public review feed without private browse APIs", async ({
   page,
@@ -131,7 +134,8 @@ test("comment timestamps show Seoul hours and minutes for local and UTC data", a
     .locator(".comment-row")
     .filter({ hasText: "시간 표시를 확인하는 댓글입니다." });
   await expect(comment.locator("time")).toHaveText("2026.09.21 15:24");
-  await expect(page.locator(".comment-row").first()).toContainText(
+  // 오래된 순이라 새 댓글은 맨 아래에 붙는다.
+  await expect(page.locator(".comment-row").last()).toContainText(
     "시간 표시를 확인하는 댓글입니다.",
   );
   await page.setViewportSize({ width: 320, height: 900 });
@@ -148,7 +152,7 @@ test("comment timestamps show Seoul hours and minutes for local and UTC data", a
   ).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({
-    path: "docs/screenshots/comments-time.png",
+    path: "test-results/comments-time.png",
     fullPage: true,
   });
 });
@@ -202,7 +206,7 @@ test("community pages remain accessible and fit small screens", async ({
       .analyze();
     expect(result.violations, path).toEqual([]);
     await page.screenshot({
-      path: `docs/screenshots/${name}.png`,
+      path: `test-results/${name}.png`,
       fullPage: true,
     });
   }

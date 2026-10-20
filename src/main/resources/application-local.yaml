@@ -11,7 +11,7 @@ spring:
     username: ${DATASOURCE_USERNAME:roomescape}
     password: ${DATASOURCE_PASSWORD:roomescape}
   flyway:
-    # 로컬만 데모·시드 데이터(db/seed)를 넣는다. 운영은 db/migration(스키마)만 돈다.
+    # 로컬만 db/seed를 추가한다. 운영은 db/migration과 db/migration_v2의 스키마 변경만 적용한다.
     locations: classpath:db/migration,classpath:db/migration_v2,classpath:db/seed
 
 app:

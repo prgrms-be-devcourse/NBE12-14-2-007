@@ -32,9 +32,9 @@ public enum FestivalExceptionCode implements ExceptionCode {
 	/** 삭제되지 않은 행사에 복구를 요청한 경우 */
 	FESTIVAL_NOT_DELETED("FESTIVAL007", HttpStatus.CONFLICT, "삭제되지 않은 행사입니다."),
 
-	/** 회원이 직접 지운 제보를 관리자가 임의로 되살리지 않도록 막는다 */
+	/** 작성자 삭제 및 삭제 주체를 알 수 없는 과거 기록은 복구하지 않는다 */
 	FESTIVAL_RESTORE_FORBIDDEN("FESTIVAL008", HttpStatus.FORBIDDEN,
-		"회원이 제보한 행사는 복구할 수 없습니다."),
+		"관리자가 삭제한 행사만 복구할 수 있습니다."),
 
 	/** 본인이 제보한 행사를 직접 정확하다고 평가하는 경우 */
 	SELF_ACCURACY_VOTE_NOT_ALLOWED("FESTIVAL009", HttpStatus.FORBIDDEN,

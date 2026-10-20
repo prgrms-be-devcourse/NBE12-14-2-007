@@ -7,10 +7,14 @@ import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.Builder;
 
 public class CommunityResponse {
+
+	/** 삭제된 댓글 자리에 내려주는 문구. */
+	public static final String DELETED_COMMENT_CONTENT = "삭제된 댓글입니다";
 
 	private CommunityResponse() {
 	}
@@ -70,26 +74,49 @@ public class CommunityResponse {
 		}
 	}
 
-	/** 커뮤니티 댓글. 작성·목록·수정에서 함께 쓴다. */
+	/** 커뮤니티 댓글. 작성·목록·수정에서 함께 쓴다. 목록에서는 일반 댓글 아래에 대댓글이 replies로 붙는다. */
 	@Builder
 	@Schema(name = "CommunityCommentInfo", description = "커뮤니티 댓글")
 	public record CommentInfo(
 		Long id,
 		UUID postId,
+		@Schema(description = "부모 댓글 ID. 일반 댓글이면 null", nullable = true)
+		Long parentId,
+		@Schema(description = "삭제 여부. true면 content는 \"삭제된 댓글입니다\", member는 null")
+		boolean deleted,
+		@Schema(description = "작성자. 삭제된 댓글은 null", nullable = true)
 		MemberResponse.MemberInfo member,
+		@Schema(description = "댓글 내용. 삭제된 댓글은 \"삭제된 댓글입니다\"")
 		String content,
 		LocalDateTime createdAt,
-		LocalDateTime updatedAt
+		LocalDateTime updatedAt,
+		@Schema(description = "대댓글. 오래된 순. 대댓글 자신과 작성·수정 응답에서는 빈 배열")
+		List<CommentInfo> replies
 	) {
 
 		public static CommentInfo from(CommunityComment comment, ImageUrlResolver imageUrlResolver) {
+			return of(comment, List.of(), imageUrlResolver);
+		}
+
+		public static CommentInfo of(
+			CommunityComment comment,
+			List<CommunityComment> replies,
+			ImageUrlResolver imageUrlResolver
+		) {
+			boolean deleted = comment.isDeleted();
 			return CommentInfo.builder()
 				.id(comment.getId())
 				.postId(comment.getPost().getId())
-				.member(MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver))
-				.content(comment.getContent())
+				.parentId(comment.isReply() ? comment.getParent().getId() : null)
+				.deleted(deleted)
+				// 삭제된 댓글은 누가 무엇을 썼는지 내려주지 않는다.
+				.member(deleted ? null : MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver))
+				.content(deleted ? DELETED_COMMENT_CONTENT : comment.getContent())
 				.createdAt(comment.getCreatedAt())
 				.updatedAt(comment.getUpdatedAt())
+				.replies(replies.stream()
+					.map(reply -> from(reply, imageUrlResolver))
+					.toList())
 				.build();
 		}
 	}

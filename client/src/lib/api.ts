@@ -1,4 +1,10 @@
 import type {
+  AdminDeletionReason,
+  DeletionTarget,
+  LatestDeletionHistory,
+  MyContentItem,
+} from "./deletion";
+import type {
   Mode,
   Member,
   SignupInput,
@@ -13,6 +19,7 @@ import type {
   AdminPostSummary,
   Page,
   Comment,
+  AdminComment,
   CommunityCategory,
   CommunityComment,
   CommunityPostDetail,
@@ -216,6 +223,10 @@ function getPost(postId: string): PostDetail {
   if (!post) throw new ApiError("후기를 찾을 수 없어요.", 404);
   return post;
 }
+/** 후기 댓글 한 페이지의 일반 댓글 수. */
+export const COMMENT_PAGE_SIZE = 20;
+/** 서버가 삭제된 댓글 자리에 내려주는 문구 (CommentResponse.DELETED_CONTENT). 데모 모드에서만 쓴다. */
+const DELETED_COMMENT = "삭제된 댓글입니다";
 function pageOf<T>(items: T[], page: number, size: number): Page<T> {
   return {
     content: items.slice(page * size, (page + 1) * size),
@@ -680,31 +691,56 @@ export function createApi(mode: Mode) {
       });
     },
     async comments(postId: string, page = 0) {
-      return demo
-        ? readDemo()
-            .comments.filter((c) => c.postId === postId)
-            .sort(
-              (a, b) =>
-                parseDateTime(b.date).getTime() -
-                parseDateTime(a.date).getTime(),
-            )
-            .slice(page * 20, (page + 1) * 20)
-        : transport<Comment[]>(
-            `/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=20&sort=createdAt,desc`,
-          );
+      if (!demo)
+        return transport<Page<Comment>>(
+          `/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=${COMMENT_PAGE_SIZE}`,
+        );
+      // 서버와 같다: 일반 댓글 기준으로 오래된 순 페이지를 나누고, 대댓글은 replies에 붙인다.
+      const all = readDemo()
+        .comments.filter((c) => c.postId === postId)
+        .map((c) => ({
+          ...c,
+          parentId: c.parentId ?? null,
+          deleted: c.deleted ?? false,
+        }))
+        .sort(
+          (a, b) =>
+            parseDateTime(a.date).getTime() - parseDateTime(b.date).getTime() ||
+            a.id - b.id,
+        );
+      const view = (c: Comment): Comment =>
+        c.deleted
+          ? { ...c, member: null, content: DELETED_COMMENT, replies: [] }
+          : { ...c, replies: [] };
+      const roots = all
+        .filter((c) => c.parentId === null)
+        .map((root) => ({
+          ...view(root),
+          replies: all.filter((c) => c.parentId === root.id).map(view),
+        }));
+      return pageOf(roots, page, COMMENT_PAGE_SIZE);
     },
-    async createComment(postId: string, content: string) {
+    async adminComments(postId: string, page = 0) {
+      return transport<Page<AdminComment>>(
+        `/admin/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=20`,
+      );
+    },
+    /** parentId를 넣으면 대댓글이 된다. 대댓글에 단 답글은 서버가 그 부모 아래에 붙인다. */
+    async createComment(postId: string, content: string, parentId?: number) {
       if (!demo)
         return transport<Comment>(
           `/posts/${encodeURIComponent(postId)}/comments`,
           "POST",
-          { content },
+          { content, parentId: parentId ?? null },
         );
       return updateDemo((d) => {
         const author = demoAuthor();
-        const c = {
+        const parent = d.comments.find((c) => c.id === parentId);
+        const c: Comment = {
           id: Date.now(),
           postId,
+          parentId: parent ? (parent.parentId ?? parent.id) : null,
+          deleted: false,
           member: {
             id: author.id,
             nickname: author.nickname,
@@ -713,8 +749,9 @@ export function createApi(mode: Mode) {
           },
           content,
           date: now(),
+          replies: [],
         };
-        d.comments.unshift(c);
+        d.comments.push(c);
         return c;
       });
     },
@@ -729,10 +766,12 @@ export function createApi(mode: Mode) {
         return c;
       });
     },
+    /** 서버는 행을 지우지 않는다. 목록에는 "삭제된 댓글입니다"로 남고 대댓글도 그대로 보인다. */
     async deleteComment(commentId: number) {
       if (!demo) return transport<void>(`/comments/${commentId}`, "DELETE");
       updateDemo((d) => {
-        d.comments = d.comments.filter((c) => c.id !== commentId);
+        const c = d.comments.find((c) => c.id === commentId);
+        if (c) c.deleted = true;
       });
     },
     async communityPosts(
@@ -772,21 +811,26 @@ export function createApi(mode: Mode) {
         "DELETE",
       );
     },
+    /** 정렬은 서버가 오래된 순으로 고정한다. 페이지는 일반 댓글 기준이다. */
     async communityComments(postId: string, page = 0) {
       const params = new URLSearchParams({
         page: String(page),
         size: "20",
-        sort: "createdAt,asc",
       });
       return transport<Page<CommunityComment>>(
         `/community/posts/${encodeURIComponent(postId)}/comments?${params}`,
       );
     },
-    async createCommunityComment(postId: string, content: string) {
+    /** parentId를 넣으면 대댓글이 된다. 대댓글에 단 답글은 서버가 그 부모 아래에 붙인다. */
+    async createCommunityComment(
+      postId: string,
+      content: string,
+      parentId?: number,
+    ) {
       return transport<CommunityComment>(
         `/community/posts/${encodeURIComponent(postId)}/comments`,
         "POST",
-        { content },
+        { content, parentId: parentId ?? null },
       );
     },
     async updateCommunityComment(commentId: number, content: string) {
@@ -891,7 +935,7 @@ export function createApi(mode: Mode) {
       const {
         page = 0,
         size = 20,
-        sort = "beginDe,desc",
+        sort = "createdAt,desc",
         excludeClosed,
         includeDeleted,
         ...filters
@@ -916,18 +960,47 @@ export function createApi(mode: Mode) {
       );
     },
     /** [ADMIN] 행사 삭제. 행을 지우지 않고 삭제 시각만 남긴다. */
-    async deleteFestival(festivalId: string | number) {
-      return transport<void>(
-        `/admin/festivals/${encodeURIComponent(String(festivalId))}`,
-        "DELETE",
+    async adminDeleteContent(
+      targetType: DeletionTarget,
+      targetId: string | number,
+      reasonCode: AdminDeletionReason,
+      reasonDetail?: string,
+      inquiryId?: string,
+    ) {
+      return transport<void>("/admin/deletions", "POST", {
+        targetType,
+        targetId: String(targetId),
+        reasonCode,
+        reasonDetail: reasonDetail?.trim() || undefined,
+        inquiryId,
+      });
+    },
+    /** [ADMIN] 최신 조치를 조회한다. 이력 없음은 null이며 현재 삭제 상태와는 구분한다. */
+    async adminLatestDeletion(
+      targetType: DeletionTarget,
+      targetId: string | number,
+    ) {
+      const query = new URLSearchParams({
+        targetType,
+        targetId: String(targetId),
+      });
+      return transport<LatestDeletionHistory | null>(
+        `/admin/deletions/latest?${query}`,
       );
     },
-    /** [ADMIN] 삭제된 행사 복구. 회원 제보는 서버가 403으로 거부한다. */
-    async restoreFestival(festivalId: string | number) {
-      return transport<void>(
-        `/admin/festivals/${encodeURIComponent(String(festivalId))}/restore`,
-        "PATCH",
+    async myContents(comments: boolean, page = 0) {
+      return transport<Page<MyContentItem>>(
+        `/members/me/${comments ? "comments" : "posts"}?page=${page}&size=20`,
       );
+    },
+    async adminRestoreContent(
+      targetType: DeletionTarget,
+      targetId: string | number,
+    ) {
+      return transport<void>("/admin/deletions/restore", "POST", {
+        targetType,
+        targetId: String(targetId),
+      });
     },
     /**
      * [ADMIN] 운영 대시보드 집계.

@@ -1731,6 +1731,28 @@ select {
   border-color: #d3ddc7;
   box-shadow: var(--shadow);
 }
+.submission-row.is-deleted {
+  background: var(--cream);
+  color: var(--muted);
+}
+.submission-row.is-deleted h3,
+.deleted-event-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.submission-row.is-deleted > img {
+  filter: grayscale(1);
+}
+.festival-deletion-notice {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 20px 0;
+  color: var(--muted);
+}
+.festival-deletion-notice p {
+  overflow-wrap: anywhere;
+}
 .submission-row > img,
 .submission-row > .photo-fallback {
   width: 165px;
@@ -2227,6 +2249,30 @@ select {
 }
 .community-comments > h2 span {
   color: var(--orange);
+}
+/* 커뮤니티 대댓글: 부모 댓글 아래 들여쓰기 */
+.community-comment-replies {
+  margin-left: 32px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+.community-comment.deleted p {
+  color: var(--muted);
+  font-style: italic;
+}
+.community-comment-form.community-reply-form {
+  margin: 12px 0;
+}
+.community-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .community-comment-replies {
+    margin-left: 8px;
+    padding-left: 12px;
+  }
 }
 .community-comment-form {
   display: flex;
@@ -3684,6 +3730,38 @@ button.post-thumbnail {
 .comment-row .prose {
   font-size: 12px;
   line-height: 1.9;
+}
+/* 대댓글: 부모 댓글 아래 들여쓰기 */
+.comment-replies {
+  margin-left: 44px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+.comment-replies .comment-row {
+  padding: 16px 0;
+}
+.comment-replies .comment-row:last-child {
+  border-bottom: 0;
+}
+.comment-row.deleted .prose {
+  color: var(--muted);
+  font-style: italic;
+}
+.comment-row.deleted .avatar {
+  background: var(--line);
+}
+.reply-form {
+  margin: 12px 0 16px;
+}
+.reply-form .form-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .comment-replies {
+    margin-left: 12px;
+    padding-left: 12px;
+  }
 }
 .empty-comments {
   text-align: center;
@@ -6318,4 +6396,37 @@ textarea::placeholder {
 .festival-picker-thumb.photo-fallback svg {
   width: 22px;
   height: 22px;
+}
+/* 마이페이지 본인 작성 이력: 삭제된 콘텐츠도 이력으로 남긴다. */
+.my-content-table-wrap {
+  overflow-x: auto;
+}
+.my-content-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.my-content-table th,
+.my-content-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #e6ebe3;
+  text-align: left;
+}
+.my-content-title {
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+.my-content-deleted {
+  color: #737b72;
+  background: #f6f7f4;
+}
+.my-content-deleted .my-content-title {
+  text-decoration: line-through;
+}
+.my-content-pagination {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
 }

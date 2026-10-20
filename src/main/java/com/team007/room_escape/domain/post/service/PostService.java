@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.post.service;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.like.type.LikeSort;
@@ -37,6 +39,7 @@ public class PostService {
 	private final LikeRepository likeRepository;
 	private final ImageUrlResolver imageUrlResolver;
 	private final R2StorageService r2StorageService;
+	private final DeletionHistoryService deletionHistoryService;
 
 
 	@Transactional
@@ -164,17 +167,18 @@ public class PostService {
 	}
 
 	@Transactional
-	public void deletePost(UUID postId, UUID memberId, boolean isAdmin) {
-		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
+	public void deletePost(UUID postId, UUID memberId) {
+		Post post = postRepository.findForDeletion(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		boolean isAuthor = post.getMember().getId().equals(memberId);
 
-		if(!isAuthor && !isAdmin) {
+		if(!isAuthor) {
 			throw new BusinessException(PostExceptionCode.POST_FORBIDDEN);
 		}
 
 		post.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.POST, postId.toString(), memberId);
 	}
 
 	/** 교체된 옛 썸네일을 R2에서 지운다. */

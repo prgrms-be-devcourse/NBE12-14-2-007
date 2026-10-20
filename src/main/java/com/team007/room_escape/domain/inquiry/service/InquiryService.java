@@ -75,7 +75,8 @@ public class InquiryService {
 	/** 문의 수정. 답변이 달린 뒤에는 수정할 수 없다. */
 	@Transactional
 	public InquiryResponse.Detail update(UUID inquiryId, UUID memberId, InquiryRequest.Update request) {
-		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
+		Inquiry inquiry = inquiryRepository.findForProcessing(inquiryId)
+			.filter(found -> !found.isDeleted())
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
 		// 수정은 관리자도 불가.
@@ -99,7 +100,8 @@ public class InquiryService {
 	/** 문의 삭제. 작성자 본인과 관리자가 삭제할 수 있다. */
 	@Transactional
 	public void delete(UUID inquiryId, UUID memberId, boolean isAdmin) {
-		Inquiry inquiry = inquiryRepository.findByIdAndDeletedAtIsNull(inquiryId)
+		Inquiry inquiry = inquiryRepository.findForProcessing(inquiryId)
+			.filter(found -> !found.isDeleted())
 			.orElseThrow(() -> new BusinessException(InquiryExceptionCode.INQUIRY_NOT_FOUND));
 
 		if (!inquiry.isWrittenBy(memberId) && !isAdmin) {

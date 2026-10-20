@@ -1,6 +1,9 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionAction;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionActorType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
@@ -14,6 +17,30 @@ import java.util.List;
 import lombok.Builder;
 
 public class FestivalResponse {
+
+	@Builder
+	@Schema(name = "FestivalDeletionInfo", description = "현재 삭제 상태. 삭제되지 않았으면 null")
+	public record DeletionInfo(
+		@Schema(description = "행사 삭제 시각") LocalDateTime deletedAt,
+		@Schema(description = "이력에 기록된 삭제 주체. AUTHOR, ADMIN. 이력이 없으면 null") DeletionActorType type,
+		@Schema(description = "작성자에게 안내하는 삭제 사유") String reason
+	) {
+		public static DeletionInfo from(Festival festival, DeletionHistory latest) {
+			if (!festival.isDeleted()) {
+				return null;
+			}
+			if (latest == null || latest.getAction() != DeletionAction.DELETE) {
+				return new DeletionInfo(festival.getDeletedAt(), null, "삭제 사유를 확인할 수 없습니다.");
+			}
+			String reason = latest.getReason().getDescription();
+			if (latest.getReasonDetail() != null) {
+				reason += " — " + latest.getReasonDetail();
+			}
+			return new DeletionInfo(festival.getDeletedAt(),
+				latest.getActorType(),
+				reason);
+		}
+	}
 
 	private FestivalResponse() {
 	}
