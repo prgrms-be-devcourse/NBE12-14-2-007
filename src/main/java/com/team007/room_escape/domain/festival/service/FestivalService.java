@@ -22,12 +22,12 @@ import com.team007.room_escape.global.config.R2Properties;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +47,8 @@ public class FestivalService {
 
 	private static final int CULTURE_INFO_PAGE_SIZE = 9999;
 	private static final int LEGACY_IMAGE_BATCH_SIZE = 30;
+	private static final Duration DETAIL_FETCH_INTERVAL = Duration.ofMillis(200); // 429 Too Many Requests 방지
+	private static final int DETAIL_SAVE_BATCH_SIZE = 50; // 이 건수마다 중간 저장해서 진행 상황을 DB에서 바로 확인할 수 있게 한다
 
 	private final FestivalRepository festivalRepository;
 	private final FestivalAccuracyVoteRepository accuracyVoteRepository;
@@ -84,26 +86,45 @@ public class FestivalService {
 			return new FestivalResponse.SyncResponse(closedFestivals, List.of());
 		}
 
-		List<FestivalResponse.SyncedFestival> savedFestivals = List.of();
+		List<FestivalResponse.SyncedFestival> savedFestivals = new ArrayList<>();
 		// 원본 스냅샷은 이미 커밋돼서 여기서 실패해도 남는다.
 		try {
 			// 신규 건만 상세조회(가격 등 포함)까지 받아서 엔티티로 변환한다.
-			List<Festival> festivals = newSeqs.stream()
-				.map(festivalPublicApiClientV2::fetchDetail)
-				.filter(Objects::nonNull) // 상세 조회가 빈 값으로 오는 경우 방어
-				.map(this::toCultureInfoFestival) // 이미지 다운로드·업로드가 여기서 일어난다
-				.toList();
+			// 호출 사이에 간격을 둬서 429 Too Many Requests를 피하고, DETAIL_SAVE_BATCH_SIZE건마다 중간 저장한다
+			// (실패해도 그때까지 모은 건 안 날아가고, DB에서 진행 상황을 바로 확인할 수 있다).
+			List<Festival> buffer = new ArrayList<>();
+			int processed = 0;
+			for (String seq : newSeqs) {
+				CultureInfoDetailRow detail = festivalPublicApiClientV2.fetchDetail(seq);
+				if (detail != null) { // 상세 조회가 빈 값으로 오는 경우 방어
+					buffer.add(toCultureInfoFestival(detail)); // 이미지 다운로드·업로드가 여기서 일어난다
+				}
+				processed++;
 
-			// 이미지 처리 후 저장만 한 트랜잭션으로 묶는다.
-			festivalRepository.saveAll(festivals);
-			// 저장 후에 만들어야 id가 채워져 있다.
-			savedFestivals = festivals.stream().map(FestivalResponse.SyncedFestival::from).toList();
+				// 버퍼가 다 찼거나, 마지막 건이라 더 안 채워져도 남은 걸 지금 저장해야 할 때
+				if (buffer.size() >= DETAIL_SAVE_BATCH_SIZE || processed == newSeqs.size()) {
+					savedFestivals.addAll(saveBatch(buffer));
+					buffer.clear();
+					log.info("공공 행사 동기화 진행 중 ({}/{}건)", processed, newSeqs.size());
+				}
+
+				Thread.sleep(DETAIL_FETCH_INTERVAL);
+			}
 			log.info("공공 행사 {}건 저장 완료", savedFestivals.size());
 		} catch (Exception e) {
-			log.error("신규 행사 저장 실패, 원본 스냅샷은 반영됨", e);
+			log.error("신규 행사 저장 실패 (지금까지 {}건 저장됨), 원본 스냅샷은 반영됨", savedFestivals.size(), e);
 		}
 		migrateLegacyImages();
 		return new FestivalResponse.SyncResponse(closedFestivals, savedFestivals);
+	}
+
+	/** 이미지 처리까지 끝난 행사 묶음을 한 트랜잭션으로 저장한다. 저장 후에 id가 채워진 목록을 돌려준다. */
+	private List<FestivalResponse.SyncedFestival> saveBatch(List<Festival> batch) {
+		if (batch.isEmpty()) {
+			return List.of();
+		}
+		festivalRepository.saveAll(batch);
+		return batch.stream().map(FestivalResponse.SyncedFestival::from).toList();
 	}
 
 	/** 검색어와 선택 필터로 공공행사와 사용자 등록 행사를 통합 검색한다. */
