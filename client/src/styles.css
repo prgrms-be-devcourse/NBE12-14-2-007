@@ -3625,13 +3625,6 @@ button.post-thumbnail {
 .article-meta .text-button {
   font-size: 13px;
 }
-.article-image {
-  width: 100%;
-  aspect-ratio: 7 / 6;
-  object-fit: cover;
-  border-radius: 8px;
-  margin: 0 0 29px;
-}
 .review-article .prose {
   font-size: 15px;
   min-height: 140px;
