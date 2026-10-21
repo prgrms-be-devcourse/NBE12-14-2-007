@@ -225,9 +225,6 @@ test("review and reply deletion preserve threads and use common deletion APIs", 
   await page.route("**/api/v1/posts/review-42", (route) =>
     route.fulfill({ json: ok(post) }),
   );
-  await page.route("**/api/v1/posts/review-42/likes", (route) =>
-    route.fulfill({ json: ok(0) }),
-  );
   await page.route("**/api/v1/admin/posts/review-42/comments?*", (route) =>
     route.fulfill({
       json: ok(
@@ -464,9 +461,6 @@ for (const targetType of [
       date: post.date,
       createdAt: post.date,
     };
-    await page.route("**/api/v1/posts/review-42/likes", (route) =>
-      route.fulfill({ json: ok(0) }),
-    );
     await page.route("**/api/v1/posts/review-42", (route) =>
       route.fulfill({ json: ok(post) }),
     );

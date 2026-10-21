@@ -112,10 +112,9 @@ async function setup(page: Page) {
         thumbnail: null,
         content: "<p>본문</p>",
         date: "2026-09-30T10:00:00",
+        likeCount: 0,
         likedByMe: false,
       });
-    if (url.pathname === `/api/v1/posts/${postId}/likes`)
-      return respond(route, 0);
     if (
       url.pathname === `/api/v1/posts/${postId}/comments` &&
       method === "GET"

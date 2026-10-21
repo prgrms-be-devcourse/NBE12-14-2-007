@@ -185,9 +185,10 @@ function ReviewDetail({ id }: { id: string }) {
     error,
     reload,
   } = useLoad(() => api.post(id), [api, id]);
-  const likes = useLoad(() => api.likeCount(id), [api, id]);
   // 누르기 전에는 서버가 알려준 상태를 쓰고, 누른 뒤에는 그 결과를 쓴다.
   const [likedOverride, setLiked] = useState<boolean | null>(null);
+  const [likeCountOverride, setLikeCount] = useState<number | null>(null);
+  const likeCount = likeCountOverride ?? post?.likeCount ?? 0;
   const liked =
     likedOverride ??
     (mode === "preview"
@@ -205,12 +206,16 @@ function ReviewDetail({ id }: { id: string }) {
     setActionError("");
     try {
       const result = await api.like(id, remove);
-      likes.setData(result.likeCount);
+      setLikeCount(result.likeCount);
       setLiked(!remove);
     } catch (e) {
       if (e instanceof ApiError && e.code === "LIKE000") {
         setLiked(true);
-        likes.reload();
+        // 다른 곳에서 이미 누른 경우라 지금 개수를 다시 받아 온다
+        api
+          .post(id)
+          .then((latest) => setLikeCount(latest.likeCount ?? null))
+          .catch(() => undefined);
         toast("이미 좋아요를 남긴 후기예요. 다시 누르면 취소할 수 있어요.");
       } else setActionError(errorText(e));
     } finally {
@@ -272,14 +277,14 @@ function ReviewDetail({ id }: { id: string }) {
         <RichTextContent content={post.content} />
         <div className="review-reactions">
           <button
-            disabled={busy || likes.loading}
+            disabled={busy}
             className={`btn ${liked ? "liked" : "secondary"}`}
             onClick={() => like(liked)}
             aria-pressed={liked}
           >
             <ThumbsUp size={18} />
             {liked ? "도움이 됐어요" : "도움돼요"}
-            {likes.data !== null && <strong>{likes.data}</strong>}
+            <strong>{likeCount}</strong>
           </button>
           {!own && (
             <ReportButton
@@ -297,9 +302,6 @@ function ReviewDetail({ id }: { id: string }) {
             </ReportButton>
           )}
         </div>
-        {likes.error && (
-          <ErrorState message={likes.error} retry={likes.reload} />
-        )}
         <FormError message={actionError} />
       </article>
       <Comments postId={id} />
