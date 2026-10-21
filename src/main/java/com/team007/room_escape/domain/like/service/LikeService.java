@@ -83,7 +83,7 @@ public class LikeService {
 
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
-		Festival festival = festivalRepository.findById(festivalId)
+		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
 		if (festival.getMember() != null && festival.getMember().getId().equals(memberId)) {
@@ -111,7 +111,7 @@ public class LikeService {
 	@Transactional(readOnly = true)
 	public Long getFestivalLikeCount(Long festivalId) {
 
-		if(!festivalRepository.existsById(festivalId)) {
+		if(!festivalRepository.existsByIdAndDeletedAtIsNull(festivalId)) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
 		}
 
