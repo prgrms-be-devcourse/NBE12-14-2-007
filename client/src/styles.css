@@ -2025,7 +2025,6 @@ select {
 .rich-text-content > * + * {
   margin-top: 12px;
 }
-.community-page,
 .community-detail-page,
 .community-form-page {
   max-width: 1050px;
