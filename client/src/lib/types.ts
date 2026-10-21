@@ -183,7 +183,7 @@ export interface PostSummary {
   title: string;
   thumbnail: string | null;
   date: string;
-  // 목록 응답에만 있다. 상세·관리자 목록 응답에는 없다.
+  // 목록·상세 응답에 있다. 관리자 목록 응답에는 없다.
   likeCount?: number;
 }
 export interface PostDetail extends PostSummary {

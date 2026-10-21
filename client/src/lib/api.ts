@@ -635,7 +635,7 @@ export function createApi(mode: Mode) {
     },
     async post(postId: string) {
       return demo
-        ? getPost(postId)
+        ? { ...getPost(postId), likeCount: readDemo().likes[postId] || 0 }
         : transport<PostDetail>(`/posts/${encodeURIComponent(postId)}`);
     },
     async createPost(festivalId: number, input: PostInput) {
@@ -842,11 +842,6 @@ export function createApi(mode: Mode) {
     },
     async deleteCommunityComment(commentId: number) {
       return transport<void>(`/community/comments/${commentId}`, "DELETE");
-    },
-    async likeCount(postId: string) {
-      return demo
-        ? readDemo().likes[postId] || 0
-        : transport<number>(`/posts/${encodeURIComponent(postId)}/likes`);
     },
     async like(postId: string, remove = false) {
       if (!demo)

@@ -55,9 +55,8 @@ public class LikeService {
 	}
 
 
-	@Transactional(readOnly = true)
-	public Long getPostLikeCount(UUID postId) {
-
+	/** 좋아요를 누르거나 취소한 뒤 바뀐 개수를 돌려주려고 다시 읽는다 */
+	private long getPostLikeCount(UUID postId) {
 		return postRepository.findLikeCountById(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 	}

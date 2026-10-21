@@ -89,6 +89,7 @@ public class PostResponse {
 		String content,
 		String thumbnail,
 		LocalDateTime date,
+		long likeCount,
 		boolean likedByMe
 	) {
 
@@ -102,6 +103,7 @@ public class PostResponse {
 				.content(post.getContent())
 				.thumbnail(imageUrlResolver.resolve(post.getThumbnail()))
 				.date(post.getUpdatedAt())
+				.likeCount(post.getLikeCount())
 				.likedByMe(likedByMe)
 				.build();
 		}
