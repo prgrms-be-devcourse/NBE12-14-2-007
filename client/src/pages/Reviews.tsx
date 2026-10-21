@@ -47,9 +47,8 @@ export function Reviews() {
   return (
     <div className="container page-space">
       <PageTitle
-        eyebrow="MOMENTS WE SHARE"
         title="행사 후기"
-        description="직접 경험한 즐거움을 나누고, 다음 나들이의 힌트를 발견해요."
+        description="행사에 다녀온 회원들이 남긴 후기예요."
       />
       <FestivalPosts />
     </div>
@@ -739,9 +738,8 @@ export function ReviewFormPage() {
         돌아가기
       </Link>
       <PageTitle
-        eyebrow="YOUR MOMENT MATTERS"
         title={postId ? "후기 수정하기" : "어떤 하루를 보내셨나요?"}
-        description="직접 경험한 이야기가 다른 이웃에게 좋은 길잡이가 돼요."
+        description="다녀온 행사에서 좋았던 점과 아쉬운 점을 적어 주세요."
       />
       {authLoading ? (
         <Loading />

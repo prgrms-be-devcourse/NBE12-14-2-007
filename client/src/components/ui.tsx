@@ -21,7 +21,13 @@ import {
   X,
 } from "lucide-react";
 import { useApp } from "../lib/context";
-import { errorText, imageUrl, period, regions } from "../lib/format";
+import {
+  errorText,
+  eventStatus,
+  imageUrl,
+  period,
+  regions,
+} from "../lib/format";
 import type { EventView, WeatherCondition } from "../lib/types";
 import { TrustGradeBadge } from "./TrustGradeBadge";
 
@@ -197,6 +203,10 @@ export function EventCard({
   const path = event.submissionId
     ? `/submissions/${event.submissionId}`
     : `/events/${event.festivalId}`;
+  const status =
+    event.status === "CLOSED"
+      ? { label: "종료", tone: "closed" as const }
+      : eventStatus(event.beginDe, event.endDe);
   return (
     <Link to={path} className={`event-card ${list ? "list-card" : ""}`}>
       <div className="event-photo">
@@ -209,13 +219,11 @@ export function EventCard({
       </div>
       <div className="event-copy">
         <div className="card-eyebrow">
-          <span
-            className={`source-badge ${event.source === "PUBLIC" ? "public" : "member"}`}
-          >
+          <span className={`event-status ${status.tone}`}>{status.label}</span>
+          <span className="card-source">
             {event.source === "PUBLIC" ? "공공데이터" : "회원 제보"}
+            {event.preview && <span className="example-label">예시</span>}
           </span>
-          {event.status === "CLOSED" && <Badge tone="gray">종료</Badge>}
-          {event.preview && <span className="example-label">예시</span>}
         </div>
         <h3>{event.title}</h3>
         {event.submitter && (
@@ -228,11 +236,15 @@ export function EventCard({
           <MapPin size={14} />
           {regions[event.region] || event.regionDetail || "지역 미정"}
         </p>
-        <p>
-          <CalendarDays size={14} />
-          {period(event.beginDe, event.endDe)}
-        </p>
         <div className="card-bottom">
+          <span className="card-date">
+            <CalendarDays size={15} />
+            {period(event.beginDe, event.endDe)
+              .split(" — ")
+              .map((part, i) => (
+                <span key={i}>{i ? `— ${part}` : part}</span>
+              ))}
+          </span>
           {event.source === "MEMBER" && event.accuracyVote && (
             <span className="card-votes">
               <span
@@ -340,7 +352,7 @@ export function LoginRequired() {
           className="btn primary"
           to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}
         >
-          로그인 <ArrowRight size={16} />
+          로그인
         </Link>
       }
     />

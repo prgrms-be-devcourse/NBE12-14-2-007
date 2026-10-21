@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { ChevronDown, Compass, Menu, Plus, UserRound, X } from "lucide-react";
+import { ChevronDown, Plus, UserRound } from "lucide-react";
 import { useApp } from "../lib/context";
 import { Logo } from "./ui";
 
@@ -23,7 +23,7 @@ export function Layout() {
             <Logo />
           </Link>
           <nav
-            className={`main-nav ${open ? "open" : ""}`}
+            className={`main-nav u286-mn ${open ? "open" : ""}`}
             aria-label="메인 메뉴"
           >
             <NavLink to="/" end>
@@ -49,14 +49,22 @@ export function Layout() {
               <span>{member ? "마이페이지" : "로그인"}</span>
               <ChevronDown size={12} />
             </Link>
-            <button
-              className="icon-btn mobile-menu"
-              aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
-              aria-expanded={open}
-              onClick={() => setOpen(!open)}
-            >
-              {open ? <X /> : <Menu />}
-            </button>
+            {/* Lucian UX/UI Prompt #286 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#286 */}
+            <span className="ux">
+              <button
+                type="button"
+                className="u286-bg"
+                aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
+                aria-expanded={open}
+                onClick={() => setOpen(!open)}
+              >
+                <span aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </button>
+            </span>
           </div>
         </div>
       </header>
@@ -70,11 +78,7 @@ export function Layout() {
               <Link to="/">
                 <Logo />
               </Link>
-              <p>
-                일상 밖, 새로운 즐거움.
-                <br />
-                발견하고, 함께하고, 기록해요.
-              </p>
+              <p>지역 문화행사를 찾고, 다녀온 후기를 나누는 곳</p>
             </div>
             <div className="footer-links">
               <Link to="/explore">지역 문화행사</Link>
@@ -84,18 +88,9 @@ export function Layout() {
               <Link to="/mypage?tab=inquiries">문의하기</Link>
               <Link to="/admin">시스템 관리자</Link>
             </div>
-            <div className="footer-message">
-              <Compass size={24} />
-              <span>
-                우리의 다음 즐거움은
-                <br />
-                <strong>생각보다 가까이에.</strong>
-              </span>
-            </div>
           </div>
           <div className="footer-bottom">
-            <span>© 2026 roomescape. 함께 만드는 즐거운 일상.</span>
-            <span>일상에 즐거움을 더하다</span>
+            <span>© 2026 roomescape</span>
           </div>
         </div>
       </footer>

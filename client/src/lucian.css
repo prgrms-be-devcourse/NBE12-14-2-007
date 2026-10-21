@@ -1,0 +1,224 @@
+/* Lucian UX/UI Prompt theme tokens · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/
+   Lucian 요소가 읽는 --ux-* 토큰을 방구석탈출 색에 연결한다.
+   서비스에 다크 테마가 없어 라이트 값만 정의한다. */
+:root {
+  --ux-page: #ffffff;
+  --ux-surface: #ffffff;
+  --ux-surface-2: var(--sage);
+  --ux-ink: var(--ink);
+  --ux-ink-2: var(--text);
+  --ux-ink-3: var(--muted);
+  --ux-line: #21392d1a;
+  --ux-accent: var(--orange);
+  --ux-shadow-strong: #21392d4d;
+  --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ux-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 요소 공통 베이스: 루트에 .ux 클래스를 붙인다 */
+.ux,
+.ux *,
+.ux *::before,
+.ux *::after {
+  box-sizing: border-box;
+}
+.ux {
+  font-family: inherit;
+  color: var(--ux-ink);
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+:where(.ux) :is(button, input, textarea, select) {
+  font: inherit;
+  color: inherit;
+}
+:where(.ux) button {
+  cursor: pointer;
+}
+.ux :focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ux,
+  .ux *,
+  .ux *::before,
+  .ux *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Lucian UX/UI Prompt #039 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#039
+   미끄러지는 알약 탭: 탭 줄만 가져와 행사 종류 필터로 쓴다.
+   항목이 많아 고정 크기 대신 가로 스크롤 줄로 바꿨다.
+   튀어 오르는 곡선은 서비스 화면에 맞게 감속 곡선으로 바꿨다. */
+.u039 {
+  position: relative;
+  max-width: 100%;
+}
+.u039-tabs {
+  position: relative;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--ux-surface);
+  box-shadow: 0 0 0 1px var(--ux-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.u039-tabs::-webkit-scrollbar {
+  display: none;
+}
+.u039-pill {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: var(--w, 80px);
+  border-radius: 999px;
+  background: var(--ux-ink);
+  transform: translateX(var(--x, 5px));
+  box-shadow: 0 8px 16px -10px var(--ux-shadow-strong);
+  transition:
+    transform 0.5s var(--ux-spring),
+    width 0.5s var(--ux-spring);
+}
+.u039-tab {
+  position: relative;
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 42px;
+  border: 0;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  font-weight: 680;
+  color: var(--ux-ink-2);
+  white-space: nowrap;
+  transition: color 0.35s var(--ux-ease);
+}
+.u039-tab[aria-pressed="true"] {
+  color: var(--ux-page);
+}
+.u039-tab:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: -2px;
+}
+
+/* Lucian UX/UI Prompt #286 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#286
+   한 단계씩 들어가는 모바일 하위 메뉴: 햄버거→X 전환, 위에서 펼쳐지는 메뉴,
+   차례로 떠오르는 항목을 가져왔다. 하위 메뉴가 없어 단계 이동은 뺐다. */
+.u286-bg {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ux-surface-2);
+  display: none;
+  place-items: center;
+  cursor: pointer;
+}
+.u286-bg:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 2px;
+}
+.u286-bg span {
+  position: relative;
+  width: 16px;
+  height: 12px;
+}
+.u286-bg i {
+  position: absolute;
+  left: 0;
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ux-ink);
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s,
+    top 0.35s;
+}
+.u286-bg i:nth-child(1) {
+  top: 0;
+}
+.u286-bg i:nth-child(2) {
+  top: 5px;
+}
+.u286-bg i:nth-child(3) {
+  top: 10px;
+}
+.u286-bg[aria-expanded="true"] i:nth-child(1) {
+  top: 5px;
+  transform: rotate(45deg);
+}
+.u286-bg[aria-expanded="true"] i:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.2);
+}
+.u286-bg[aria-expanded="true"] i:nth-child(3) {
+  top: 5px;
+  transform: rotate(-45deg);
+}
+@media (max-width: 560px) {
+  .u286-bg {
+    display: grid;
+  }
+  .main-nav.u286-mn {
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+    clip-path: inset(0 0 100% 0);
+    transition:
+      clip-path 0.45s cubic-bezier(0.7, 0, 0.2, 1),
+      visibility 0s 0.45s;
+  }
+  .main-nav.u286-mn.open {
+    visibility: visible;
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 0.45s cubic-bezier(0.7, 0, 0.2, 1);
+  }
+  .u286-mn > a {
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 0.3s,
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      background 0.2s;
+  }
+  .u286-mn.open > a {
+    opacity: 1;
+    transform: none;
+  }
+  .u286-mn.open > a:nth-child(1) {
+    transition-delay: 0.05s;
+  }
+  .u286-mn.open > a:nth-child(2) {
+    transition-delay: 0.09s;
+  }
+  .u286-mn.open > a:nth-child(3) {
+    transition-delay: 0.13s;
+  }
+  .u286-mn.open > a:nth-child(4) {
+    transition-delay: 0.17s;
+  }
+  .u286-mn.open > a:nth-child(5) {
+    transition-delay: 0.21s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .main-nav.u286-mn,
+  .u286-mn > a {
+    transition: none !important;
+  }
+}

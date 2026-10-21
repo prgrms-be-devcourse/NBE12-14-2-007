@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useApp } from "../lib/context";
 import { errorText } from "../lib/format";
 import { Field, FormError, Logo, SubmitButton } from "../components/ui";
@@ -62,19 +62,6 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
       <div className="auth-visual">
         <img src="/images/garden.jpg" alt="가을 정원" />
         <div />
-        <section>
-          <span>EVERYDAY, A LITTLE MORE SPECIAL</span>
-          <h2>
-            우리의 다음 즐거움은
-            <br />
-            생각보다 가까이에.
-          </h2>
-          <p>
-            새로운 발견과 소중한 순간을
-            <br />
-            방구석탈출에서 함께 나눠요.
-          </p>
-        </section>
       </div>
       <div className="auth-panel">
         <Link className="back-link" to="/">
@@ -82,11 +69,11 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           홈으로
         </Link>
         <Logo />
-        <h1>{signup ? "새로운 즐거움에 함께해요" : "다시 만나 반가워요"}</h1>
+        <h1>{signup ? "회원가입" : "로그인"}</h1>
         <p className="muted">
           {signup
-            ? "일상을 특별하게 만드는 첫걸음, 회원가입."
-            : "로그인하고 나만의 즐거운 순간을 기록해요."}
+            ? "가입하면 후기와 제보, 커뮤니티 글을 쓸 수 있어요."
+            : "후기와 제보, 커뮤니티 글은 로그인 후 쓸 수 있어요."}
         </p>
         <form onSubmit={submit}>
           <Field label="이메일" required>
@@ -179,7 +166,6 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
             }
           >
             {signup ? "회원가입" : "로그인"}
-            <ArrowRight size={17} />
           </SubmitButton>
         </form>
         <p className="auth-switch">
@@ -189,10 +175,6 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           >
             {signup ? "로그인" : "회원가입"}
           </Link>
-        </p>
-        <p className="auth-foot">
-          <ShieldCheck size={15} />
-          당신의 새로운 일상을 응원해요.
         </p>
       </div>
     </div>

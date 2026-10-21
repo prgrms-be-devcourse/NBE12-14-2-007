@@ -2040,18 +2040,6 @@ select {
   padding-bottom: 18px;
   border-bottom: 1px solid var(--line);
 }
-.community-categories button {
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: #f4f5f1;
-  color: #566250;
-  font-size: 14px;
-  font-weight: 650;
-}
-.community-categories button.active {
-  background: var(--orange);
-  color: #fff;
-}
 .community-search {
   display: flex;
   align-items: center;

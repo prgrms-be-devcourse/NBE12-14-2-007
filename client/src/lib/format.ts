@@ -106,6 +106,34 @@ export function eventState(start: string, end: string) {
       ? "개최 예정"
       : "진행 중";
 }
+export type EventStatusTone = "live" | "ending" | "soon" | "closed";
+
+/** 카드에 붙일 진행 상태. 날짜만 비교해 시차로 하루 어긋나지 않게 한다. */
+export function eventStatus(
+  start: string,
+  end: string,
+  now = new Date(),
+): { label: string; tone: EventStatusTone } {
+  const day = (value: string | Date) => {
+    const d = new Date(value);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+  const today = day(now);
+  const DAY = 86_400_000;
+  const startDay = day(start);
+  const endDay = day(end);
+  if (Number.isNaN(startDay) || Number.isNaN(endDay))
+    return { label: "일정 확인", tone: "soon" };
+  if (endDay < today) return { label: "종료", tone: "closed" };
+  if (startDay > today) {
+    const left = Math.round((startDay - today) / DAY);
+    return { label: left === 1 ? "내일 시작" : `D-${left}`, tone: "soon" };
+  }
+  const left = Math.round((endDay - today) / DAY);
+  if (left === 0) return { label: "오늘 종료", tone: "ending" };
+  if (left <= 3) return { label: `${left}일 후 종료`, tone: "ending" };
+  return { label: "진행 중", tone: "live" };
+}
 export function safeUrl(value?: string | null): string | undefined {
   if (!value) return undefined;
   try {

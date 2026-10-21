@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  ArrowRight,
   CalendarDays,
   Grid2X2,
   Landmark,
@@ -13,6 +12,7 @@ import { useApp, useLoad } from "../lib/context";
 import { categories } from "../lib/format";
 import { selectedRegion } from "../lib/regions";
 import { RegionSelects } from "../components/RegionSelects";
+import { PillTabs } from "../components/PillTabs";
 import {
   Empty,
   ErrorState,
@@ -91,15 +91,12 @@ export function Explore() {
   return (
     <div className="container page-space">
       <PageTitle
-        eyebrow="ESCAPE THE ORDINARY"
-        title="오늘, 어디로 탈출할까요?"
-        description="축제부터 공연, 전시까지! 방구석을 나설 이유를 찾아보세요."
+        title="지역 문화행사"
+        description="지역, 날짜, 종류로 축제와 공연, 전시를 찾아보세요."
       />
       <div className="source-note">
         <Landmark size={18} />
-        <span>
-          공공데이터와 이웃의 제보를 모아, 놓치기 아까운 행사를 한곳에!
-        </span>
+        <span>공공데이터와 회원 제보를 함께 보여줘요.</span>
         {mode === "preview" && (
           <span className="example-label">현재 화면은 예시입니다</span>
         )}
@@ -157,17 +154,12 @@ export function Explore() {
       </form>
 
       <div className="filter-bottom">
-        <div className="category-tabs" role="group" aria-label="행사 종류">
-          {categories.map((item) => (
-            <button
-              key={item}
-              className={category === item ? "active" : ""}
-              onClick={() => setFilter("category", item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+        <PillTabs
+          label="행사 종류"
+          items={categories.map((item) => ({ value: item, label: item }))}
+          value={category}
+          onChange={(item) => setFilter("category", item)}
+        />
         <button
           className="text-button muted"
           onClick={() => {
@@ -256,7 +248,7 @@ export function Explore() {
       ) : (
         <Empty
           title="조건에 맞는 행사가 없어요"
-          description="날짜나 지역을 바꾸면 새로운 행사를 만날 수 있어요."
+          description="날짜나 지역, 종류를 바꿔 다시 찾아보세요."
           action={
             <button
               className="btn secondary"
@@ -283,10 +275,7 @@ export function Explore() {
         <span>
           찾던 행사가 보이지 않나요? 알고 있는 행사를 직접 알려주세요.
         </span>
-        <Link to="/submissions/new">
-          행사 제보하기
-          <ArrowRight size={16} />
-        </Link>
+        <Link to="/submissions/new">행사 제보하기</Link>
       </div>
     </div>
   );

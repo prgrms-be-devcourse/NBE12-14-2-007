@@ -18,6 +18,7 @@ import {
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
 import { AdminDeletionModal } from "../components/AdminDeletionModal";
 import { ReportButton } from "../components/ReportButton";
+import { PillTabs } from "../components/PillTabs";
 import { isRichTextEmpty, RichTextContent } from "../components/RichText";
 import {
   Empty,
@@ -93,9 +94,8 @@ export function CommunityPage() {
   return (
     <div className="container page-space community-page">
       <PageTitle
-        eyebrow="COMMUNITY"
         title="커뮤니티"
-        description="밖으로 나갈 이유와 즐거운 이야기를 이웃과 나눠보세요."
+        description="자유 이야기, 행사 소식, 맛집 추천을 나눠요."
         action={
           member ? (
             <Link className="btn primary" to="/community/new">
@@ -105,22 +105,19 @@ export function CommunityPage() {
         }
       />
 
-      <nav className="community-categories" aria-label="커뮤니티 카테고리">
-        {[
-          ["", "전체"],
-          ["FREE", "자유"],
-          ["EVENT", "행사"],
-          ["RESTAURANT", "맛집"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            className={category === value ? "active" : ""}
-            onClick={() => changeFilter(value as CommunityCategory | "")}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="community-categories">
+        <PillTabs
+          label="커뮤니티 카테고리"
+          items={[
+            { value: "", label: "전체" },
+            { value: "FREE", label: "자유" },
+            { value: "EVENT", label: "행사" },
+            { value: "RESTAURANT", label: "맛집" },
+          ]}
+          value={category}
+          onChange={(value) => changeFilter(value as CommunityCategory | "")}
+        />
+      </div>
 
       <form className="community-search" onSubmit={submitSearch}>
         <Search size={18} />
@@ -140,7 +137,7 @@ export function CommunityPage() {
       {result.data && result.data.content.length === 0 && (
         <Empty
           title="아직 등록된 이야기가 없어요"
-          description="첫 번째 탈출 이야기를 남겨보세요."
+          description="첫 글을 남겨 보세요."
           action={
             member ? (
               <Link className="btn primary small" to="/community/new">
@@ -672,9 +669,8 @@ export function CommunityFormPage() {
   return (
     <div className="container page-space community-form-page">
       <PageTitle
-        eyebrow="COMMUNITY"
         title={postId ? "이야기 수정" : "새 이야기 쓰기"}
-        description="이웃과 나누고 싶은 즐거움을 편하게 적어주세요."
+        description="카테고리를 고르고 내용을 적어 주세요."
       />
       <form className="community-form" onSubmit={submit}>
         <Field label="카테고리" required>

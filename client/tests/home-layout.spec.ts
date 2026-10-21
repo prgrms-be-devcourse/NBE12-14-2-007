@@ -11,7 +11,7 @@ test("search fields remain readable across the flex regression breakpoints", asy
   ]) {
     await page.setViewportSize({ width, height: 1000 });
     const fields = await page
-      .locator(".discovery-search input, .discovery-search select")
+      .locator(".hero-search input, .hero-search select")
       .evaluateAll((labels) =>
         labels.map((input) => {
           return {

@@ -23,7 +23,7 @@ import { ApiError } from "../lib/api";
 import { useApp, useLoad } from "../lib/context";
 import {
   errorText,
-  eventState,
+  eventStatus,
   imageUrl,
   period,
   regions,
@@ -158,6 +158,10 @@ function EventDetail({ event }: { event: EventView }) {
   const isAdminDeletion = member?.role === "ROLE_ADMIN" && !isAuthor;
   const [copied, setCopied] = useState(false);
   const externalUrl = safeUrl(event.referenceUrl);
+  const status =
+    event.status === "CLOSED"
+      ? { label: "종료", tone: "closed" as const }
+      : eventStatus(event.beginDe, event.endDe);
   const inaccurateVoteCount = event.accuracyVote?.inaccurateCount ?? 0;
   const unverified = inaccurateVoteCount >= INACCURATE_THUMBNAIL_THRESHOLD;
   const heroUrl = imageUrl(event.imgUrl) ?? FESTIVAL_DEFAULT_IMAGE;
@@ -286,8 +290,8 @@ function EventDetail({ event }: { event: EventView }) {
                 {event.source === "PUBLIC" ? "공공데이터" : "회원 제보"}
               </span>
               <Badge tone="gray">{event.category || "행사"}</Badge>
-              <span className="state-label">
-                {eventState(event.beginDe, event.endDe)}
+              <span className={`event-status ${status.tone}`}>
+                {status.label}
               </span>
             </div>
             <h1>{event.title}</h1>
@@ -330,57 +334,7 @@ function EventDetail({ event }: { event: EventView }) {
             {tab === "about" ? (
               <>
                 <section className="detail-section">
-                  <h2>요약 정보</h2>
-                  <div className="detail-summary">
-                    <div>
-                      <CalendarDays size={20} />
-                      <span>
-                        <small>일정</small>
-                        {period(event.beginDe, event.endDe)}
-                      </span>
-                    </div>
-                    <div>
-                      <MapPin size={20} />
-                      <span>
-                        <small>장소</small>
-                        {event.regionDetail ||
-                          regions[event.region] ||
-                          "장소 안내 확인"}
-                      </span>
-                    </div>
-                    <div>
-                      <Ticket size={20} />
-                      <span>
-                        <small>참가 비용</small>
-                        {event.partcptExpnInfo || "별도 안내 없음"}
-                      </span>
-                    </div>
-                  </div>
-                </section>
-                <section className="detail-section detail-description">
-                  <RichTextContent
-                    content={
-                      event.festivalContent ||
-                      "아직 등록된 상세 소개가 없어요. 행사 참고 링크에서 자세한 내용을 확인해 주세요."
-                    }
-                  />
-                  {externalUrl ? (
-                    <a
-                      className="btn primary"
-                      href={externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      행사 안내 페이지 보기
-                    </a>
-                  ) : (
-                    <p className="aside-note">
-                      등록된 행사 참고 링크가 없어요.
-                    </p>
-                  )}
-                </section>
-                <section className="detail-section">
-                  <h2>상세 정보</h2>
+                  <h2 className="sr-only">행사 정보</h2>
                   <dl className="event-info">
                     <div>
                       <dt>
@@ -444,6 +398,29 @@ function EventDetail({ event }: { event: EventView }) {
                       </div>
                     )}
                   </dl>
+                </section>
+                <section className="detail-section detail-description">
+                  <h2>행사 소개</h2>
+                  <RichTextContent
+                    content={
+                      event.festivalContent ||
+                      "아직 등록된 상세 소개가 없어요. 행사 참고 링크에서 자세한 내용을 확인해 주세요."
+                    }
+                  />
+                  {externalUrl ? (
+                    <a
+                      className="btn primary"
+                      href={externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      행사 안내 페이지 보기
+                    </a>
+                  ) : (
+                    <p className="aside-note">
+                      등록된 행사 참고 링크가 없어요.
+                    </p>
+                  )}
                 </section>
                 <div className="detail-source">
                   <Landmark size={19} />

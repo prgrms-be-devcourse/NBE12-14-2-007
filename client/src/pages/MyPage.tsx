@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  ArrowRight,
   Check,
   ChevronRight,
   ClipboardList,
@@ -41,9 +40,8 @@ export function MyPage() {
   return (
     <div className="container page-space">
       <PageTitle
-        eyebrow="MY LITTLE JOURNEY"
         title="마이페이지"
-        description="내가 나눈 소식과 이야기를 한곳에서 확인해요."
+        description="내 정보, 제보, 문의 내역을 관리해요."
       />
       {authLoading ? (
         <Loading />
@@ -242,7 +240,6 @@ function Profile() {
           onClick={() => setPasswordOpen(true)}
         >
           비밀번호 변경
-          <ArrowRight size={15} />
         </button>
       </div>
       {/* 관리자 계정은 서버가 탈퇴를 막으므로 버튼을 아예 보여주지 않는다. */}
@@ -260,7 +257,6 @@ function Profile() {
             onClick={() => setWithdrawOpen(true)}
           >
             탈퇴하기
-            <ArrowRight size={15} />
           </button>
         </div>
       )}
