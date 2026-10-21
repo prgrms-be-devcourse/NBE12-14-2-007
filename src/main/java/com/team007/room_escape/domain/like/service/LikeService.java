@@ -84,7 +84,7 @@ public class LikeService {
 
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
-		Festival festival = festivalRepository.findById(festivalId)
+		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
 		if (festival.getMember() != null && festival.getMember().getId().equals(memberId)) {
