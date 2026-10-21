@@ -8,15 +8,14 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.team007.room_escape.domain.festival.dto.FestivalResponse;
 import com.team007.room_escape.domain.festival.dto.FestivalSearchRequest;
-import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClient;
-import com.team007.room_escape.domain.festival.infra.dto.FestivalApiResult;
-import com.team007.room_escape.domain.festival.infra.dto.FestivalApiRow;
+import com.team007.room_escape.domain.festival.infra.client.FestivalPublicApiClientV2;
+import com.team007.room_escape.domain.festival.infra.dto.CultureInfoDetailRow;
+import com.team007.room_escape.domain.festival.infra.dto.CultureInfoPeriodRow;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
@@ -32,6 +31,7 @@ import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +58,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * FestivalService.syncPublicFestivals()의 배치 동기화 로직을 검증
- * 외부 API(FestivalPublicApiClient)와 DB(FestivalRepository 등)는 Mockito로 목 처리해서
+ * 외부 API(FestivalPublicApiClientV2)와 DB(FestivalRepository 등)는 Mockito로 목 처리해서
  * 실제 네트워크 호출/DB 접근 없이 순수 로직만 확인
  */
 @ExtendWith(MockitoExtension.class)
@@ -66,6 +66,8 @@ class FestivalServiceTest {
 
 	private static final int CURRENT_YEAR = LocalDate.now().getYear();
 	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
+	/** FestivalService.CULTURE_INFO_PAGE_SIZE와 같은 값. private라 여기 따로 맞춰둔다. */
+	private static final int PAGE_SIZE = 9999;
 
 	@Mock
 	private FestivalRepository festivalRepository;
@@ -80,7 +82,7 @@ class FestivalServiceTest {
 	private PublicFestivalSourceRepository publicFestivalSourceRepository;
 
 	@Mock
-	private FestivalPublicApiClient festivalPublicApiClient;
+	private FestivalPublicApiClientV2 festivalPublicApiClientV2;
 
 	@Mock
 	private ObjectMapper objectMapper;
@@ -96,142 +98,128 @@ class FestivalServiceTest {
 	@InjectMocks
 	private FestivalService festivalService;
 
-	/** 이미지 이관은 이 테스트의 관심사가 아니라서 원본 URL을 그대로 돌려준다. */
+	/** 이미지 이관은 이 테스트의 관심사가 아니라서 원본 URL을 그대로 돌려준다. 신규 판별 기본값은 "전부 신규". */
 	@BeforeEach
-	void stubImageProcessor() {
+	void setUpDefaultStubs() {
 		lenient().when(festivalImageProcessor.process(any())).thenAnswer(inv -> inv.getArgument(0));
 		lenient().when(accuracyVoteRepository.countByFestivalIds(any())).thenReturn(List.of());
+		lenient().when(festivalRepository.findExistingExternalIds(any(), any())).thenReturn(List.of());
 	}
 
-	/**
-	 * 올해 날짜(currentYear+MMdd)를 가진 FestivalApiRow를 만드는 헬퍼
-	 */
-	private FestivalApiRow rowInCurrentYear(String monthDay, String endDe) {
-		return row(CURRENT_YEAR + monthDay, endDe, CURRENT_YEAR + "0101");
+	/** /period2 응답 1건. 신규 판별에만 쓰이므로 seq/title만 있으면 충분하다. */
+	private CultureInfoPeriodRow periodRow(String seq) {
+		return new CultureInfoPeriodRow(seq, "남한산성문화제");
 	}
 
-	/**
-	 * 날짜 3개(beginDe, endDe, writngDe)만 테스트별로 바꿔가며 나머지 필드는 고정값을 쓴다.
-	 */
-	private FestivalApiRow row(String beginDe, String endDe, String writngDe) {
-		return new FestivalApiRow(
-				"경기문화재단", "남한산성문화제", "행사", "https://example.com/1",
-				"10:00~18:00", "무료", "031-000-0000", "광주시",
-				"https://example.com", "https://example.com/img.jpg",
-				beginDe, endDe, writngDe
+	/** 같은 seq를 가진 period 응답을 count개 반복해서 만든다 (페이지네이션 테스트용). */
+	private List<CultureInfoPeriodRow> dummyPeriodRows(int count, String seq) {
+		return java.util.stream.Stream.generate(() -> periodRow(seq)).limit(count).toList();
+	}
+
+	/** /detail2 응답 1건. 날짜 2개만 테스트별로 바꿔가며 나머지 필드는 고정값을 쓴다. */
+	private CultureInfoDetailRow detailRow(String seq, String startDate, String endDate) {
+		return new CultureInfoDetailRow(
+				seq, "남한산성문화제", startDate, endDate,
+				"광주시 문화센터", "행사", "경기", "광주시",
+				"무료", "상세 설명", "https://example.com/1", "031-000-0000",
+				"https://example.com/img.jpg", "경기도 광주시 문화센터로 1"
 		);
 	}
 
-	/**
-	 * FestivalService가 연도 범위를 계산해서 넘기는 정확한 LocalDateTime 값을 여기서 재계산하지 않고,
-	 * any(LocalDateTime.class)로 느슨하게 매칭해서 "DB에 이만큼 저장돼 있다고 치자"만 표현한다.
-	 */
-	private void stubYearCount(long dbCount) {
-		when(festivalRepository.countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
-				eq(ProviderType.PUBLIC), any(LocalDateTime.class), any(LocalDateTime.class)))
-				.thenReturn(dbCount);
-	}
-
-	/**
-	 * 전체 응답이 한 페이지(1000건 미만)에 다 들어오는 가장 단순한 경우.
-	 * 올해 행사 1건, DB에 0건 저장돼 있으면 N=1이라 신규로 저장돼야 한다.
-	 */
 	@Test
-	@DisplayName("올해 필터링된 건수와 DB 건수가 같으면 아무것도 저장하지 않는다")
+	@DisplayName("신규 seq가 없으면 상세조회 없이 아무것도 저장하지 않는다")
 	void doesNotSaveWhenNoNewFestivals() {
-		FestivalApiRow existing = rowInCurrentYear("0918", "20261231");
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(1, List.of(existing)));
-		stubYearCount(1L);
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalRepository.findExistingExternalIds(eq(ProviderType.PUBLIC), any()))
+				.thenReturn(List.of("seq-1")); // 이미 저장돼 있음
 
 		festivalService.syncPublicFestivals();
 
-		verify(festivalPublicApiClient, times(1)).fetch(1, 1000);
+		verify(festivalPublicApiClientV2, never()).fetchDetail(any());
 		verify(festivalRepository, never()).saveAll(any());
 	}
 
-	/**
-	 * totalCount가 1000을 넘으면 fetchAllRows()가 다음 페이지(pIndex=2)까지 이어서 호출해야 한다.
-	 */
+	/** 받은 개수가 요청한 페이지 크기(PAGE_SIZE)만큼 꽉 차면, fetchAllRows()가 다음 페이지까지 이어서 호출해야 한다. */
 	@Test
-	@DisplayName("전체 건수가 1000건을 넘으면 페이지를 나눠서 전부 가져온다")
-	void fetchesMultiplePagesWhenTotalCountExceedsPageSize() {
-		FestivalApiRow row1 = rowInCurrentYear("0101", "29991231");
-		FestivalApiRow row2 = rowInCurrentYear("0102", "29991231");
-
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(1001, dummyRows(1000, row1)));
-		when(festivalPublicApiClient.fetch(2, 1000))
-				.thenReturn(new FestivalApiResult(1001, List.of(row2)));
-		stubYearCount(0L);
+	@DisplayName("받은 개수가 페이지 크기만큼 꽉 차면 다음 페이지까지 이어서 가져온다")
+	void fetchesNextPageWhenFirstPageIsFull() {
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(dummyPeriodRows(PAGE_SIZE, "seq-full"));
+		when(festivalPublicApiClientV2.fetchPeriod(eq(2), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-last")));
+		// 전부 이미 저장된 것으로 처리해서, 상세조회 루프(호출 간 대기 포함)는 안 타게 하고 페이지네이션만 확인한다.
+		when(festivalRepository.findExistingExternalIds(eq(ProviderType.PUBLIC), any()))
+				.thenReturn(List.of("seq-full", "seq-last"));
 
 		festivalService.syncPublicFestivals();
 
-		verify(festivalPublicApiClient).fetch(1, 1000);
-		verify(festivalPublicApiClient).fetch(2, 1000);
+		verify(festivalPublicApiClientV2).fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any());
+		verify(festivalPublicApiClientV2).fetchPeriod(eq(2), eq(PAGE_SIZE), any(), any());
 	}
 
-	/**
-	 * 페이지네이션 테스트용으로 같은 row를 count번 반복한 목록을 만든다 (내용보다 "1000건 채웠다"는 게 중요).
-	 */
-	private List<FestivalApiRow> dummyRows(int count, FestivalApiRow sample) {
-		return java.util.stream.Stream.generate(() -> sample).limit(count).toList();
-	}
-
-	/**
-	 * BEGIN_DE가 올해가 아닌 행사는 신규 건수(N) 계산과 저장 대상에서 제외돼야 한다.
-	 */
+	/** 올해 범위(yyyyMMdd)로 from/to를 넘기는지 확인한다. 연도 필터링은 이제 API 쪽(from/to)에서 서버가 처리한다. */
 	@Test
-	@DisplayName("BEGIN_DE가 올해가 아닌 행사는 걸러진다")
-	void filtersOutRowsNotInCurrentYear() {
-		FestivalApiRow thisYear = rowInCurrentYear("0918", "29991231");
-		FestivalApiRow otherYear = row((CURRENT_YEAR - 1) + "1231", "29991231", (CURRENT_YEAR - 1) + "1201");
-
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(2, List.of(thisYear, otherYear)));
-		stubYearCount(0L);
+	@DisplayName("올해 1월 1일부터 12월 31일까지의 범위로 목록을 요청한다")
+	void requestsPeriodWithCurrentYearRange() {
+		when(festivalPublicApiClientV2.fetchPeriod(1, PAGE_SIZE, CURRENT_YEAR + "0101", CURRENT_YEAR + "1231"))
+				.thenReturn(List.of());
 
 		festivalService.syncPublicFestivals();
 
-		assertThat(captureSaved()).hasSize(1);
+		verify(festivalPublicApiClientV2)
+				.fetchPeriod(1, PAGE_SIZE, CURRENT_YEAR + "0101", CURRENT_YEAR + "1231");
 	}
 
 	/**
-	 * toGyeonggiFestival()이 각 필드를 제대로 옮기고 yyyyMMdd 문자열도 LocalDateTime으로 잘 파싱하는지 확인한다.
+	 * 상황: /period2에서 seq-1이 신규로 조회되고, /detail2가 제목·날짜·장소·가격·전화번호·주소 등
+	 * 상세정보를 채워서 돌려준다고 가정한다.
+	 * 확인: syncPublicFestivals()가 그 상세정보를 Festival 엔티티로 변환할 때 각 필드
+	 * (externalId, title, category, url, place, placeAddress, region, regionDetail 등)가
+	 * 올바르게 매핑되는지, 저장하려고 넘긴 리스트의 첫 번째 객체를 꺼내서 확인한다.
 	 */
 	@Test
-	@DisplayName("API 응답 필드가 Festival 엔티티 필드로 올바르게 매핑된다")
-	void mapsApiRowFieldsToFestivalEntity() {
-		FestivalApiRow row = rowInCurrentYear("0918", "29991231");
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(1, List.of(row)));
-		stubYearCount(0L);
+	@DisplayName("상세조회 응답 필드가 Festival 엔티티 필드로 올바르게 매핑된다")
+	void mapsDetailRowFieldsToFestivalEntity() {
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalPublicApiClientV2.fetchDetail("seq-1"))
+				.thenReturn(detailRow("seq-1", CURRENT_YEAR + "0918", "29991231"));
 
 		festivalService.syncPublicFestivals();
 
 		Festival festival = captureSaved().get(0);
 		assertThat(festival.getProviderType()).isEqualTo(ProviderType.PUBLIC);
+		assertThat(festival.getExternalId()).isEqualTo("seq-1");
 		assertThat(festival.getTitle()).isEqualTo("남한산성문화제");
 		assertThat(festival.getCategory()).isEqualTo("행사");
 		assertThat(festival.getUrl()).isEqualTo("https://example.com/1");
 		assertThat(festival.getImgUrl()).isEqualTo("https://example.com/img.jpg");
+		assertThat(festival.getPartcptExpnInfo()).isEqualTo("무료");
+		assertThat(festival.getTelnoInfo()).isEqualTo("031-000-0000");
+		assertThat(festival.getPlace()).isEqualTo("광주시 문화센터");
+		assertThat(festival.getPlaceAddress()).isEqualTo("경기도 광주시 문화센터로 1");
+		assertThat(festival.getRegion()).isEqualTo(FestivalRegion.GYEONGGI);
+		assertThat(festival.getRegionDetail()).isEqualTo("광주시");
 		assertThat(festival.getBeginDe()).isEqualTo(LocalDateTime.of(CURRENT_YEAR, 9, 18, 0, 0));
-		assertThat(festival.getEndDe()).isEqualTo(LocalDateTime.of(2999, 12, 31, 0, 0));
+		// endDe는 그날 자정(0시)이 아니라 하루의 끝(23:59:59.999999999)으로 저장된다 (parseEndDate() 참고).
+		assertThat(festival.getEndDe()).isEqualTo(LocalDate.of(2999, 12, 31).atTime(LocalTime.MAX));
 	}
 
 	/**
-	 * endDe를 "어제" 날짜로 동적으로 만들어서, 테스트를 언제 실행하든
-	 * FestivalStatus.from()이 CLOSED를 반환하는지 안정적으로 확인한다.
+	 * 상황: 상세조회 응답의 종료일(endDate)을 "어제" 날짜로 준다
+	 * (테스트를 언제 실행하든 항상 과거가 되도록 동적으로 계산).
+	 * 확인: 저장된 Festival의 status가 FestivalStatus.from(endDe) 로직에 의해
+	 * CLOSED로 계산되는지.
 	 */
 	@Test
 	@DisplayName("종료일이 지난 행사는 CLOSED 상태로 저장된다")
 	void resolvesClosedStatusWhenEndDeIsInThePast() {
 		String yesterday = LocalDate.now().minusDays(1).format(DATE_FORMAT);
-		FestivalApiRow row = rowInCurrentYear("0101", yesterday);
-
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(1, List.of(row)));
-		stubYearCount(0L);
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalPublicApiClientV2.fetchDetail("seq-1"))
+				.thenReturn(detailRow("seq-1", CURRENT_YEAR + "0101", yesterday));
 
 		festivalService.syncPublicFestivals();
 
@@ -239,17 +227,18 @@ class FestivalServiceTest {
 	}
 
 	/**
-	 * 실제 API 응답에서도 일부 필드가 빈 값으로 오는 걸 확인했었는데,
-	 * 날짜 필드가 빈 문자열("")로 와도 parseDate()가 예외 없이 null을 반환하고,
-	 * FestivalStatus.from(null)은 기본값 OPEN을 반환하는지 확인한다.
+	 * 상황: 실제 API 응답에서도 종료일이 빈 문자열("")로 오는 경우가 있었다.
+	 * 상세조회 응답의 endDate를 ""로 준다.
+	 * 확인: parseDate()가 예외 없이 null을 반환하고, endDe가 null이면
+	 * status가 기본값 OPEN으로 저장되는지.
 	 */
 	@Test
 	@DisplayName("종료일이 비어 있으면 날짜는 null이고 상태는 OPEN으로 저장된다")
 	void handlesBlankDateAsNullAndDefaultsToOpen() {
-		FestivalApiRow row = rowInCurrentYear("0918", "");
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(1, List.of(row)));
-		stubYearCount(0L);
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalPublicApiClientV2.fetchDetail("seq-1"))
+				.thenReturn(detailRow("seq-1", CURRENT_YEAR + "0918", ""));
 
 		festivalService.syncPublicFestivals();
 
@@ -258,17 +247,15 @@ class FestivalServiceTest {
 		assertThat(festival.getStatus()).isEqualTo(FestivalStatus.OPEN);
 	}
 
-	/**
-	 * 원본 스냅샷은 누적하지 않고 기존 것을 지운 뒤 새로 저장해야 한다 (순서까지 확인).
-	 */
+	/** 원본 스냅샷은 누적하지 않고 기존 것을 지운 뒤 새로 저장해야 한다 (순서까지 확인). */
 	@Test
 	@DisplayName("원본 데이터는 기존 것을 삭제하고 최신 것만 저장한다")
 	void savesLatestRawSourceOnly() {
-		FestivalApiRow row = rowInCurrentYear("0918", "29991231");
-		when(festivalPublicApiClient.fetch(1, 1000))
-				.thenReturn(new FestivalApiResult(1, List.of(row)));
-		stubYearCount(1L);
-		when(objectMapper.writeValueAsString(Mockito.<List<FestivalApiRow>>any())).thenReturn("[]");
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalRepository.findExistingExternalIds(eq(ProviderType.PUBLIC), any()))
+				.thenReturn(List.of("seq-1")); // 신규 없음, 원본 저장 순서만 확인
+		when(objectMapper.writeValueAsString(Mockito.<List<CultureInfoPeriodRow>>any())).thenReturn("[]");
 
 		festivalService.syncPublicFestivals();
 
@@ -288,19 +275,18 @@ class FestivalServiceTest {
 			.build();
 	}
 
-	/**
-	 * 수동 동기화 버튼에 돌려줄 결과: 종료 처리한 행사 목록과 새로 저장한 행사 목록(행사명 포함)이 담기는지 확인한다.
-	 */
+	/** 수동 동기화 버튼에 돌려줄 결과: 종료 처리한 행사 목록과 새로 저장한 행사 목록(행사명 포함)이 담기는지 확인한다. */
 	@Test
 	@DisplayName("동기화 결과에 종료 처리된 행사 목록과 새로 저장한 행사 목록이 담긴다")
 	void returnsClosedAndSavedFestivals() {
-		FestivalApiRow row1 = rowInCurrentYear("0101", "29991231");
-		FestivalApiRow row2 = rowInCurrentYear("0102", "29991231");
 		when(festivalRepository.findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), any(LocalDateTime.class)))
 			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회"), expiredOpenFestival(4L, "지난 전시회")));
-		when(festivalPublicApiClient.fetch(1, 1000))
-			.thenReturn(new FestivalApiResult(2, List.of(row1, row2)));
-		stubYearCount(0L);
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1"), periodRow("seq-2")));
+		when(festivalPublicApiClientV2.fetchDetail("seq-1"))
+				.thenReturn(detailRow("seq-1", CURRENT_YEAR + "0101", "29991231"));
+		when(festivalPublicApiClientV2.fetchDetail("seq-2"))
+				.thenReturn(detailRow("seq-2", CURRENT_YEAR + "0102", "29991231"));
 
 		FestivalResponse.SyncResponse result = festivalService.syncPublicFestivals();
 
@@ -312,16 +298,14 @@ class FestivalServiceTest {
 			.containsExactly("남한산성문화제", "남한산성문화제");
 	}
 
-	/**
-	 * 종료 처리 목록을 뽑은 뒤, 같은 시각(now)으로 일괄 갱신까지 호출되는지 확인한다.
-	 */
+	/** 종료 처리 목록을 뽑은 뒤, 같은 시각(now)으로 일괄 갱신까지 호출되는지 확인한다. */
 	@Test
 	@DisplayName("종료 대상 목록을 조회한 뒤 같은 시각으로 CLOSED 일괄 갱신을 호출한다")
 	void closesExpiredFestivalsWithSameNowAsLookup() {
-		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
-		when(festivalPublicApiClient.fetch(1, 1000))
-			.thenReturn(new FestivalApiResult(1, List.of(existing)));
-		stubYearCount(1L);
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalRepository.findExistingExternalIds(eq(ProviderType.PUBLIC), any()))
+				.thenReturn(List.of("seq-1"));
 
 		festivalService.syncPublicFestivals();
 
@@ -333,18 +317,16 @@ class FestivalServiceTest {
 		assertThat(updateNow.getValue()).isEqualTo(lookupNow.getValue());
 	}
 
-	/**
-	 * 새 행사가 없으면 저장 목록은 비어 있지만, 종료 처리한 행사 목록은 그대로 응답해야 한다.
-	 */
+	/** 새 행사가 없으면 저장 목록은 비어 있지만, 종료 처리한 행사 목록은 그대로 응답해야 한다. */
 	@Test
 	@DisplayName("새 행사가 없으면 저장 목록은 비고 종료 처리 목록만 담긴다")
 	void returnsEmptySavedWhenNoNewFestivals() {
-		FestivalApiRow existing = rowInCurrentYear("0918", "29991231");
 		when(festivalRepository.findByStatusAndEndDeBefore(eq(FestivalStatus.OPEN), any(LocalDateTime.class)))
 			.thenReturn(List.of(expiredOpenFestival(3L, "지난 음악회")));
-		when(festivalPublicApiClient.fetch(1, 1000))
-			.thenReturn(new FestivalApiResult(1, List.of(existing)));
-		stubYearCount(1L);
+		when(festivalPublicApiClientV2.fetchPeriod(eq(1), eq(PAGE_SIZE), any(), any()))
+				.thenReturn(List.of(periodRow("seq-1")));
+		when(festivalRepository.findExistingExternalIds(eq(ProviderType.PUBLIC), any()))
+				.thenReturn(List.of("seq-1"));
 
 		FestivalResponse.SyncResponse result = festivalService.syncPublicFestivals();
 
@@ -352,19 +334,16 @@ class FestivalServiceTest {
 		assertThat(result.savedFestivals()).isEmpty();
 	}
 
-	/**
-	 * saveAll(List)에 실제로 넘어간 Festival 목록을 잡아내는 공통 헬퍼.
-	 */
+	/** saveAll(List)에 실제로 넘어간 Festival 목록을 잡아내는 공통 헬퍼. */
 	@SuppressWarnings("unchecked")
+	/** 동기화 중 festivalRepository.saveAll()에 실제로 넘긴 Festival 리스트를 꺼내온다. */
 	private List<Festival> captureSaved() {
 		ArgumentCaptor<List<Festival>> captor = ArgumentCaptor.forClass(List.class);
 		verify(festivalRepository).saveAll(captor.capture());
 		return captor.getValue();
 	}
 
-	/**
-	 * 행사 검색 테스트용 PUBLIC 행사 엔티티를 만든다.
-	 */
+	/** 행사 검색 테스트용 PUBLIC 행사 엔티티를 만든다. */
 	private Festival publicFestival(
 			FestivalRegion region,
 			LocalDateTime beginDe,
@@ -382,9 +361,7 @@ class FestivalServiceTest {
 				.build();
 	}
 
-	/**
-	 * 테스트에서 공통으로 사용하는 검색 조건을 만든다.
-	 */
+	/** 테스트에서 공통으로 사용하는 검색 조건을 만든다. */
 	private FestivalSearchRequest searchRequest(LocalDate date) {
 		return searchRequest(date, false);
 	}
@@ -400,9 +377,7 @@ class FestivalServiceTest {
 		);
 	}
 
-	/**
-	 * 실제 서비스와 동일한 9개 단위 페이징 조건을 만든다.
-	 */
+	/** 실제 서비스와 동일한 9개 단위 페이징 조건을 만든다. */
 	private Pageable searchPageable() {
 		return PageRequest.of(
 				0,
@@ -556,9 +531,7 @@ class FestivalServiceTest {
 		assertThat(response.providerType()).isEqualTo(ProviderType.PUBLIC);
 	}
 
-	/**
-	 * 상세 조회 시 출처와 상세 화면용 필드가 그대로 담기는지 확인한다.
-	 */
+	/** 상세 조회 시 출처와 상세 화면용 필드가 그대로 담기는지 확인한다. */
 	@Test
 	@DisplayName("행사 상세 조회 시 출처와 상세 필드를 응답에 담는다")
 	void getFestivalReturnsDetail() {
@@ -655,9 +628,7 @@ class FestivalServiceTest {
 		assertThat(detail.likedByMe()).isTrue();
 	}
 
-	/**
-	 * 존재하지 않거나 삭제됐거나 공공 행사가 아니면 리포지토리가 빈 값을 주고, 서비스는 FESTIVAL_NOT_FOUND를 던진다.
-	 */
+	/** 존재하지 않거나 삭제됐거나 공공 행사가 아니면 리포지토리가 빈 값을 주고, 서비스는 FESTIVAL_NOT_FOUND를 던진다. */
 	@Test
 	@DisplayName("행사를 찾을 수 없으면 FESTIVAL_NOT_FOUND 예외가 발생한다")
 	void getPublicFestivalThrowsWhenNotFound() {
@@ -669,9 +640,7 @@ class FestivalServiceTest {
 			.isEqualTo(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
 	}
 
-	/**
-	 * 저장된 status가 낡아도(OPEN) 응답은 종료일 기준으로 다시 계산해서 CLOSED로 내려야 한다.
-	 */
+	/** 저장된 status가 낡아도(OPEN) 응답은 종료일 기준으로 다시 계산해서 CLOSED로 내려야 한다. */
 	@Test
 	@DisplayName("상세 응답의 status도 저장된 값이 아니라 endDe 기준으로 계산된다")
 	void getPublicFestivalComputesStatusFromEndDe() {

@@ -104,7 +104,7 @@ public class FestivalService {
 				// 버퍼가 다 찼거나, 마지막 건이라 더 안 채워져도 남은 걸 지금 저장해야 할 때
 				if (buffer.size() >= DETAIL_SAVE_BATCH_SIZE || processed == newSeqs.size()) {
 					savedFestivals.addAll(saveBatch(buffer));
-					buffer.clear();
+					buffer = new ArrayList<>(); // 저장에 쓴 리스트는 그대로 두고, 다음 배치는 새 리스트에 담는다.
 					log.info("공공 행사 동기화 진행 중 ({}/{}건)", processed, newSeqs.size());
 				}
 
