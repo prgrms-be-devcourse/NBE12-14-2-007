@@ -53,13 +53,31 @@ class LikeServiceTest {
 			.providerType(ProviderType.MEMBER)
 			.build();
 
-		when(festivalRepository.findById(1L)).thenReturn(Optional.of(festival));
+		when(festivalRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(festival));
 		when(memberReader.getUnrestrictedMember(memberId)).thenReturn(member);
 
 		assertThatThrownBy(() -> likeService.createFestivalLike(1L, memberId))
 			.isInstanceOfSatisfying(BusinessException.class, exception ->
 				org.assertj.core.api.Assertions.assertThat(exception.getExceptionCode())
 					.isEqualTo(LikeExceptionCode.SELF_FESTIVAL_LIKE_NOT_ALLOWED)
+			);
+
+		verify(likeRepository, never()).save(org.mockito.ArgumentMatchers.any(Like.class));
+	}
+
+	@Test
+	@DisplayName("삭제된 행사에는 좋아요를 새로 등록할 수 없다")
+	void rejectLikeOnDeletedFestival() {
+		UUID memberId = UUID.randomUUID();
+
+		when(festivalRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
+		when(memberReader.getUnrestrictedMember(memberId))
+			.thenReturn(Member.builder().id(memberId).build());
+
+		assertThatThrownBy(() -> likeService.createFestivalLike(1L, memberId))
+			.isInstanceOfSatisfying(BusinessException.class, exception ->
+				org.assertj.core.api.Assertions.assertThat(exception.getExceptionCode())
+					.isEqualTo(com.team007.room_escape.global.response.code.FestivalExceptionCode.FESTIVAL_NOT_FOUND)
 			);
 
 		verify(likeRepository, never()).save(org.mockito.ArgumentMatchers.any(Like.class));
