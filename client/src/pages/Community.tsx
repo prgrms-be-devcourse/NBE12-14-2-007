@@ -704,6 +704,7 @@ export function CommunityFormPage() {
             onChange={setContent}
             placeholder="이웃에게 들려주고 싶은 이야기를 적어주세요."
             ariaLabel="커뮤니티 글 내용"
+            onUploadImage={async (file) => (await api.upload(file, "POST")).url}
           />
         </Field>
         {formError && (

@@ -466,6 +466,9 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 onChange={(value) => change("festivalContent", value)}
                 placeholder="행사의 내용과 즐길 거리를 자세히 소개해 주세요."
                 ariaLabel="행사 소개"
+                onUploadImage={async (file) =>
+                  (await api.upload(file, "FESTIVAL")).url
+                }
               />
             </Field>
             <div className="wide">
