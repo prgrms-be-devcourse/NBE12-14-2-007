@@ -96,31 +96,31 @@ export function CommunityPage() {
         eyebrow="COMMUNITY"
         title="커뮤니티"
         description="밖으로 나갈 이유와 즐거운 이야기를 이웃과 나눠보세요."
-        action={
-          member ? (
-            <Link className="btn primary" to="/community/new">
-              <Plus size={17} /> 글쓰기
-            </Link>
-          ) : undefined
-        }
       />
 
-      <nav className="community-categories" aria-label="커뮤니티 카테고리">
-        {[
-          ["", "전체"],
-          ["FREE", "자유"],
-          ["EVENT", "행사"],
-          ["RESTAURANT", "맛집"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            className={category === value ? "active" : ""}
-            onClick={() => changeFilter(value as CommunityCategory | "")}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="community-toolbar">
+        <nav className="community-categories" aria-label="커뮤니티 카테고리">
+          {[
+            ["", "전체"],
+            ["FREE", "자유"],
+            ["EVENT", "행사"],
+            ["RESTAURANT", "맛집"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              className={category === value ? "active" : ""}
+              onClick={() => changeFilter(value as CommunityCategory | "")}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        {member && (
+          <Link className="btn primary" to="/community/new">
+            <Plus size={17} /> 글쓰기
+          </Link>
+        )}
+      </div>
 
       <form className="community-search" onSubmit={submitSearch}>
         <Search size={18} />
