@@ -38,7 +38,6 @@ import {
   Modal,
   PageTitle,
   Pagination,
-  Photo,
   SubmitButton,
   Upload,
 } from "../components/ui";
@@ -267,13 +266,6 @@ function ReviewDetail({ id }: { id: string }) {
             )}
           </div>
         </div>
-        {post.thumbnail && (
-          <Photo
-            className="article-image"
-            src={post.thumbnail}
-            alt={post.title}
-          />
-        )}
         <RichTextContent content={post.content} />
         <div className="review-reactions">
           <button
@@ -879,6 +871,11 @@ function ReviewForm({
             placeholder="오늘의 경험을 한 문장으로 표현해 주세요"
           />
         </Field>
+        <span className="upload-label">썸네일 이미지</span>
+        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
+        <p className="upload-hint">
+          후기 목록에서 대표 사진으로 보여요. 본문에는 들어가지 않아요.
+        </p>
         <Field label="후기 내용" required>
           <LazyRichTextEditor
             value={content}
@@ -888,9 +885,6 @@ function ReviewForm({
             onUploadImage={async (file) => (await api.upload(file, "POST")).url}
           />
         </Field>
-        <span className="upload-label">기억에 남은 사진</span>
-        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
-        <p className="upload-hint">사진은 7:6 비율로 표시돼요.</p>
       </div>
       <FormError message={error} />
       <div className="form-actions">
