@@ -2219,7 +2219,19 @@ select {
 .community-detail h1 {
   margin: 15px 0 13px;
   color: #1f3328;
-  font-size: clamp(25px, 4vw, 34px);
+  font-size: clamp(21px, 3vw, 27px);
+}
+.community-detail .community-category {
+  padding: 6px 13px;
+  font-size: 13px;
+}
+.community-detail .community-detail-meta {
+  font-size: 14px;
+}
+.community-detail .community-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
 }
 .community-owner-actions {
   position: absolute;
@@ -2247,8 +2259,11 @@ select {
   min-height: 260px;
   padding: 40px 6px 60px;
   color: #37473c;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.9;
+}
+.community-content h2 {
+  font-size: 18px;
 }
 .community-comments {
   padding-top: 28px;
@@ -2257,7 +2272,7 @@ select {
 .community-comments > h2 {
   margin-bottom: 18px;
   color: #26392e;
-  font-size: 20px;
+  font-size: 16px;
 }
 .community-comments > h2 span {
   color: var(--orange);
