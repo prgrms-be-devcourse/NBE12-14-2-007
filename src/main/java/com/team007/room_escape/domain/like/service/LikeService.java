@@ -112,7 +112,7 @@ public class LikeService {
 	@Transactional(readOnly = true)
 	public Long getFestivalLikeCount(Long festivalId) {
 
-		if(!festivalRepository.existsById(festivalId)) {
+		if(!festivalRepository.existsByIdAndDeletedAtIsNull(festivalId)) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
 		}
 
