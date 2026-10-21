@@ -2030,15 +2030,20 @@ select {
 .community-form-page {
   max-width: 1050px;
 }
+.community-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
 .community-categories {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
-}
-.community-categories {
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--line);
 }
 .community-categories button {
   padding: 10px 16px;
@@ -2075,17 +2080,14 @@ select {
   outline: 0;
 }
 .community-list {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
+  border-top: 1px solid var(--line);
 }
 .community-row {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  padding: 15px 18px;
+  padding: 18px 3px;
   border-bottom: 1px solid #edf0e9;
   color: inherit;
   transition: background 0.15s;
@@ -2356,7 +2358,7 @@ select {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
     gap: 10px;
-    padding: 13px 14px;
+    padding: 13px 3px;
   }
   .community-owner-actions {
     position: static;
