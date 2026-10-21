@@ -10,7 +10,6 @@ import com.team007.room_escape.domain.festival.infra.entity.*;
 import com.team007.room_escape.domain.festival.infra.repository.*;
 import com.team007.room_escape.domain.member.service.MemberReader;
 import com.team007.room_escape.domain.member.service.MemberTrustGradeService;
-import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import com.team007.room_escape.global.util.RichTextSanitizer;
@@ -26,9 +25,7 @@ class FestivalSubmissionServiceTest {
 	private final com.team007.room_escape.domain.deletion.service.DeletionHistoryService deletionHistories =
 		mock(com.team007.room_escape.domain.deletion.service.DeletionHistoryService.class);
 	private final FestivalDeletionService deletion = new FestivalDeletionService(festivals,
-			new MemberTrustGradeService(
-				mock(LikeRepository.class),
-				mock(FestivalAccuracyVoteRepository.class)),
+			mock(MemberTrustGradeService.class),
 			deletionHistories, new FestivalDuplicateValidator(festivals));
 	private final FestivalSubmissionService service = new FestivalSubmissionService(
 			festivals, submissions, members, mock(RichTextSanitizer.class), deletion, deletionHistories, new FestivalDuplicateValidator(festivals));
