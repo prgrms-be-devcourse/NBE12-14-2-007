@@ -84,6 +84,20 @@ class LikeServiceTest {
 	}
 
 	@Test
+	@DisplayName("삭제된 행사의 좋아요 개수는 조회할 수 없다")
+	void rejectLikeCountOnDeletedFestival() {
+		when(festivalRepository.existsByIdAndDeletedAtIsNull(1L)).thenReturn(false);
+
+		assertThatThrownBy(() -> likeService.getFestivalLikeCount(1L))
+			.isInstanceOfSatisfying(BusinessException.class, exception ->
+				org.assertj.core.api.Assertions.assertThat(exception.getExceptionCode())
+					.isEqualTo(com.team007.room_escape.global.response.code.FestivalExceptionCode.FESTIVAL_NOT_FOUND)
+			);
+
+		verify(likeRepository, never()).countByFestivalId(any());
+	}
+
+	@Test
 	@DisplayName("후기 좋아요를 등록하면 후기의 좋아요 수를 올리고 올라간 값을 돌려준다")
 	void createPostLikeIncreasesLikeCount() {
 		UUID memberId = UUID.randomUUID();
