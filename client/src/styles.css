@@ -3480,6 +3480,9 @@ select {
 .festival-posts {
   padding-top: 25px;
 }
+.page-heading + .festival-posts {
+  padding-top: 0;
+}
 .festival-posts .section-heading h2 {
   font-size: 20px;
 }
