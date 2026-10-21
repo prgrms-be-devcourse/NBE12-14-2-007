@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useApp } from "../lib/context";
+import { deletionReasons, type AdminDeletionReason } from "../lib/deletion";
 import { dateText, errorText } from "../lib/format";
 import type {
   AdminFestivalQuery,
@@ -17,6 +18,7 @@ import type {
   AdminMemberQuery,
   AdminStats,
   AdminFestivalListItem,
+  FestivalDeletion,
   InquiryCategory,
   Role,
 } from "../lib/types";
@@ -78,6 +80,7 @@ export interface ContentItem {
   reason?: string;
   /** 삭제 시각. 삭제되지 않았으면 null. 후기는 아직 예시라 undefined */
   deletedAt?: string | null;
+  deletion?: FestivalDeletion | null;
 }
 export interface Ticket {
   id: string;
@@ -291,12 +294,13 @@ function toEvent(item: AdminFestivalListItem): ContentItem {
     author: item.instNm || (item.providerType === "MEMBER" ? "회원 제보" : "-"),
     source: item.providerType,
     category: item.category,
-    date: dateText(item.beginDe),
+    date: item.createdAt ? dateText(item.createdAt) : "등록일 확인 불가",
     status: item.status,
     // 목록 응답에는 본문이 없다. 상세를 열 때 채워 넣는다.
     content: "",
     image: item.imgUrl ?? undefined,
     deletedAt: item.deletedAt,
+    deletion: item.deletion,
   };
 }
 /** 서버 목록 한 줄을 화면이 쓰는 Ticket 모양으로 바꾼다. */
@@ -372,8 +376,12 @@ interface AdminContextValue {
    * 행사 삭제. 행을 지우지 않고 삭제 시각만 남기므로 되돌릴 수 있다.
    * 서버에 저장하므로 실패할 수 있다.
    */
-  deleteEvent: (id: string) => Promise<void>;
-  /** 삭제된 행사 복구. 회원 제보는 서버가 403으로 거부한다. */
+  deleteEvent: (
+    id: string,
+    reason: string,
+    reasonCode?: AdminDeletionReason,
+  ) => Promise<void>;
+  /** 관리자가 삭제한 행사만 복구한다. */
   restoreEvent: (id: string) => Promise<void>;
   /** 행사 목록을 서버에서 다시 불러온다. */
   reloadEvents: () => void;
@@ -659,8 +667,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         reloadEvents() {
           setEventsRevision((current) => current + 1);
         },
-        async deleteEvent(id) {
-          await api.deleteFestival(id);
+        async deleteEvent(id, reason, reasonCode = "OTHER") {
+          await api.adminDeleteContent("FESTIVAL", id, reasonCode, reason);
+          setMembersRevision((current) => current + 1);
           // 목록을 다시 받는다. 삭제 포함 보기가 꺼져 있으면 행이 사라지고,
           // 켜져 있으면 (삭제) 표시로 바뀐다. 직접 갈아끼우면 둘을 구분해야 한다.
           setEventsRevision((current) => current + 1);
@@ -669,12 +678,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             area: "행사",
             action: "삭제",
             target: events.find((item) => item.id === id)?.title ?? id,
-            reason: "관리자 삭제",
+            reason: reason.trim() || deletionReasons[reasonCode],
           });
           setMessage("행사를 삭제했습니다.");
         },
         async restoreEvent(id) {
-          await api.restoreFestival(id);
+          await api.adminRestoreContent("FESTIVAL", id);
+          setMembersRevision((current) => current + 1);
           setEventsRevision((current) => current + 1);
           setStatsRevision((current) => current + 1);
           record({

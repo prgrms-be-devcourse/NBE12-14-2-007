@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { AdminDeletionModal } from "../components/AdminDeletionModal";
 import { ReportButton } from "../components/ReportButton";
 import { isRichTextEmpty, RichTextContent } from "../components/RichText";
 import {
@@ -214,9 +215,17 @@ export function CommunityDetailPage() {
   // 답글 입력창이 열린 일반 댓글. 한 번에 하나만 연다.
   const [replyTo, setReplyTo] = useState<{ rootId: number } | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [adminTarget, setAdminTarget] = useState<{
+    type: "COMMUNITY_POST" | "COMMUNITY_COMMENT";
+    id: string | number;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function removePost() {
+    if (member?.role === "ROLE_ADMIN" && post.data?.member.id !== member.id) {
+      setAdminTarget({ type: "COMMUNITY_POST", id: postId });
+      return;
+    }
     if (!window.confirm("이 글을 삭제할까요?")) return;
     try {
       await api.deleteCommunityPost(postId);
@@ -294,10 +303,14 @@ export function CommunityDetailPage() {
   }
 
   // 삭제해도 "삭제된 댓글입니다"로 자리가 남아서 페이지가 당겨지지 않는다.
-  async function removeComment(commentId: number) {
+  async function removeComment(item: CommunityComment) {
+    if (member?.role === "ROLE_ADMIN" && item.member?.id !== member.id) {
+      setAdminTarget({ type: "COMMUNITY_COMMENT", id: item.id });
+      return;
+    }
     if (!window.confirm("댓글을 삭제할까요?")) return;
     try {
-      await api.deleteCommunityComment(commentId);
+      await api.deleteCommunityComment(item.id);
       comments.reload();
       post.setData((current) =>
         current
@@ -392,7 +405,7 @@ export function CommunityDetailPage() {
               </button>
             )}
             {canDeleteComment && (
-              <button onClick={() => removeComment(item.id)}>삭제</button>
+              <button onClick={() => removeComment(item)}>삭제</button>
             )}
           </div>
         )}
@@ -419,6 +432,21 @@ export function CommunityDetailPage() {
 
   return (
     <div className="container page-space community-detail-page">
+      {adminTarget && (
+        <AdminDeletionModal
+          targetType={adminTarget.type}
+          targetId={adminTarget.id}
+          onClose={() => setAdminTarget(null)}
+          onDeleted={() => {
+            toast("삭제했습니다.");
+            if (adminTarget.type === "COMMUNITY_POST") navigate("/community");
+            else {
+              comments.reload();
+              post.reload();
+            }
+          }}
+        />
+      )}
       <Link to="/community" className="back-link">
         <ArrowLeft size={17} /> 목록으로
       </Link>

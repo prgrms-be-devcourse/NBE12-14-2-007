@@ -32,13 +32,16 @@ public enum FestivalExceptionCode implements ExceptionCode {
 	/** 삭제되지 않은 행사에 복구를 요청한 경우 */
 	FESTIVAL_NOT_DELETED("FESTIVAL007", HttpStatus.CONFLICT, "삭제되지 않은 행사입니다."),
 
-	/** 회원이 직접 지운 제보를 관리자가 임의로 되살리지 않도록 막는다 */
-	FESTIVAL_RESTORE_FORBIDDEN("FESTIVAL008", HttpStatus.FORBIDDEN,
-		"회원이 제보한 행사는 복구할 수 없습니다."),
+	// FESTIVAL008 은 삭제 주체 검증이 DeletionExceptionCode.RESTORE_NOT_ALLOWED 로 합쳐지면서 비었다.
+	// 다른 코드가 밀리지 않도록 번호는 재사용하지 않는다.
 
 	/** 본인이 제보한 행사를 직접 정확하다고 평가하는 경우 */
 	SELF_ACCURACY_VOTE_NOT_ALLOWED("FESTIVAL009", HttpStatus.FORBIDDEN,
-		"본인이 제보한 행사의 정확도는 평가할 수 없습니다.");
+		"본인이 제보한 행사의 정확도는 평가할 수 없습니다."),
+
+	/** 중복 검사에 필요한 일정·지역·링크가 비어 있어 복구 가능 여부를 판단할 수 없는 경우 */
+	RESTORE_DATA_INCOMPLETE("FESTIVAL010", HttpStatus.CONFLICT,
+		"일정·지역·참고 링크가 비어 있어 복구할 수 없습니다.");
 
 	private final String code;
 	private final HttpStatus status;

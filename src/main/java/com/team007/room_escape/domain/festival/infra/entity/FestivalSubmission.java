@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.festival.infra.entity;
 
-import com.team007.room_escape.global.entity.SoftDeletableEntity;
+import com.team007.room_escape.global.entity.BaseTimeEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -21,7 +21,7 @@ import org.hibernate.annotations.UuidGenerator;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class FestivalSubmission extends SoftDeletableEntity {
+public class FestivalSubmission extends BaseTimeEntity {
 
 	@Id
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)

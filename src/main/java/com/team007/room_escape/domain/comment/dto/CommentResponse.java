@@ -1,5 +1,7 @@
 package com.team007.room_escape.domain.comment.dto;
 
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
+import com.team007.room_escape.domain.deletion.dto.DeletionHistoryResponse;
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.member.dto.MemberResponse;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
@@ -15,6 +17,42 @@ public class CommentResponse {
 	public static final String DELETED_CONTENT = "삭제된 댓글입니다";
 
 	private CommentResponse() {
+	}
+
+	@Builder
+	@Schema(name = "AdminCommentInfo", description = "삭제된 댓글과 최신 삭제 사유를 포함한 관리자용 댓글")
+	public record AdminInfo(
+		Long id,
+		UUID postId,
+		Long parentId,
+		MemberResponse.MemberInfo member,
+		String content,
+		LocalDateTime date,
+		LocalDateTime deletedAt,
+		boolean parentDeleted,
+		DeletionHistoryResponse.Latest deletion,
+		List<AdminInfo> replies
+	) {
+		public static AdminInfo from(
+			Comment comment,
+			ImageUrlResolver imageUrlResolver,
+			boolean parentDeleted,
+			DeletionHistory history,
+			List<AdminInfo> replies
+		) {
+			return AdminInfo.builder()
+				.id(comment.getId())
+				.postId(comment.getPost().getId())
+				.parentId(comment.isReply() ? comment.getParent().getId() : null)
+				.member(MemberResponse.MemberInfo.from(comment.getMember(), imageUrlResolver))
+				.content(comment.getContent())
+				.date(comment.getCreatedAt())
+				.deletedAt(comment.getDeletedAt())
+				.parentDeleted(parentDeleted)
+				.replies(replies)
+				.deletion(history == null ? null : DeletionHistoryResponse.Latest.from(history))
+				.build();
+		}
 	}
 
 	/** 댓글 응답. 작성·목록·수정에서 함께 쓴다. 목록에서는 일반 댓글 아래에 대댓글이 replies로 붙는다. */

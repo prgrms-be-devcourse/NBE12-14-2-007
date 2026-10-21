@@ -112,13 +112,13 @@ public class PostController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "후기 삭제", description = "작성자 본인 또는 관리자가 후기를 삭제합니다")
+	@Operation(summary = "후기 삭제", description = "작성자 본인이 삭제합니다. 관리자의 타인 후기 삭제는 공통 관리자 조치 API를 사용합니다.")
 	@DeleteMapping("/posts/{id}")
 	public ResponseEntity<ApiResponse<Void>> deletePost(
 			@PathVariable UUID id,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
-		postService.deletePost(id, user.getId(), user.isAdmin());
+		postService.deletePost(id, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}

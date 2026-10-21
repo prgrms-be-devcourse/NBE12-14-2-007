@@ -1,4 +1,10 @@
 import type {
+  AdminDeletionReason,
+  DeletionTarget,
+  LatestDeletionHistory,
+  MyContentItem,
+} from "./deletion";
+import type {
   Mode,
   Member,
   SignupInput,
@@ -13,6 +19,7 @@ import type {
   AdminPostSummary,
   Page,
   Comment,
+  AdminComment,
   CommunityCategory,
   CommunityComment,
   CommunityPostDetail,
@@ -713,6 +720,11 @@ export function createApi(mode: Mode) {
         }));
       return pageOf(roots, page, COMMENT_PAGE_SIZE);
     },
+    async adminComments(postId: string, page = 0) {
+      return transport<Page<AdminComment>>(
+        `/admin/posts/${encodeURIComponent(postId)}/comments?page=${page}&size=20`,
+      );
+    },
     /** parentId를 넣으면 대댓글이 된다. 대댓글에 단 답글은 서버가 그 부모 아래에 붙인다. */
     async createComment(postId: string, content: string, parentId?: number) {
       if (!demo)
@@ -923,7 +935,7 @@ export function createApi(mode: Mode) {
       const {
         page = 0,
         size = 20,
-        sort = "beginDe,desc",
+        sort = "createdAt,desc",
         excludeClosed,
         includeDeleted,
         ...filters
@@ -948,18 +960,47 @@ export function createApi(mode: Mode) {
       );
     },
     /** [ADMIN] 행사 삭제. 행을 지우지 않고 삭제 시각만 남긴다. */
-    async deleteFestival(festivalId: string | number) {
-      return transport<void>(
-        `/admin/festivals/${encodeURIComponent(String(festivalId))}`,
-        "DELETE",
+    async adminDeleteContent(
+      targetType: DeletionTarget,
+      targetId: string | number,
+      reasonCode: AdminDeletionReason,
+      reasonDetail?: string,
+      inquiryId?: string,
+    ) {
+      return transport<void>("/admin/deletions", "POST", {
+        targetType,
+        targetId: String(targetId),
+        reasonCode,
+        reasonDetail: reasonDetail?.trim() || undefined,
+        inquiryId,
+      });
+    },
+    /** [ADMIN] 최신 조치를 조회한다. 이력 없음은 null이며 현재 삭제 상태와는 구분한다. */
+    async adminLatestDeletion(
+      targetType: DeletionTarget,
+      targetId: string | number,
+    ) {
+      const query = new URLSearchParams({
+        targetType,
+        targetId: String(targetId),
+      });
+      return transport<LatestDeletionHistory | null>(
+        `/admin/deletions/latest?${query}`,
       );
     },
-    /** [ADMIN] 삭제된 행사 복구. 회원 제보는 서버가 403으로 거부한다. */
-    async restoreFestival(festivalId: string | number) {
-      return transport<void>(
-        `/admin/festivals/${encodeURIComponent(String(festivalId))}/restore`,
-        "PATCH",
+    async myContents(comments: boolean, page = 0) {
+      return transport<Page<MyContentItem>>(
+        `/members/me/${comments ? "comments" : "posts"}?page=${page}&size=20`,
       );
+    },
+    async adminRestoreContent(
+      targetType: DeletionTarget,
+      targetId: string | number,
+    ) {
+      return transport<void>("/admin/deletions/restore", "POST", {
+        targetType,
+        targetId: String(targetId),
+      });
     },
     /**
      * [ADMIN] 운영 대시보드 집계.

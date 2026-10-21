@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { previewSession } from "./helpers/preview";
+
+test.beforeEach(async ({ page }) => previewSession(page));
 
 test("API mode retrieves the public review feed without private browse APIs", async ({
   page,
@@ -149,7 +152,7 @@ test("comment timestamps show Seoul hours and minutes for local and UTC data", a
   ).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({
-    path: "docs/screenshots/comments-time.png",
+    path: "test-results/comments-time.png",
     fullPage: true,
   });
 });
@@ -203,7 +206,7 @@ test("community pages remain accessible and fit small screens", async ({
       .analyze();
     expect(result.violations, path).toEqual([]);
     await page.screenshot({
-      path: `docs/screenshots/${name}.png`,
+      path: `test-results/${name}.png`,
       fullPage: true,
     });
   }

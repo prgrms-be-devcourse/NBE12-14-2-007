@@ -16,6 +16,7 @@ import { dateText, errorText, period, regions } from "../lib/format";
 import { selectedRegion } from "../lib/regions";
 import { RegionSelects } from "../components/RegionSelects";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { FestivalDeletionNotice } from "../components/FestivalDeletionNotice";
 import type {
   EventView,
   SubmissionInput,
@@ -89,7 +90,7 @@ export function SubmissionList({ compact = false }: { compact?: boolean }) {
           {list.map((s) => {
             return (
               <Link
-                className="submission-row"
+                className={`submission-row${s.deletion ? " is-deleted" : ""}`}
                 key={s.festivalSubmissionId}
                 to={`/submissions/${s.festivalSubmissionId}`}
               >
@@ -101,10 +102,20 @@ export function SubmissionList({ compact = false }: { compact?: boolean }) {
                 <div className="submission-row-copy">
                   <div>
                     <Badge tone={s.status === "CLOSED" ? "gray" : "green"}>
-                      {s.status === "CLOSED" ? "종료" : "종료 전"}
+                      {s.deletion
+                        ? "삭제된 행사"
+                        : s.status === "CLOSED"
+                          ? "종료"
+                          : "종료 전"}
                     </Badge>
                   </div>
                   <h3>{s.title}</h3>
+                  {s.deletion && (
+                    <p>
+                      삭제 사유:{" "}
+                      {s.deletion.reason || "기록된 사유가 없습니다."}
+                    </p>
+                  )}
                   <p>
                     <MapPin size={14} />
                     {regions[s.region] || s.region} {s.regionDetail}
@@ -194,7 +205,14 @@ function EditSubmission({ id }: { id: string }) {
   ) : error ? (
     <ErrorState message={error} retry={reload} />
   ) : data ? (
-    <SubmissionForm existing={data} />
+    data.submission.festival.deletion ? (
+      <>
+        <FestivalDeletionNotice deletion={data.submission.festival.deletion} />
+        <p className="muted">삭제된 행사는 수정할 수 없어요</p>
+      </>
+    ) : (
+      <SubmissionForm existing={data} />
+    )
   ) : null;
 }
 function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {

@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { ApiError, COMMENT_PAGE_SIZE } from "../lib/api";
+import { AdminDeletionModal } from "../components/AdminDeletionModal";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
 import { FestivalPicker } from "../components/FestivalPicker";
@@ -302,37 +303,52 @@ function ReviewDetail({ id }: { id: string }) {
         <FormError message={actionError} />
       </article>
       <Comments postId={id} />
-      {deleteOpen && (
-        <Modal title="후기를 삭제할까요?" onClose={() => setDeleteOpen(false)}>
-          <p className="muted">삭제한 후기는 목록에서 사라져요.</p>
-          <FormError message={actionError} />
-          <div className="form-actions">
-            <button
-              className="btn secondary"
-              onClick={() => setDeleteOpen(false)}
-            >
-              취소
-            </button>
-            <button
-              className="btn danger"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await api.deletePost(id);
-                  toast("후기를 삭제했어요.");
-                  navigate(`/reviews?festival=${post.festivalId}`);
-                } catch (e) {
-                  setActionError(errorText(e));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              삭제하기
-            </button>
-          </div>
-        </Modal>
+      {deleteOpen && !own ? (
+        <AdminDeletionModal
+          targetType="POST"
+          targetId={id}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => {
+            toast("후기를 삭제했어요.");
+            navigate(`/reviews?festival=${post.festivalId}`);
+          }}
+        />
+      ) : (
+        deleteOpen && (
+          <Modal
+            title="후기를 삭제할까요?"
+            onClose={() => setDeleteOpen(false)}
+          >
+            <p className="muted">삭제한 후기는 목록에서 사라져요.</p>
+            <FormError message={actionError} />
+            <div className="form-actions">
+              <button
+                className="btn secondary"
+                onClick={() => setDeleteOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api.deletePost(id);
+                    toast("후기를 삭제했어요.");
+                    navigate(`/reviews?festival=${post.festivalId}`);
+                  } catch (e) {
+                    setActionError(errorText(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                삭제하기
+              </button>
+            </div>
+          </Modal>
+        )
       )}
     </>
   );
@@ -672,29 +688,38 @@ function CommentRow({
         )}
         <FormError message={error} />
       </div>
-      {deleting && (
-        <Modal title="댓글을 삭제할까요?" onClose={() => setDeleting(false)}>
-          <p className="muted">
-            삭제한 댓글은 "삭제된 댓글입니다"로 표시되고, 달린 답글은 그대로
-            남아요.
-          </p>
-          <FormError message={error} />
-          <div className="form-actions">
-            <button
-              className="btn secondary"
-              onClick={() => setDeleting(false)}
-            >
-              취소
-            </button>
-            <button
-              className="btn danger"
-              disabled={busy}
-              onClick={() => save(true)}
-            >
-              삭제
-            </button>
-          </div>
-        </Modal>
+      {deleting && admin && !own ? (
+        <AdminDeletionModal
+          targetType="COMMENT"
+          targetId={comment.id}
+          onClose={() => setDeleting(false)}
+          onDeleted={reload}
+        />
+      ) : (
+        deleting && (
+          <Modal title="댓글을 삭제할까요?" onClose={() => setDeleting(false)}>
+            <p className="muted">
+              삭제한 댓글은 "삭제된 댓글입니다"로 표시되고, 달린 답글은 그대로
+              남아요.
+            </p>
+            <FormError message={error} />
+            <div className="form-actions">
+              <button
+                className="btn secondary"
+                onClick={() => setDeleting(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={busy}
+                onClick={() => save(true)}
+              >
+                삭제
+              </button>
+            </div>
+          </Modal>
+        )
       )}
     </div>
   );
