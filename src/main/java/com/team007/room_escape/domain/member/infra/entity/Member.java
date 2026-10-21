@@ -15,10 +15,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.UuidGenerator;
 
 // 탈퇴 회원의 글·댓글 조회가 깨지지 않게 @SQLRestriction을 걸지 않는다. 활동 회원은 deletedAtIsNull 메서드로 거른다.
 @Entity
+@DynamicUpdate // 프로필·탈퇴 등 다른 변경이 DB의 최신 등급까지 덮어쓰지 않도록 변경한 컬럼만 저장한다.
 @Table(name = "member")
 @Getter
 @Builder
@@ -77,14 +79,6 @@ public class Member extends SoftDeletableEntity {
 	/** @param encodedPassword 반드시 인코딩된 값이어야 한다. 평문을 넣으면 로그인이 깨진다. */
 	public void changePassword(String encodedPassword) {
 		this.password = encodedPassword;
-	}
-
-	/** 활동 기반 신뢰 등급 재계산용. 제재 회원과 관리자는 자동 계산으로 덮어쓰지 않는다. */
-	public void applyTrustGrade(MemberRole grade) {
-		if (role == MemberRole.ROLE_WARNING || role == MemberRole.ROLE_ADMIN) {
-			return;
-		}
-		this.role = grade;
 	}
 
 	/** 탈퇴 회원 대신 보여줄 이름. 파기 배치와 응답 DTO가 같은 값을 쓰도록 여기 둔다. */

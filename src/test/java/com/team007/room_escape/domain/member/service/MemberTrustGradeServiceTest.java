@@ -3,6 +3,9 @@ package com.team007.room_escape.domain.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
@@ -10,6 +13,9 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracy
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
+import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,11 +33,17 @@ class MemberTrustGradeServiceTest {
 	@Mock
 	private FestivalAccuracyVoteRepository accuracyVoteRepository;
 
+	@Mock
+	private MemberRepository memberRepository;
+
+	@Mock
+	private EntityManager entityManager;
+
 	@InjectMocks
 	private MemberTrustGradeService memberTrustGradeService;
 
 	@Test
-	@DisplayName("좋아요 또는 정확해요 중 하나가 10개 이상이면 Expert 등급이 된다")
+	@DisplayName("좋아요 또는 정확해요 중 하나가 10개 이상이면 탈출 메이커 등급이 된다")
 	void becomeRecognizedWhenEitherConditionIsMet() {
 		Member author = author(MemberRole.ROLE_UNVERIFIED);
 		Festival festival = festivalBy(author);
@@ -42,7 +54,7 @@ class MemberTrustGradeServiceTest {
 
 		memberTrustGradeService.refreshForFestival(festival);
 
-		assertThat(author.getRole()).isEqualTo(MemberRole.ROLE_RECOGNIZED);
+		verify(memberRepository).updateTrustGrade(eq(author.getId()), eq(MemberRole.ROLE_RECOGNIZED), any(LocalDateTime.class));
 	}
 
 	@Test
@@ -57,7 +69,7 @@ class MemberTrustGradeServiceTest {
 
 		memberTrustGradeService.refreshForFestival(festival);
 
-		assertThat(author.getRole()).isEqualTo(MemberRole.ROLE_TRUSTED);
+		verify(memberRepository).updateTrustGrade(eq(author.getId()), eq(MemberRole.ROLE_TRUSTED), any(LocalDateTime.class));
 	}
 
 	@Test
@@ -70,7 +82,7 @@ class MemberTrustGradeServiceTest {
 
 		assertThat(warning.getRole()).isEqualTo(MemberRole.ROLE_WARNING);
 		assertThat(admin.getRole()).isEqualTo(MemberRole.ROLE_ADMIN);
-		verifyNoInteractions(likeRepository, accuracyVoteRepository);
+		verifyNoInteractions(likeRepository, accuracyVoteRepository, memberRepository, entityManager);
 	}
 
 	private Member author(MemberRole role) {
