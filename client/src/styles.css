@@ -2209,7 +2209,6 @@ select {
 }
 .community-detail {
   margin-top: 28px;
-  border-top: 2px solid #31463a;
 }
 .community-detail > header {
   position: relative;
