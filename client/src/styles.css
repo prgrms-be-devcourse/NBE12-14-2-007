@@ -2207,12 +2207,9 @@ select {
   width: 22px;
   height: 22px;
 }
-.community-detail {
-  margin-top: 28px;
-}
 .community-detail > header {
   position: relative;
-  padding: 30px 6px 26px;
+  padding: 4px 0 22px;
   border-bottom: 1px solid var(--line);
 }
 .community-detail h1 {
@@ -2235,7 +2232,7 @@ select {
 .community-owner-actions {
   position: absolute;
   right: 0;
-  bottom: 24px;
+  bottom: 22px;
   display: flex;
   gap: 12px;
 }
@@ -2255,8 +2252,8 @@ select {
   color: #657064;
 }
 .community-content {
-  min-height: 260px;
-  padding: 40px 6px 60px;
+  min-height: 140px;
+  padding: 28px 0 40px;
   color: #37473c;
   font-size: 14px;
   line-height: 1.9;
