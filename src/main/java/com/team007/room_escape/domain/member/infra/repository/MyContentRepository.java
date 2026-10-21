@@ -2,6 +2,7 @@ package com.team007.room_escape.domain.member.infra.repository;
 
 import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
 import jakarta.persistence.EntityManager;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -55,6 +56,6 @@ public class MyContentRepository {
 
 	private static LocalDateTime time(Object value) {
 		if (value == null) return null;
-		return value instanceof LocalDateTime time ? time : ((java.sql.Timestamp) value).toLocalDateTime();
+		return value instanceof LocalDateTime time ? time : ((Timestamp) value).toLocalDateTime();
 	}
 }

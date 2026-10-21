@@ -1,8 +1,9 @@
 package com.team007.room_escape.domain.festival.service;
 
-import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
-import com.team007.room_escape.domain.deletion.infra.entity.*;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
 import com.team007.room_escape.domain.deletion.service.DeletionHandler;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
@@ -20,12 +21,10 @@ public class FestivalDeletionHandler implements DeletionHandler {
 	public void restore(DeletionHistory history) {
 		var festival = festivals.findForDeletion(Long.valueOf(history.getTargetId()))
 			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
-		var latest = histories.findLatest(supports(), history.getTargetId())
-			.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_RESTORE_FORBIDDEN));
-		if (!festival.isDeleted() || latest.getAction() != DeletionAction.DELETE
-			|| latest.getActorType() != DeletionActorType.ADMIN) {
-			throw new BusinessException(FestivalExceptionCode.FESTIVAL_RESTORE_FORBIDDEN);
+		if (!festival.isDeleted()) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
 		}
+		histories.requireAdministratorDeletion(supports(), history.getTargetId());
 		deletion.restore(festival);
 	}
 
