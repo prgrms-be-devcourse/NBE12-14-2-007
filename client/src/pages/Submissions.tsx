@@ -156,14 +156,16 @@ export function SubmissionFormPage() {
   const { member, authLoading } = useApp();
   return (
     <div className="container page-space">
-      <p className="eyebrow">SHARE A LITTLE JOY</p>
-      <Link
-        className="back-link"
-        to={submissionId ? `/submissions/${submissionId}` : "/explore"}
-      >
-        <ArrowLeft size={16} />
-        {submissionId ? "제보 상세로" : "행사 목록으로"}
-      </Link>
+      <div className="form-topline">
+        <p className="eyebrow">SHARE A LITTLE JOY</p>
+        <Link
+          className="back-link"
+          to={submissionId ? `/submissions/${submissionId}` : "/explore"}
+        >
+          <ArrowLeft size={16} />
+          {submissionId ? "제보 상세로" : "행사 목록으로"}
+        </Link>
+      </div>
       <PageTitle
         title={
           submissionId

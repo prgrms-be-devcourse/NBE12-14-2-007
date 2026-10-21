@@ -1802,6 +1802,17 @@ select {
 .back-link:hover {
   color: var(--orange);
 }
+.form-topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  margin-bottom: 14px;
+}
+.form-topline .eyebrow,
+.form-topline .back-link {
+  margin-bottom: 0;
+}
 .form-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 270px;
