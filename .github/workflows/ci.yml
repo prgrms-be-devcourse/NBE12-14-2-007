@@ -1,0 +1,135 @@
+name: CI
+
+# 코틀린 전환 중 에이전트가 여러 갈래로 작업해도 API 동작이 어긋나지 않게 막는다.
+# 사람이 눈으로 확인하는 대신 여기서 기계적으로 거른다.
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+jobs:
+  guardrails:
+    name: 계약 보호 검사
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 기준 브랜치와 비교해야 해서 전체 이력을 받는다.
+          fetch-depth: 0
+
+      - name: 계약 테스트를 고치지 않았는지 확인
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          # 계약 테스트는 "지금 동작"을 적어둔 기준이다. 코드를 맞추는 대신
+          # 테스트를 고치면 깨진 동작이 통과하므로, 수정과 삭제를 막는다.
+          # 새 엔드포인트용 추가(A)는 허용한다.
+          CHANGED=$(git diff --diff-filter=MD --name-only "$BASE"...HEAD \
+            -- 'src/test/java/com/team007/room_escape/api/*ApiContractTest.java' \
+               'src/test/java/com/team007/room_escape/api/ApiContractSupport.java')
+          if [ -n "$CHANGED" ]; then
+            echo "::error::계약 테스트를 수정하거나 삭제했다. 코드를 테스트에 맞춰야 한다."
+            echo "$CHANGED" | sed 's/^/  /'
+            echo "기대값이 실제로 틀렸다면, 이 PR 에서 그 이유를 설명하고 리뷰어 승인을 받아라." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "계약 테스트 변경 없음" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 적용된 마이그레이션을 고치지 않았는지 확인
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          # 이미 적용된 마이그레이션을 고치면 Flyway 체크섬이 깨져 기동이 막힌다.
+          CHANGED=$(git diff --diff-filter=MD --name-only "$BASE"...HEAD \
+            -- 'src/main/resources/db/migration/*.sql' 'src/main/resources/db/migration_v2/*.sql')
+          if [ -n "$CHANGED" ]; then
+            echo "::error::기존 마이그레이션을 수정하거나 삭제했다. 새 버전 파일을 추가해라."
+            echo "$CHANGED" | sed 's/^/  /'
+            exit 1
+          fi
+          echo "기존 마이그레이션 변경 없음" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: API 표면 기준이 바뀌었는지 알림
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          # 막지는 않는다. 의도한 변경일 수 있어서, 리뷰어가 보도록 드러내기만 한다.
+          if git diff --quiet "$BASE"...HEAD -- src/test/resources/api-surface.txt; then
+            echo "API 표면 기준 변경 없음" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### :warning: API 표면이 바뀌었다"
+              echo "경로·파라미터·응답 필드명이 달라졌다. 의도한 변경인지 확인해라."
+              echo '```diff'
+              git diff "$BASE"...HEAD -- src/test/resources/api-surface.txt | head -100
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  test:
+    name: 빌드와 테스트
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: roomescape
+          POSTGRES_USER: roomescape
+          POSTGRES_PASSWORD: roomescape
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 정책 테스트용 데이터베이스 생성
+        # 일부 테스트가 별도 데이터베이스를 쓴다. 없으면 컨텍스트 로딩부터 실패한다.
+        env:
+          PGPASSWORD: roomescape
+        run: |
+          psql -h localhost -U roomescape -d postgres \
+            -c "CREATE DATABASE roomescape_policy_test OWNER roomescape;"
+          psql -h localhost -U roomescape -d roomescape_policy_test \
+            -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+
+      - name: 테스트
+        env:
+          DATASOURCE_URL: jdbc:postgresql://localhost:5432/roomescape
+          DATASOURCE_USERNAME: roomescape
+          DATASOURCE_PASSWORD: roomescape
+          # 동시성 테스트가 기본값으로 쓰는 55432 대신 위 서비스를 쓰게 한다.
+          TRUST_TEST_DATABASE_URL: jdbc:postgresql://localhost:5432/roomescape_policy_test
+          # 외부 연동은 테스트에서 호출하지 않는다. 기동만 되게 더미를 넣는다.
+          JWT_SECRET: ci-only-jwt-secret-value-that-is-long-enough-for-hs256
+          JWT_REFRESH_SECRET: ci-only-refresh-secret-value-that-is-long-enough-for-hs256
+          MAIL_USERNAME: ci@example.com
+          MAIL_PASSWORD: ci-dummy
+          PUBLIC_FESTIVAL_SERVICE_KEY: ci-dummy
+          KMA_WEATHER_SERVICE_KEY: ci-dummy
+          CULTURE_INFO_SERVICE_KEY: ci-dummy
+          R2_ACCOUNT_ID: ci-dummy
+          R2_ACCESS_KEY: ci-dummy
+          R2_SECRET_KEY: ci-dummy
+          R2_BUCKET: ci-dummy
+          R2_PUBLIC_URL: https://example.com
+        run: ./gradlew test --no-daemon
+
+      - name: 테스트 결과 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/test
+            build/api-surface-actual.txt
+          if-no-files-found: ignore

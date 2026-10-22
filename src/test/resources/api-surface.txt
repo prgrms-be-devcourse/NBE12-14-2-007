@@ -1,0 +1,881 @@
+# 엔드포인트
+POST /api/v1/admin/deletions
+  body: AdminDeletionCreate
+  responses: 200->ApiResponseVoid
+GET /api/v1/admin/deletions/latest
+  params: targetId(query), targetType(query)
+  responses: 200->ApiResponseLatest
+POST /api/v1/admin/deletions/restore
+  body: AdminDeletionRestore
+  responses: 200->ApiResponseVoid
+GET /api/v1/admin/festivals
+  params: excludeClosed(query), includeDeleted(query), keyword(query), page(query), providerType(query), size(query), sort(query)
+  responses: 200->ApiResponsePageAdminFestivalListItem
+PATCH /api/v1/admin/festivals/{festivalId}
+  params: festivalId(path)
+  body: AdminFestivalUpdateRequest
+  responses: 200->ApiResponseFestivalDetail
+GET /api/v1/admin/inquiries
+  params: category(query), includeDeleted(query), page(query), size(query), sort(query), status(query), title(query)
+  responses: 200->ApiResponsePageAdminInquiryListItem
+GET /api/v1/admin/inquiries/{inquiryId}
+  params: inquiryId(path)
+  responses: 200->ApiResponseAdminInquiryDetail
+PATCH /api/v1/admin/inquiries/{inquiryId}/answer
+  params: inquiryId(path)
+  body: AdminInquiryAnswerRequest
+  responses: 200->ApiResponseAdminInquiryDetail
+GET /api/v1/admin/members
+  params: includeDeleted(query), keyword(query), page(query), role(query), size(query), sort(query)
+  responses: 200->ApiResponsePageAdminInfo
+GET /api/v1/admin/members/{memberId}
+  params: memberId(path)
+  responses: 200->ApiResponseAdminInfo
+PATCH /api/v1/admin/members/{memberId}/role
+  params: memberId(path)
+  body: AdminMemberRoleChangeRequest
+  responses: 200->ApiResponseAdminInfo
+GET /api/v1/admin/posts
+  params: keyword(query), page(query), type(query)
+  responses: 200->ApiResponsePagePostAdminListItem
+GET /api/v1/admin/posts/{id}/comments
+  params: id(path), page(query)
+  responses: 200->ApiResponsePageAdminCommentInfo
+POST /api/v1/auth/login
+  body: AuthLoginRequest
+  responses: 200->ApiResponseAuthToken
+POST /api/v1/auth/logout
+  params: refreshToken(cookie)
+  responses: 200->ApiResponseVoid
+POST /api/v1/auth/refresh
+  params: refreshToken(cookie)
+  responses: 200->ApiResponseAuthToken
+POST /api/v1/auth/signup
+  body: AuthSignupRequest
+  responses: 200->ApiResponseVoid
+DELETE /api/v1/comments/{id}
+  params: id(path)
+  responses: 200->ApiResponseVoid
+PATCH /api/v1/comments/{id}
+  params: id(path)
+  body: CommentUpsertRequest
+  responses: 200->ApiResponseCommentInfo
+DELETE /api/v1/community/comments/{commentId}
+  params: commentId(path)
+  responses: 200->ApiResponseVoid
+PATCH /api/v1/community/comments/{commentId}
+  params: commentId(path)
+  body: CommunityCommentUpsertRequest
+  responses: 200->ApiResponseCommunityCommentInfo
+GET /api/v1/community/posts
+  params: category(query), keyword(query), pageable(query)
+  responses: 200->ApiResponsePageCommunityPostListItem
+POST /api/v1/community/posts
+  body: CommunityPostUpsertRequest
+  responses: 200->ApiResponseCommunityPostDetail
+DELETE /api/v1/community/posts/{postId}
+  params: postId(path)
+  responses: 200->ApiResponseVoid
+GET /api/v1/community/posts/{postId}
+  params: postId(path)
+  responses: 200->ApiResponseCommunityPostDetail
+PATCH /api/v1/community/posts/{postId}
+  params: postId(path)
+  body: CommunityPostUpsertRequest
+  responses: 200->ApiResponseCommunityPostDetail
+GET /api/v1/community/posts/{postId}/comments
+  params: pageable(query), postId(path)
+  responses: 200->ApiResponsePageCommunityCommentInfo
+POST /api/v1/community/posts/{postId}/comments
+  params: postId(path)
+  body: CommunityCommentCreateRequest
+  responses: 200->ApiResponseCommunityCommentInfo
+GET /api/v1/festivals
+  params: category(query), date(query), excludeClosed(query), keyword(query), page(query), providerType(query), region(query), size(query), sort(query)
+  responses: 200->ApiResponsePageFestivalListItem
+POST /api/v1/festivals/submissions
+  body: FestivalSubmissionUpsertRequest
+  responses: 200->ApiResponseFestivalSubmissionCreate
+POST /api/v1/festivals/sync
+  responses: 200->ApiResponseSyncResponse
+GET /api/v1/festivals/{festivalId}
+  params: festivalId(path)
+  responses: 200->ApiResponseFestivalDetail
+DELETE /api/v1/festivals/{festivalId}/accuracy-votes/me
+  params: festivalId(path)
+  responses: 200->ApiResponseFestivalAccuracyVoteInfo
+PUT /api/v1/festivals/{festivalId}/accuracy-votes/me
+  params: festivalId(path)
+  body: FestivalAccuracyVoteUpsertRequest
+  responses: 200->ApiResponseFestivalAccuracyVoteInfo
+DELETE /api/v1/festivals/{id}/likes/me
+  params: id(path)
+  responses: 200->ApiResponseLikeResponse
+POST /api/v1/festivals/{id}/likes/me
+  params: id(path)
+  responses: 200->ApiResponseLikeResponse
+GET /api/v1/festivals/{id}/posts
+  params: id(path), page(query)
+  responses: 200->ApiResponsePagePostListItem
+POST /api/v1/festivals/{id}/posts
+  params: id(path)
+  body: PostRequest
+  responses: 200->ApiResponsePostCreate
+POST /api/v1/images
+  params: type(query)
+  responses: 200->ApiResponseUploadInfo
+POST /api/v1/inquiries
+  body: InquiryCreateRequest
+  responses: 200->ApiResponseInquiryDetail
+GET /api/v1/inquiries/me
+  responses: 200->ApiResponseListInquiryListItem
+DELETE /api/v1/inquiries/{inquiryId}
+  params: inquiryId(path)
+  responses: 200->ApiResponseVoid
+GET /api/v1/inquiries/{inquiryId}
+  params: inquiryId(path)
+  responses: 200->ApiResponseInquiryDetail
+PATCH /api/v1/inquiries/{inquiryId}
+  params: inquiryId(path)
+  body: InquiryUpdateRequest
+  responses: 200->ApiResponseInquiryDetail
+DELETE /api/v1/members/me
+  body: MemberWithdrawRequest
+  responses: 200->ApiResponseVoid
+GET /api/v1/members/me
+  responses: 200->ApiResponseMyPageInfo
+PATCH /api/v1/members/me
+  body: MemberUpdateRequest
+  responses: 200->ApiResponseMyPageInfo
+GET /api/v1/members/me/comments
+  params: page(query)
+  responses: 200->ApiResponsePageItem
+PATCH /api/v1/members/me/password
+  body: PasswordChangeRequest
+  responses: 200->ApiResponseVoid
+POST /api/v1/members/me/password/verification-code
+  responses: 200->ApiResponseVoid
+POST /api/v1/members/me/password/verify
+  body: PasswordVerifyRequest
+  responses: 200->ApiResponseVoid
+GET /api/v1/members/me/posts
+  params: page(query)
+  responses: 200->ApiResponsePageItem
+GET /api/v1/members/me/submissions
+  responses: 200->ApiResponseListFestivalSubmissionListItem
+DELETE /api/v1/members/me/submissions/{submissionId}
+  params: submissionId(path)
+  responses: 200->ApiResponseVoid
+GET /api/v1/members/me/submissions/{submissionId}
+  params: submissionId(path)
+  responses: 200->ApiResponseFestivalSubmissionDetail
+PATCH /api/v1/members/me/submissions/{submissionId}
+  params: submissionId(path)
+  body: FestivalSubmissionUpsertRequest
+  responses: 200->ApiResponseFestivalSubmissionDetail
+GET /api/v1/posts
+  params: keyword(query), page(query), type(query)
+  responses: 200->ApiResponsePagePostListItem
+DELETE /api/v1/posts/{id}
+  params: id(path)
+  responses: 200->ApiResponseVoid
+GET /api/v1/posts/{id}
+  params: id(path)
+  responses: 200->ApiResponsePostDetail
+PATCH /api/v1/posts/{id}
+  params: id(path)
+  body: PostRequest
+  responses: 200->ApiResponsePostDetail
+GET /api/v1/posts/{id}/comments
+  params: id(path), page(query)
+  responses: 200->ApiResponsePageCommentInfo
+POST /api/v1/posts/{id}/comments
+  params: id(path)
+  body: CommentCreateRequest
+  responses: 200->ApiResponseCommentInfo
+DELETE /api/v1/posts/{id}/likes/me
+  params: id(path)
+  responses: 200->ApiResponseLikeResponse
+POST /api/v1/posts/{id}/likes/me
+  params: id(path)
+  responses: 200->ApiResponseLikeResponse
+GET /api/v1/weather
+  params: date(query), region(query)
+  responses: 200->ApiResponseWeatherResponse
+
+# 스키마
+AdminCommentInfo
+  content: string
+  date: string/date-time
+  deletedAt: string/date-time
+  deletion: Latest
+  id: integer/int64
+  member: MemberInfo
+  parentDeleted: boolean
+  parentId: integer/int64
+  postId: string/uuid
+  replies: array<AdminCommentInfo>
+AdminDeletionCreate
+  inquiryId: string/uuid
+  reasonCode: string
+  reasonDetail: string
+  targetId: string
+  targetType: string
+AdminDeletionRestore
+  targetId: string
+  targetType: string
+AdminFestivalListItem
+  beginDe: string/date-time
+  category: string
+  createdAt: string/date-time
+  deletedAt: string/date-time
+  deletion: FestivalDeletionInfo
+  endDe: string/date-time
+  festivalId: integer/int64
+  imgUrl: string
+  providerType: string
+  region: string
+  status: string
+  title: string
+AdminFestivalUpdateRequest
+  beginDe: string/date-time
+  category: string
+  endDe: string/date-time
+  festivalContent: string
+  imgUrl: string
+  partcptExpnInfo: string
+  referenceUrl: string
+  region: string
+  regionDetail: string
+  telnoInfo: string
+  title: string
+AdminInfo
+  createdAt: string/date-time
+  deletedAt: string/date-time
+  email: string
+  id: string/uuid
+  nickname: string
+  phone: string
+  profileImg: string
+  role: string
+  updatedAt: string/date-time
+AdminInquiryAnswerRequest
+  answer: string
+AdminInquiryDetail
+  answer: string
+  category: string
+  content: string
+  createdAt: string/date-time
+  deletedAt: string/date-time
+  id: string/uuid
+  img: string
+  status: string
+  targetId: string
+  targetPostId: string/uuid
+  targetType: string
+  title: string
+  updatedAt: string/date-time
+  writer: AdminInfo
+AdminInquiryListItem
+  category: string
+  createdAt: string/date-time
+  deletedAt: string/date-time
+  id: string/uuid
+  status: string
+  targetId: string
+  targetType: string
+  title: string
+  writer: AdminInfo
+AdminMemberRoleChangeRequest
+  role: string
+ApiResponseAdminInfo
+  code: string
+  data: AdminInfo
+  message: string
+  success: boolean
+ApiResponseAdminInquiryDetail
+  code: string
+  data: AdminInquiryDetail
+  message: string
+  success: boolean
+ApiResponseAuthToken
+  code: string
+  data: AuthToken
+  message: string
+  success: boolean
+ApiResponseCommentInfo
+  code: string
+  data: CommentInfo
+  message: string
+  success: boolean
+ApiResponseCommunityCommentInfo
+  code: string
+  data: CommunityCommentInfo
+  message: string
+  success: boolean
+ApiResponseCommunityPostDetail
+  code: string
+  data: CommunityPostDetail
+  message: string
+  success: boolean
+ApiResponseFestivalAccuracyVoteInfo
+  code: string
+  data: FestivalAccuracyVoteInfo
+  message: string
+  success: boolean
+ApiResponseFestivalDetail
+  code: string
+  data: FestivalDetail
+  message: string
+  success: boolean
+ApiResponseFestivalSubmissionCreate
+  code: string
+  data: FestivalSubmissionCreate
+  message: string
+  success: boolean
+ApiResponseFestivalSubmissionDetail
+  code: string
+  data: FestivalSubmissionDetail
+  message: string
+  success: boolean
+ApiResponseInquiryDetail
+  code: string
+  data: InquiryDetail
+  message: string
+  success: boolean
+ApiResponseLatest
+  code: string
+  data: Latest
+  message: string
+  success: boolean
+ApiResponseLikeResponse
+  code: string
+  data: LikeResponse
+  message: string
+  success: boolean
+ApiResponseListFestivalSubmissionListItem
+  code: string
+  data: array<FestivalSubmissionListItem>
+  message: string
+  success: boolean
+ApiResponseListInquiryListItem
+  code: string
+  data: array<InquiryListItem>
+  message: string
+  success: boolean
+ApiResponseMyPageInfo
+  code: string
+  data: MyPageInfo
+  message: string
+  success: boolean
+ApiResponsePageAdminCommentInfo
+  code: string
+  data: PageAdminCommentInfo
+  message: string
+  success: boolean
+ApiResponsePageAdminFestivalListItem
+  code: string
+  data: PageAdminFestivalListItem
+  message: string
+  success: boolean
+ApiResponsePageAdminInfo
+  code: string
+  data: PageAdminInfo
+  message: string
+  success: boolean
+ApiResponsePageAdminInquiryListItem
+  code: string
+  data: PageAdminInquiryListItem
+  message: string
+  success: boolean
+ApiResponsePageCommentInfo
+  code: string
+  data: PageCommentInfo
+  message: string
+  success: boolean
+ApiResponsePageCommunityCommentInfo
+  code: string
+  data: PageCommunityCommentInfo
+  message: string
+  success: boolean
+ApiResponsePageCommunityPostListItem
+  code: string
+  data: PageCommunityPostListItem
+  message: string
+  success: boolean
+ApiResponsePageFestivalListItem
+  code: string
+  data: PageFestivalListItem
+  message: string
+  success: boolean
+ApiResponsePageItem
+  code: string
+  data: PageItem
+  message: string
+  success: boolean
+ApiResponsePagePostAdminListItem
+  code: string
+  data: PagePostAdminListItem
+  message: string
+  success: boolean
+ApiResponsePagePostListItem
+  code: string
+  data: PagePostListItem
+  message: string
+  success: boolean
+ApiResponsePostCreate
+  code: string
+  data: PostCreate
+  message: string
+  success: boolean
+ApiResponsePostDetail
+  code: string
+  data: PostDetail
+  message: string
+  success: boolean
+ApiResponseSyncResponse
+  code: string
+  data: SyncResponse
+  message: string
+  success: boolean
+ApiResponseUploadInfo
+  code: string
+  data: UploadInfo
+  message: string
+  success: boolean
+ApiResponseVoid
+  code: string
+  data: object
+  message: string
+  success: boolean
+ApiResponseWeatherResponse
+  code: string
+  data: WeatherResponse
+  message: string
+  success: boolean
+AuthLoginRequest
+  email: string/email
+  password: string
+AuthSignupRequest
+  email: string/email
+  nickname: string
+  password: string
+  phone: string
+AuthToken
+  accessToken: string
+  tokenType: string
+CommentCreateRequest
+  content: string
+  parentId: object/int64
+CommentInfo
+  content: string
+  date: string/date-time
+  deleted: boolean
+  id: integer/int64
+  member: MemberInfo
+  parentId: object/int64
+  postId: string/uuid
+  replies: array<CommentInfo>
+CommentUpsertRequest
+  content: string
+CommunityCommentCreateRequest
+  content: string
+  parentId: object/int64
+CommunityCommentInfo
+  content: string
+  createdAt: string/date-time
+  deleted: boolean
+  id: integer/int64
+  member: MemberInfo
+  parentId: object/int64
+  postId: string/uuid
+  replies: array<CommunityCommentInfo>
+  updatedAt: string/date-time
+CommunityCommentUpsertRequest
+  content: string
+CommunityPostDetail
+  category: string
+  commentCount: integer/int64
+  content: string
+  createdAt: string/date-time
+  id: string/uuid
+  member: MemberInfo
+  title: string
+  updatedAt: string/date-time
+  viewCount: integer/int64
+CommunityPostListItem
+  category: string
+  commentCount: integer/int64
+  createdAt: string/date-time
+  id: string/uuid
+  member: MemberInfo
+  title: string
+  viewCount: integer/int64
+CommunityPostUpsertRequest
+  category: string
+  content: string
+  title: string
+FestivalAccuracyVoteInfo
+  accurateCount: integer/int64
+  inaccurateCount: integer/int64
+  myVote: object
+FestivalAccuracyVoteUpsertRequest
+  voteType: string
+FestivalDeletionInfo
+  deletedAt: string/date-time
+  reason: string
+  type: string
+FestivalDetail
+  accurateCount: integer/int64
+  beginDe: string/date-time
+  category: string
+  endDe: string/date-time
+  festivalContent: string
+  festivalId: integer/int64
+  imgUrl: string
+  inaccurateCount: integer/int64
+  likeCount: integer/int64
+  likedByMe: boolean
+  member: MemberInfo
+  myVote: object
+  partcptExpnInfo: string
+  providerType: string
+  referenceUrl: string
+  region: string
+  regionDetail: string
+  status: string
+  telnoInfo: string
+  title: string
+  url: string
+FestivalListItem
+  accurateCount: integer/int64
+  beginDe: string/date-time
+  category: string
+  endDe: string/date-time
+  festivalId: integer/int64
+  imgUrl: string
+  inaccurateCount: integer/int64
+  likeCount: integer/int64
+  member: MemberInfo
+  providerType: string
+  region: string
+  status: string
+  title: string
+FestivalSubmissionCreate
+  festivalId: integer/int64
+  festivalSubmissionId: string/uuid
+  status: string
+FestivalSubmissionDetail
+  submission: FestivalSubmissionInfo
+FestivalSubmissionFestivalInfo
+  beginDe: string/date-time
+  category: string
+  deletion: FestivalDeletionInfo
+  endDe: string/date-time
+  festivalContent: string
+  festivalId: integer/int64
+  imgUrl: string
+  partcptExpnInfo: string
+  referenceUrl: string
+  region: string
+  regionDetail: string
+  status: string
+  telnoInfo: string
+  title: string
+FestivalSubmissionInfo
+  createdAt: string/date-time
+  festival: FestivalSubmissionFestivalInfo
+  festivalSubmissionId: string/uuid
+  updatedAt: string/date-time
+FestivalSubmissionListItem
+  beginDe: string/date-time
+  createdAt: string/date-time
+  deletion: FestivalDeletionInfo
+  endDe: string/date-time
+  festivalId: integer/int64
+  festivalSubmissionId: string/uuid
+  region: string
+  regionDetail: string
+  status: string
+  title: string
+FestivalSubmissionUpsertRequest
+  beginDe: string/date-time
+  category: string
+  endDe: string/date-time
+  festivalContent: string
+  imgUrl: string
+  partcptExpnInfo: string
+  referenceUrl: string
+  region: string
+  regionDetail: string
+  telnoInfo: string
+  title: string
+  validPeriod: boolean
+InquiryCreateRequest
+  category: string
+  content: string
+  img: string
+  targetId: string
+  targetType: string
+  title: string
+InquiryDetail
+  answer: string
+  category: string
+  content: string
+  createdAt: string/date-time
+  id: string/uuid
+  img: string
+  status: string
+  targetId: string
+  targetType: string
+  title: string
+InquiryListItem
+  category: string
+  createdAt: string/date-time
+  id: string/uuid
+  status: string
+  targetId: string
+  targetType: string
+  title: string
+InquiryUpdateRequest
+  category: string
+  content: string
+  img: string
+  title: string
+Item
+  createdAt: string/date-time
+  deletedAt: string/date-time
+  deletion: Latest
+  originalPath: string
+  parentDeleted: boolean
+  targetId: string
+  title: string
+  type: string
+Latest
+  action: string
+  actorType: string
+  createdAt: string/date-time
+  reasonCode: string
+  reasonDetail: string
+  reasonLabel: string
+LikeResponse
+  likeCount: integer/int64
+MemberInfo
+  id: string/uuid
+  nickname: string
+  profileImg: string
+  role: string
+MemberUpdateRequest
+  nickname: string
+  phone: string
+  profileImg: string
+MemberWithdrawRequest
+  password: string
+MyPageInfo
+  createdAt: string/date-time
+  email: string
+  id: string/uuid
+  nickname: string
+  phone: string
+  profileImg: string
+  role: string
+  updatedAt: string/date-time
+PageAdminCommentInfo
+  content: array<AdminCommentInfo>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageAdminFestivalListItem
+  content: array<AdminFestivalListItem>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageAdminInfo
+  content: array<AdminInfo>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageAdminInquiryListItem
+  content: array<AdminInquiryListItem>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageCommentInfo
+  content: array<CommentInfo>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageCommunityCommentInfo
+  content: array<CommunityCommentInfo>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageCommunityPostListItem
+  content: array<CommunityPostListItem>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageFestivalListItem
+  content: array<FestivalListItem>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PageItem
+  content: array<Item>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PagePostAdminListItem
+  content: array<PostAdminListItem>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+PagePostListItem
+  content: array<PostListItem>
+  empty: boolean
+  first: boolean
+  last: boolean
+  number: integer/int32
+  numberOfElements: integer/int32
+  pageable: PageableObject
+  size: integer/int32
+  sort: SortObject
+  totalElements: integer/int64
+  totalPages: integer/int32
+Pageable
+  page: integer/int32
+  size: integer/int32
+  sort: array<string>
+PageableObject
+  offset: integer/int64
+  pageNumber: integer/int32
+  pageSize: integer/int32
+  paged: boolean
+  sort: SortObject
+  unpaged: boolean
+PasswordChangeRequest
+  newPassword: string
+PasswordVerifyRequest
+  code: string
+PostAdminListItem
+  date: string/date-time
+  deletedAt: string/date-time
+  festivalId: integer/int64
+  festivalTitle: string
+  id: string/uuid
+  member: MemberInfo
+  thumbnail: string
+  title: string
+PostCreate
+  id: string/uuid
+PostDetail
+  content: string
+  date: string/date-time
+  festivalId: integer/int64
+  festivalTitle: string
+  id: string/uuid
+  likeCount: integer/int64
+  likedByMe: boolean
+  member: MemberInfo
+  thumbnail: string
+  title: string
+PostListItem
+  date: string/date-time
+  festivalId: integer/int64
+  festivalTitle: string
+  id: string/uuid
+  likeCount: integer/int64
+  member: MemberInfo
+  thumbnail: string
+  title: string
+PostRequest
+  content: string
+  thumbnail: string
+  title: string
+SortObject
+  empty: boolean
+  sorted: boolean
+  unsorted: boolean
+SyncResponse
+  closedFestivals: array<SyncedFestival>
+  savedFestivals: array<SyncedFestival>
+SyncedFestival
+  festivalId: integer/int64
+  title: string
+UploadInfo
+  key: string
+  url: string
+WeatherResponse
+  condition: string
+  date: string/date
+  precipitationProbability: integer/int32

@@ -73,4 +73,7 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// API 표면 기준 파일을 다시 만들 때 쓰는 플래그. 기본은 비교만 한다.
+	// ./gradlew test --tests "*ApiSurfaceTest" -Dapi.surface.update=true
+	systemProperty("api.surface.update", System.getProperty("api.surface.update") ?: "false")
 }
