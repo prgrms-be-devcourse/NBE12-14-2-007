@@ -14,6 +14,26 @@ import org.springframework.data.repository.query.Param;
 
 public interface MemberRepository extends JpaRepository<Member, UUID> {
 
+	/** 자동 등급만 갱신한다. 먼저 조회한 객체가 아니라 DB의 현재 탈퇴·제재 상태로 판단한다. */
+	@Modifying(flushAutomatically = true)
+	@Query("""
+		UPDATE Member m
+		SET m.role = :grade, m.updatedAt = :updatedAt
+		WHERE m.id = :memberId
+		  AND m.deletedAt IS NULL
+		  AND m.role <> :grade
+		  AND m.role IN (
+		    com.team007.room_escape.domain.member.infra.entity.MemberRole.ROLE_UNVERIFIED,
+		    com.team007.room_escape.domain.member.infra.entity.MemberRole.ROLE_RECOGNIZED,
+		    com.team007.room_escape.domain.member.infra.entity.MemberRole.ROLE_TRUSTED
+		  )
+		""")
+	int updateTrustGrade(
+		@Param("memberId") UUID memberId,
+		@Param("grade") MemberRole grade,
+		@Param("updatedAt") LocalDateTime updatedAt
+	);
+
 	/** 탈퇴하지 않은 회원 조회. Member엔 @SQLRestriction이 없어서 findById 대신 이걸 쓴다. */
 	Optional<Member> findByIdAndDeletedAtIsNull(UUID id);
 

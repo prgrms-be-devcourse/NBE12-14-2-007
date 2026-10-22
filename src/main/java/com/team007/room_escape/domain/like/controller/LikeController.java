@@ -35,16 +35,6 @@ public class LikeController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	// TODO 추후에 API따로 작성안하고 개수 조회는 Post로 이동 시킬지 결정
-
-	@Operation(summary = "후기 좋아요 개수 조회", description = "특정 후기의 좋아요 개수를 조회합니다.")
-	@GetMapping("/posts/{id}/likes")
-	public ResponseEntity<ApiResponse<Long>> getPostLikeCount(@PathVariable UUID id) {
-		long likeCount = likeService.getPostLikeCount(id);
-
-		return ResponseEntity.ok(ApiResponse.success(likeCount));
-	}
-
 	@Operation(summary = "후기 좋아요 취소", description = "특정 후기에 좋아요를 취소합니다.")
 	@DeleteMapping("/posts/{id}/likes/me")
 	public ResponseEntity<ApiResponse<LikeResponse>> deletePostLike(

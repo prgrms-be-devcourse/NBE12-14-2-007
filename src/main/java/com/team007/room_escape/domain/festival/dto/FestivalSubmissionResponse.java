@@ -1,6 +1,7 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalSubmission;
@@ -63,11 +64,14 @@ public class FestivalSubmissionResponse {
 		@Schema(description = "행사 제보 일시")
 		LocalDateTime createdAt,
 
+		@Schema(description = "삭제 정보. 삭제되지 않았으면 null")
+		FestivalResponse.DeletionInfo deletion,
+
 		@Schema(description = "행사 상태", example = "OPEN")
 		FestivalStatus status
 	) {
 
-		public static ListItem from(FestivalSubmission festivalSubmission) {
+		public static ListItem from(FestivalSubmission festivalSubmission, DeletionHistory latest) {
 			Festival festival = festivalSubmission.getFestival();
 
 			return ListItem.builder()
@@ -79,6 +83,7 @@ public class FestivalSubmissionResponse {
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
 				.createdAt(festivalSubmission.getCreatedAt())
+				.deletion(FestivalResponse.DeletionInfo.from(festival, latest))
 				.status(FestivalStatus.from(festival.getEndDe()))
 				.build();
 		}
@@ -91,9 +96,9 @@ public class FestivalSubmissionResponse {
 		SubmissionInfo submission
 	) {
 
-		public static Detail from(FestivalSubmission festivalSubmission) {
+		public static Detail from(FestivalSubmission festivalSubmission, DeletionHistory latest) {
 			return Detail.builder()
-				.submission(SubmissionInfo.from(festivalSubmission))
+				.submission(SubmissionInfo.from(festivalSubmission, latest))
 				.build();
 		}
 	}
@@ -114,12 +119,12 @@ public class FestivalSubmissionResponse {
 		FestivalInfo festival
 	) {
 
-		public static SubmissionInfo from(FestivalSubmission festivalSubmission) {
+		public static SubmissionInfo from(FestivalSubmission festivalSubmission, DeletionHistory latest) {
 			return SubmissionInfo.builder()
 				.festivalSubmissionId(festivalSubmission.getId())
 				.createdAt(festivalSubmission.getCreatedAt())
 				.updatedAt(festivalSubmission.getUpdatedAt())
-				.festival(FestivalInfo.from(festivalSubmission.getFestival()))
+				.festival(FestivalInfo.from(festivalSubmission.getFestival(), latest))
 				.build();
 		}
 	}
@@ -163,11 +168,13 @@ public class FestivalSubmissionResponse {
 		@Schema(description = "전화번호")
 		String telnoInfo,
 
+		@Schema(description = "삭제 정보. 삭제되지 않았으면 null")
+		FestivalResponse.DeletionInfo deletion,
 		@Schema(description = "행사 상태", example = "OPEN")
 		FestivalStatus status
 	) {
 
-		public static FestivalInfo from(Festival festival) {
+		public static FestivalInfo from(Festival festival, DeletionHistory latest) {
 			return FestivalInfo.builder()
 				.festivalId(festival.getId())
 				.category(festival.getCategory())
@@ -181,6 +188,7 @@ public class FestivalSubmissionResponse {
 				.endDe(festival.getEndDe())
 				.partcptExpnInfo(festival.getPartcptExpnInfo())
 				.telnoInfo(festival.getTelnoInfo())
+				.deletion(FestivalResponse.DeletionInfo.from(festival, latest))
 				.status(FestivalStatus.from(festival.getEndDe()))
 				.build();
 		}

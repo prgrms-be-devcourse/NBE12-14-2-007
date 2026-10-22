@@ -47,6 +47,8 @@ class CommentServiceTest {
 	private EntityManager entityManager;
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+	@Autowired
+	private com.team007.room_escape.domain.deletion.service.AdminDeletionFacade adminDeletions;
 
 	private final PageRequest firstPage = PageRequest.of(0, 20);
 
@@ -108,7 +110,7 @@ class CommentServiceTest {
 	void 삭제해도_행은_남고_삭제_시각만_기록된다() {
 		Long id = write("지울 댓글");
 
-		commentService.deleteComment(id, writer.getId(), false);
+		commentService.deleteComment(id, writer.getId());
 		entityManager.flush();
 
 		var row = jdbcTemplate.queryForMap("SELECT content, deleted_at FROM \"comment\" WHERE id = ?", id);
@@ -120,7 +122,7 @@ class CommentServiceTest {
 	void 대댓글이_없는_댓글도_삭제하면_문구로_자리가_남는다() {
 		Long id = write("지울 댓글");
 
-		commentService.deleteComment(id, writer.getId(), false);
+		commentService.deleteComment(id, writer.getId());
 		CommentResponse.Info deleted = commentService.getComments(postId, firstPage).getContent().get(0);
 
 		assertThat(deleted.id()).isEqualTo(id);
@@ -134,7 +136,7 @@ class CommentServiceTest {
 		Long root = write("부모 댓글");
 		Long reply = reply(root, "남아야 하는 답글");
 
-		commentService.deleteComment(root, writer.getId(), false);
+		commentService.deleteComment(root, writer.getId());
 		CommentResponse.Info deletedRoot = commentService.getComments(postId, firstPage).getContent().get(0);
 
 		assertThat(deletedRoot.deleted()).isTrue();
@@ -152,7 +154,7 @@ class CommentServiceTest {
 		Long root = write("부모 댓글");
 		Long reply = reply(root, "지울 답글");
 
-		commentService.deleteComment(reply, other.getId(), false);
+		commentService.deleteComment(reply, other.getId());
 		CommentResponse.Info rootInfo = commentService.getComments(postId, firstPage).getContent().get(0);
 
 		assertThat(rootInfo.deleted()).isFalse();
@@ -166,7 +168,7 @@ class CommentServiceTest {
 	@Test
 	void 삭제된_댓글은_수정할_수_없다() {
 		Long id = write("지울 댓글");
-		commentService.deleteComment(id, writer.getId(), false);
+		commentService.deleteComment(id, writer.getId());
 
 		assertThatThrownBy(() -> commentService.updateComment(id, new CommentRequest.Upsert("되살리기"), writer.getId()))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
@@ -176,9 +178,9 @@ class CommentServiceTest {
 	@Test
 	void 이미_삭제된_댓글은_다시_삭제할_수_없다() {
 		Long id = write("지울 댓글");
-		commentService.deleteComment(id, writer.getId(), false);
+		commentService.deleteComment(id, writer.getId());
 
-		assertThatThrownBy(() -> commentService.deleteComment(id, writer.getId(), true))
+		assertThatThrownBy(() -> commentService.deleteComment(id, writer.getId()))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
 				assertThat(e.getExceptionCode()).isEqualTo(CommentExceptionCode.COMMENT_NOT_FOUND));
 	}
@@ -186,7 +188,7 @@ class CommentServiceTest {
 	@Test
 	void 삭제된_댓글에는_답글을_달_수_없다() {
 		Long id = write("지울 댓글");
-		commentService.deleteComment(id, writer.getId(), false);
+		commentService.deleteComment(id, writer.getId());
 
 		assertThatThrownBy(() -> reply(id, "늦은 답글"))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
@@ -196,7 +198,7 @@ class CommentServiceTest {
 	@Test
 	void 삭제된_댓글은_신고할_수_없다() {
 		Long id = write("지울 댓글");
-		commentService.deleteComment(id, writer.getId(), false);
+		commentService.deleteComment(id, writer.getId());
 
 		assertThatThrownBy(() -> inquiryTargetValidator.validate(InquiryTargetType.COMMENT, String.valueOf(id)))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
@@ -231,11 +233,15 @@ class CommentServiceTest {
 	void 남의_댓글은_삭제할_수_없고_관리자는_삭제할_수_있다() {
 		Long id = write("남의 댓글");
 
-		assertThatThrownBy(() -> commentService.deleteComment(id, other.getId(), false))
+		assertThatThrownBy(() -> commentService.deleteComment(id, other.getId()))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
 				assertThat(e.getExceptionCode()).isEqualTo(CommentExceptionCode.COMMENT_FORBIDDEN));
 
-		commentService.deleteComment(id, other.getId(), true);
+		Member admin = memberRepository.save(Member.builder().email(UUID.randomUUID() + "@test.com")
+			.password("encoded").nickname("관리자").role(MemberRole.ROLE_ADMIN).build());
+		adminDeletions.delete(admin.getId(), new com.team007.room_escape.domain.deletion.dto.AdminDeletionRequest.Create(
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType.COMMENT, id.toString(),
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionReason.SPAM, null, null));
 		assertThat(commentService.getComments(postId, firstPage).getContent().get(0).deleted()).isTrue();
 	}
 

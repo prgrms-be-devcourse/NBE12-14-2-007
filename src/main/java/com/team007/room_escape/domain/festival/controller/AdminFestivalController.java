@@ -7,7 +7,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -41,35 +40,13 @@ public class AdminFestivalController {
 	public ResponseEntity<ApiResponse<Page<AdminFestivalResponse.ListItem>>> search(
 		@ParameterObject @ModelAttribute AdminFestivalRequest.Search request,
 		@ParameterObject
-		@PageableDefault(size = 20, sort = "beginDe", direction = Sort.Direction.DESC)
+		@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
 		Pageable pageable
 	) {
 		Page<AdminFestivalResponse.ListItem> response =
 			adminFestivalService.search(request, pageable);
 
 		return ResponseEntity.ok(ApiResponse.success(response));
-	}
-
-	@Operation(summary = "[ADMIN] 행사 삭제", description = "삭제 시각만 남겨서 복구할 수 있다.")
-	@DeleteMapping("/{festivalId}")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse<Void>> delete(
-		@PathVariable("festivalId") Long festivalId
-	) {
-		adminFestivalService.delete(festivalId);
-
-		return ResponseEntity.ok(ApiResponse.noContentSuccess());
-	}
-
-	@Operation(summary = "[ADMIN] 행사 복구", description = "삭제된 공공 행사를 되살린다.")
-	@PatchMapping("/{festivalId}/restore")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse<Void>> restore(
-		@PathVariable("festivalId") Long festivalId
-	) {
-		adminFestivalService.restore(festivalId);
-
-		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}
 
 	@Operation(summary = "[ADMIN] 행사 수정", description = "보낸 값으로 행사 정보를 전부 덮어쓴다.")

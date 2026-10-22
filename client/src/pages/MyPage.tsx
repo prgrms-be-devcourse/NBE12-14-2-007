@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   Check,
@@ -30,7 +30,7 @@ import {
   SubmitButton,
   Upload,
 } from "../components/ui";
-import { SubmissionList } from "./Submissions";
+import { MyContents } from "./MyContents";
 
 export function MyPage() {
   const { member, authLoading, api, setMember, toast } = useApp();
@@ -73,8 +73,13 @@ export function MyPage() {
                 { key: "profile", label: "내 정보", Icon: UserRound },
                 {
                   key: "submissions",
-                  label: "내 행사 제보",
+                  label: "내가 작성한 글",
                   Icon: ClipboardList,
+                },
+                {
+                  key: "comments",
+                  label: "내가 작성한 댓글",
+                  Icon: MessageCircle,
                 },
                 {
                   key: "inquiries",
@@ -117,7 +122,9 @@ export function MyPage() {
           </aside>
           <div className="my-content">
             {tab === "submissions" ? (
-              <SubmissionList compact />
+              <MyContents key="posts" comments={false} />
+            ) : tab === "comments" ? (
+              <MyContents key="comments" comments />
             ) : tab === "inquiries" ? (
               <Inquiries />
             ) : (

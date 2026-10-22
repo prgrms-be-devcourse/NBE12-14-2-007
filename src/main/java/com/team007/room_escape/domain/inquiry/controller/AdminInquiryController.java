@@ -35,7 +35,7 @@ public class AdminInquiryController {
 
 	private final AdminInquiryService adminInquiryService;
 
-	@Operation(summary = "[ADMIN] 문의·신고·제보 목록 조회", description = "제목, 답변 상태, 문의 종류로 검색한다.")
+	@Operation(summary = "[ADMIN] 문의·신고·제보 목록 조회", description = "제목, 답변 상태, 문의 종류로 검색한다. 조건을 비우면 전체를 조회한다")
 	@GetMapping
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<Page<AdminInquiryResponse.ListItem>>> search(
@@ -49,7 +49,7 @@ public class AdminInquiryController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "[ADMIN] 문의·신고·제보 상세 조회", description = "본문, 첨부, 작성자, 답변까지 함께 조회한다.")
+	@Operation(summary = "[ADMIN] 문의·신고·제보 상세 조회", description = "본문, 첨부, 작성자, 답변까지 함께 조회한다")
 	@GetMapping("/{inquiryId}")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<AdminInquiryResponse.Detail>> findById(
@@ -60,7 +60,9 @@ public class AdminInquiryController {
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "[ADMIN] 문의·신고·제보 답변 등록", description = "답변을 등록하고 상태를 ANSWERED로 바꾼다.")
+	@Operation(
+		summary = "[ADMIN] 문의·신고·제보 답변 등록",
+		description = "답변을 등록하고 상태를 ANSWERED로 바꾼다.")
 	@PatchMapping("/{inquiryId}/answer")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<AdminInquiryResponse.Detail>> answer(

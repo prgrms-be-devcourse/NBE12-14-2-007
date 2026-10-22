@@ -52,6 +52,8 @@ class CommunityCommentTest {
 	private EntityManager entityManager;
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+	@Autowired
+	private com.team007.room_escape.domain.deletion.service.AdminDeletionFacade adminDeletions;
 
 	private final PageRequest firstPage = PageRequest.of(0, 20);
 
@@ -109,7 +111,7 @@ class CommunityCommentTest {
 	void 삭제해도_행은_남고_삭제_시각만_기록된다() {
 		Written comment = write("지울 댓글");
 
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 		entityManager.flush();
 
 		Map<String, Object> row = jdbcTemplate.queryForMap(
@@ -122,7 +124,7 @@ class CommunityCommentTest {
 	void 대댓글이_없는_댓글도_삭제하면_문구로_자리가_남는다() {
 		Written comment = write("지울 댓글");
 
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 		CommunityResponse.CommentInfo deleted = communityService.getComments(postId, firstPage).getContent().get(0);
 
 		assertThat(deleted.id()).isEqualTo(comment.id());
@@ -136,7 +138,7 @@ class CommunityCommentTest {
 		Written root = write("부모 댓글");
 		Written reply = reply(root.id(), "남아야 하는 답글");
 
-		communityService.deleteComment(root.id(), root.writer().getId(), false);
+		communityService.deleteComment(root.id(), root.writer().getId());
 		CommunityResponse.CommentInfo deletedRoot = communityService.getComments(postId, firstPage).getContent().get(0);
 
 		assertThat(deletedRoot.deleted()).isTrue();
@@ -154,7 +156,7 @@ class CommunityCommentTest {
 		Written root = write("부모 댓글");
 		Written reply = reply(root.id(), "지울 답글");
 
-		communityService.deleteComment(reply.id(), reply.writer().getId(), false);
+		communityService.deleteComment(reply.id(), reply.writer().getId());
 		CommunityResponse.CommentInfo rootInfo = communityService.getComments(postId, firstPage).getContent().get(0);
 
 		assertThat(rootInfo.deleted()).isFalse();
@@ -172,7 +174,7 @@ class CommunityCommentTest {
 		reply(root.id(), "답글 2");
 		write("다른 댓글");
 
-		communityService.deleteComment(root.id(), root.writer().getId(), false);
+		communityService.deleteComment(root.id(), root.writer().getId());
 
 		assertThat(communityService.getPost(postId).commentCount()).isEqualTo(3);
 		assertThat(communityService.getPosts(null, "", PageRequest.of(0, 50)).getContent())
@@ -184,7 +186,7 @@ class CommunityCommentTest {
 	@Test
 	void 삭제된_댓글은_수정할_수_없다() {
 		Written comment = write("지울 댓글");
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 
 		assertThatThrownBy(() -> communityService.updateComment(
 			comment.id(), new CommunityRequest.CommentUpsert("되살리기"), comment.writer().getId()))
@@ -195,9 +197,9 @@ class CommunityCommentTest {
 	@Test
 	void 이미_삭제된_댓글은_다시_삭제할_수_없다() {
 		Written comment = write("지울 댓글");
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 
-		assertThatThrownBy(() -> communityService.deleteComment(comment.id(), comment.writer().getId(), true))
+		assertThatThrownBy(() -> communityService.deleteComment(comment.id(), comment.writer().getId()))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
 				assertThat(e.getExceptionCode()).isEqualTo(CommunityExceptionCode.COMMENT_NOT_FOUND));
 	}
@@ -205,7 +207,7 @@ class CommunityCommentTest {
 	@Test
 	void 삭제된_댓글에는_답글을_달_수_없다() {
 		Written comment = write("지울 댓글");
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 
 		assertThatThrownBy(() -> reply(comment.id(), "늦은 답글"))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
@@ -215,7 +217,7 @@ class CommunityCommentTest {
 	@Test
 	void 삭제된_댓글은_신고할_수_없다() {
 		Written comment = write("지울 댓글");
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 
 		assertThatThrownBy(() -> inquiryTargetValidator.validate(
 			InquiryTargetType.COMMUNITY_COMMENT, String.valueOf(comment.id())))
@@ -226,7 +228,7 @@ class CommunityCommentTest {
 	@Test
 	void 삭제한_댓글은_도배_확인에서_빠져_바로_다시_쓸_수_있다() {
 		Written comment = write("같은 내용");
-		communityService.deleteComment(comment.id(), comment.writer().getId(), false);
+		communityService.deleteComment(comment.id(), comment.writer().getId());
 
 		CommunityResponse.CommentInfo again = communityService.createComment(
 			postId, new CommunityRequest.CommentCreate("같은 내용", null), comment.writer().getId());
@@ -263,11 +265,15 @@ class CommunityCommentTest {
 		Written comment = write("남의 댓글");
 		UUID otherId = newMember().getId();
 
-		assertThatThrownBy(() -> communityService.deleteComment(comment.id(), otherId, false))
+		assertThatThrownBy(() -> communityService.deleteComment(comment.id(), otherId))
 			.isInstanceOfSatisfying(BusinessException.class, e ->
 				assertThat(e.getExceptionCode()).isEqualTo(CommunityExceptionCode.COMMENT_FORBIDDEN));
 
-		communityService.deleteComment(comment.id(), otherId, true);
+		Member admin = memberRepository.save(Member.builder().email(UUID.randomUUID() + "@test.com")
+			.password("encoded").nickname("관리자").role(MemberRole.ROLE_ADMIN).build());
+		adminDeletions.delete(admin.getId(), new com.team007.room_escape.domain.deletion.dto.AdminDeletionRequest.Create(
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType.COMMUNITY_COMMENT, comment.id().toString(),
+			com.team007.room_escape.domain.deletion.infra.entity.DeletionReason.SPAM, null, null));
 		assertThat(communityService.getComments(postId, firstPage).getContent().get(0).deleted()).isTrue();
 	}
 

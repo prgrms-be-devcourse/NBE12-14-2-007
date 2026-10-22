@@ -1,6 +1,10 @@
 package com.team007.room_escape.domain.comment.service;
 
+import org.springframework.security.access.AccessDeniedException;
+import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.comment.dto.CommentRequest;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.comment.dto.CommentResponse;
 import com.team007.room_escape.domain.comment.infra.entity.Comment;
 import com.team007.room_escape.domain.comment.infra.repository.CommentRepository;
@@ -23,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,28 @@ public class CommentService {
 	private final MemberReader memberReader;
 	private final PostRepository postRepository;
 	private final ImageUrlResolver imageUrlResolver;
+	private final DeletionHistoryService deletionHistoryService;
+
+	@Transactional(readOnly = true)
+	public Page<CommentResponse.AdminInfo> getCommentsForAdmin(UUID postId, UUID adminId, Pageable page) {
+		if (memberReader.getActiveMember(adminId).getRole() !=
+			MemberRole.ROLE_ADMIN) {
+			throw new AccessDeniedException("관리자만 삭제된 댓글을 조회할 수 있습니다.");
+		}
+		Post post = postRepository.findById(postId)
+			.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
+		var roots = commentRepository.findRootsByPostId(postId, PageRequest.of(page.getPageNumber(), page.getPageSize()));
+		var replies = roots.isEmpty() ? List.<Comment>of()
+			: commentRepository.findRepliesByParentIds(roots.map(Comment::getId).toList());
+		var comments = Stream.concat(roots.stream(), replies.stream()).toList();
+		var histories = deletionHistoryService.findLatestForTargets(DeletionTargetType.COMMENT,
+			comments.stream().filter(Comment::isDeleted).map(comment -> comment.getId().toString()).toList());
+		var repliesByParentId = replies.stream().collect(Collectors.groupingBy(reply -> reply.getParent().getId()));
+		return roots.map(root -> CommentResponse.AdminInfo.from(root, imageUrlResolver, post.isDeleted(),
+			histories.get(root.getId().toString()), repliesByParentId.getOrDefault(root.getId(), List.of()).stream()
+				.map(reply -> CommentResponse.AdminInfo.from(reply, imageUrlResolver, post.isDeleted(),
+					histories.get(reply.getId().toString()), List.of())).toList()));
+	}
 
 	@Transactional
 	public CommentResponse.Info createComment(
@@ -101,16 +128,18 @@ public class CommentService {
 
 	/** 행은 지우지 않고 삭제 시각만 남긴다. 대댓글은 그대로 두고, 목록에는 "삭제된 댓글입니다"로 보인다. */
 	@Transactional
-	public void deleteComment(Long id, UUID memberId, boolean isAdmin) {
-		Comment comment = getActiveComment(id);
+	public void deleteComment(Long id, UUID memberId) {
+		Comment comment = commentRepository.findForDeletion(id)
+				.orElseThrow(() -> new BusinessException(CommentExceptionCode.COMMENT_NOT_FOUND));
 
 		boolean isAuthor = comment.getMember().getId().equals(memberId);
 
-		if(!isAuthor && !isAdmin) {
+		if(!isAuthor) {
 			throw new BusinessException(CommentExceptionCode.COMMENT_FORBIDDEN);
 		}
 
 		comment.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.COMMENT, id.toString(), memberId);
 	}
 
 	/**

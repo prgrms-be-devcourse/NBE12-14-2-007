@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { ApiError, COMMENT_PAGE_SIZE } from "../lib/api";
+import { AdminDeletionModal } from "../components/AdminDeletionModal";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
 import { FestivalPicker } from "../components/FestivalPicker";
@@ -37,7 +38,6 @@ import {
   Modal,
   PageTitle,
   Pagination,
-  Photo,
   SubmitButton,
   Upload,
 } from "../components/ui";
@@ -184,9 +184,10 @@ function ReviewDetail({ id }: { id: string }) {
     error,
     reload,
   } = useLoad(() => api.post(id), [api, id]);
-  const likes = useLoad(() => api.likeCount(id), [api, id]);
   // 누르기 전에는 서버가 알려준 상태를 쓰고, 누른 뒤에는 그 결과를 쓴다.
   const [likedOverride, setLiked] = useState<boolean | null>(null);
+  const [likeCountOverride, setLikeCount] = useState<number | null>(null);
+  const likeCount = likeCountOverride ?? post?.likeCount ?? 0;
   const liked =
     likedOverride ??
     (mode === "preview"
@@ -204,12 +205,16 @@ function ReviewDetail({ id }: { id: string }) {
     setActionError("");
     try {
       const result = await api.like(id, remove);
-      likes.setData(result.likeCount);
+      setLikeCount(result.likeCount);
       setLiked(!remove);
     } catch (e) {
       if (e instanceof ApiError && e.code === "LIKE000") {
         setLiked(true);
-        likes.reload();
+        // 다른 곳에서 이미 누른 경우라 지금 개수를 다시 받아 온다
+        api
+          .post(id)
+          .then((latest) => setLikeCount(latest.likeCount ?? null))
+          .catch(() => undefined);
         toast("이미 좋아요를 남긴 후기예요. 다시 누르면 취소할 수 있어요.");
       } else setActionError(errorText(e));
     } finally {
@@ -261,24 +266,17 @@ function ReviewDetail({ id }: { id: string }) {
             )}
           </div>
         </div>
-        {post.thumbnail && (
-          <Photo
-            className="article-image"
-            src={post.thumbnail}
-            alt={post.title}
-          />
-        )}
         <RichTextContent content={post.content} />
         <div className="review-reactions">
           <button
-            disabled={busy || likes.loading}
+            disabled={busy}
             className={`btn ${liked ? "liked" : "secondary"}`}
             onClick={() => like(liked)}
             aria-pressed={liked}
           >
             <ThumbsUp size={18} />
             {liked ? "도움이 됐어요" : "도움돼요"}
-            {likes.data !== null && <strong>{likes.data}</strong>}
+            <strong>{likeCount}</strong>
           </button>
           {!own && (
             <ReportButton
@@ -296,43 +294,55 @@ function ReviewDetail({ id }: { id: string }) {
             </ReportButton>
           )}
         </div>
-        {likes.error && (
-          <ErrorState message={likes.error} retry={likes.reload} />
-        )}
         <FormError message={actionError} />
       </article>
       <Comments postId={id} />
-      {deleteOpen && (
-        <Modal title="후기를 삭제할까요?" onClose={() => setDeleteOpen(false)}>
-          <p className="muted">삭제한 후기는 목록에서 사라져요.</p>
-          <FormError message={actionError} />
-          <div className="form-actions">
-            <button
-              className="btn secondary"
-              onClick={() => setDeleteOpen(false)}
-            >
-              취소
-            </button>
-            <button
-              className="btn danger"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await api.deletePost(id);
-                  toast("후기를 삭제했어요.");
-                  navigate(`/reviews?festival=${post.festivalId}`);
-                } catch (e) {
-                  setActionError(errorText(e));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              삭제하기
-            </button>
-          </div>
-        </Modal>
+      {deleteOpen && !own ? (
+        <AdminDeletionModal
+          targetType="POST"
+          targetId={id}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => {
+            toast("후기를 삭제했어요.");
+            navigate(`/reviews?festival=${post.festivalId}`);
+          }}
+        />
+      ) : (
+        deleteOpen && (
+          <Modal
+            title="후기를 삭제할까요?"
+            onClose={() => setDeleteOpen(false)}
+          >
+            <p className="muted">삭제한 후기는 목록에서 사라져요.</p>
+            <FormError message={actionError} />
+            <div className="form-actions">
+              <button
+                className="btn secondary"
+                onClick={() => setDeleteOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api.deletePost(id);
+                    toast("후기를 삭제했어요.");
+                    navigate(`/reviews?festival=${post.festivalId}`);
+                  } catch (e) {
+                    setActionError(errorText(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                삭제하기
+              </button>
+            </div>
+          </Modal>
+        )
       )}
     </>
   );
@@ -672,29 +682,38 @@ function CommentRow({
         )}
         <FormError message={error} />
       </div>
-      {deleting && (
-        <Modal title="댓글을 삭제할까요?" onClose={() => setDeleting(false)}>
-          <p className="muted">
-            삭제한 댓글은 "삭제된 댓글입니다"로 표시되고, 달린 답글은 그대로
-            남아요.
-          </p>
-          <FormError message={error} />
-          <div className="form-actions">
-            <button
-              className="btn secondary"
-              onClick={() => setDeleting(false)}
-            >
-              취소
-            </button>
-            <button
-              className="btn danger"
-              disabled={busy}
-              onClick={() => save(true)}
-            >
-              삭제
-            </button>
-          </div>
-        </Modal>
+      {deleting && admin && !own ? (
+        <AdminDeletionModal
+          targetType="COMMENT"
+          targetId={comment.id}
+          onClose={() => setDeleting(false)}
+          onDeleted={reload}
+        />
+      ) : (
+        deleting && (
+          <Modal title="댓글을 삭제할까요?" onClose={() => setDeleting(false)}>
+            <p className="muted">
+              삭제한 댓글은 "삭제된 댓글입니다"로 표시되고, 달린 답글은 그대로
+              남아요.
+            </p>
+            <FormError message={error} />
+            <div className="form-actions">
+              <button
+                className="btn secondary"
+                onClick={() => setDeleting(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={busy}
+                onClick={() => save(true)}
+              >
+                삭제
+              </button>
+            </div>
+          </Modal>
+        )
       )}
     </div>
   );
@@ -852,6 +871,11 @@ function ReviewForm({
             placeholder="오늘의 경험을 한 문장으로 표현해 주세요"
           />
         </Field>
+        <span className="upload-label">썸네일 이미지</span>
+        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
+        <p className="upload-hint">
+          후기 목록에서 대표 사진으로 보여요. 본문에는 들어가지 않아요.
+        </p>
         <Field label="후기 내용" required>
           <LazyRichTextEditor
             value={content}
@@ -861,9 +885,6 @@ function ReviewForm({
             onUploadImage={async (file) => (await api.upload(file, "POST")).url}
           />
         </Field>
-        <span className="upload-label">기억에 남은 사진</span>
-        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
-        <p className="upload-hint">사진은 7:6 비율로 표시돼요.</p>
       </div>
       <FormError message={error} />
       <div className="form-actions">

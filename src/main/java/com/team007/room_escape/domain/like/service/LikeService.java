@@ -55,9 +55,8 @@ public class LikeService {
 	}
 
 
-	@Transactional(readOnly = true)
-	public Long getPostLikeCount(UUID postId) {
-
+	/** 좋아요를 누르거나 취소한 뒤 바뀐 개수를 돌려주려고 다시 읽는다 */
+	private long getPostLikeCount(UUID postId) {
 		return postRepository.findLikeCountById(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 	}
@@ -84,7 +83,7 @@ public class LikeService {
 
 		Member member = memberReader.getUnrestrictedMember(memberId);
 
-		Festival festival = festivalRepository.findById(festivalId)
+		Festival festival = festivalRepository.findByIdAndDeletedAtIsNull(festivalId)
 				.orElseThrow(() -> new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND));
 
 		if (festival.getMember() != null && festival.getMember().getId().equals(memberId)) {
@@ -112,7 +111,7 @@ public class LikeService {
 	@Transactional(readOnly = true)
 	public Long getFestivalLikeCount(Long festivalId) {
 
-		if(!festivalRepository.existsById(festivalId)) {
+		if(!festivalRepository.existsByIdAndDeletedAtIsNull(festivalId)) {
 			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
 		}
 

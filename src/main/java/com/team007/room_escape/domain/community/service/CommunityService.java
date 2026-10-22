@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.community.service;
 
 import com.team007.room_escape.domain.community.dto.CommunityRequest;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.community.dto.CommunityResponse;
 import com.team007.room_escape.domain.community.infra.entity.CommunityComment;
 import com.team007.room_escape.domain.community.infra.entity.CommunityPost;
@@ -39,6 +41,7 @@ public class CommunityService {
 	private final MemberRepository memberRepository;
 	private final RichTextSanitizer richTextSanitizer;
 	private final ImageUrlResolver imageUrlResolver;
+	private final DeletionHistoryService deletionHistoryService;
 
 	@Transactional(readOnly = true)
 	public Page<CommunityResponse.PostListItem> getPosts(
@@ -112,12 +115,14 @@ public class CommunityService {
 	}
 
 	@Transactional
-	public void deletePost(UUID postId, UUID memberId, boolean isAdmin) {
-		CommunityPost post = getPostEntity(postId);
-		if (!post.getMember().getId().equals(memberId) && !isAdmin) {
+	public void deletePost(UUID postId, UUID memberId) {
+		CommunityPost post = postRepository.findForDeletion(postId)
+			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.POST_NOT_FOUND));
+		if (!post.getMember().getId().equals(memberId)) {
 			throw new BusinessException(CommunityExceptionCode.POST_FORBIDDEN);
 		}
 		post.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.COMMUNITY_POST, postId.toString(), memberId);
 	}
 
 	/** 일반 댓글을 오래된 순으로 페이지 나누고, 각 댓글 아래에 대댓글을 붙인다. 삭제된 댓글도 자리를 남긴다. */
@@ -173,12 +178,14 @@ public class CommunityService {
 
 	/** 행은 지우지 않고 삭제 시각만 남긴다. 대댓글은 그대로 두고, 목록에는 "삭제된 댓글입니다"로 보인다. */
 	@Transactional
-	public void deleteComment(Long commentId, UUID memberId, boolean isAdmin) {
-		CommunityComment comment = getCommentEntity(commentId);
-		if (!comment.getMember().getId().equals(memberId) && !isAdmin) {
+	public void deleteComment(Long commentId, UUID memberId) {
+		CommunityComment comment = commentRepository.findForDeletion(commentId)
+			.orElseThrow(() -> new BusinessException(CommunityExceptionCode.COMMENT_NOT_FOUND));
+		if (!comment.getMember().getId().equals(memberId)) {
 			throw new BusinessException(CommunityExceptionCode.COMMENT_FORBIDDEN);
 		}
 		comment.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.COMMUNITY_COMMENT, commentId.toString(), memberId);
 	}
 
 	private Member getActiveMember(UUID memberId) {
