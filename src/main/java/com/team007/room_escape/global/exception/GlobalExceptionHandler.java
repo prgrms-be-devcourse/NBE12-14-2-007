@@ -14,6 +14,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.hibernate.query.sqm.UnknownPathException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -127,6 +131,53 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ec.getStatus())
 			.body(ApiResponse.error(
 				"'" + e.getPropertyName() + "' 으로는 정렬할 수 없습니다.", ec.getCode()));
+	}
+
+	/** 경로는 맞지만 메서드가 틀린 경우. 안 잡으면 500이라 여기서 405로 바꾼다. */
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e) {
+		CommonExceptionCode ec = CommonExceptionCode.METHOD_NOT_ALLOWED;
+		log.warn("[{}] 지원하지 않는 메서드: {}", ec.getCode(), e.getMethod());
+		return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec.getMessage(), ec.getCode()));
+	}
+
+	/** 매핑되지 않은 경로. 안 잡으면 500이라 여기서 404로 바꾼다. */
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException e) {
+		CommonExceptionCode ec = CommonExceptionCode.ENDPOINT_NOT_FOUND;
+		log.warn("[{}] 없는 경로: {}", ec.getCode(), e.getResourcePath());
+		return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec.getMessage(), ec.getCode()));
+	}
+
+	/**
+	 * @Query 로 직접 쓴 쿼리에 없는 정렬 필드가 들어온 경우.
+	 * Spring Data 는 이때 정렬 필드를 검증하지 않고 JPQL 에 그대로 붙이므로
+	 * PropertyReferenceException 이 아니라 Hibernate 예외가 래핑되어 올라온다.
+	 * 공개 목록에서도 ?sort= 만으로 500이 나던 것을 400으로 바꾼다.
+	 *
+	 * 같은 예외 타입이 진짜 서버 버그일 수도 있어, 원인이 경로 해석 실패일 때만 400으로 본다.
+	 */
+	@ExceptionHandler(InvalidDataAccessApiUsageException.class)
+	public ResponseEntity<ApiResponse<Void>> handleInvalidDataAccess(InvalidDataAccessApiUsageException e) {
+		if (!hasUnknownPathCause(e)) {
+			return handleUnknown(e);
+		}
+		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
+		log.warn("[{}] 잘못된 정렬 필드: {}", ec.getCode(), e.getMessage());
+		return ResponseEntity.status(ec.getStatus())
+			.body(ApiResponse.error("정렬할 수 없는 필드입니다.", ec.getCode()));
+	}
+
+	private boolean hasUnknownPathCause(Throwable e) {
+		for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+			if (cause instanceof UnknownPathException) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	/** 위에서 못 잡은 모든 예외. 원문 메시지는 노출하지 않는다 */

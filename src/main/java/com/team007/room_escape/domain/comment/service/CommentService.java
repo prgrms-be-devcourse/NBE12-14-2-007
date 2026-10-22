@@ -38,7 +38,7 @@ public class CommentService {
 	private final PostRepository postRepository;
 	private final ImageUrlResolver imageUrlResolver;
 	private final DeletionHistoryService deletionHistoryService;
-G
+
 	@Transactional(readOnly = true)
 	public Page<CommentResponse.AdminInfo> getCommentsForAdmin(UUID postId, UUID adminId, Pageable page) {
 		if (memberReader.getActiveMember(adminId).getRole() !=
