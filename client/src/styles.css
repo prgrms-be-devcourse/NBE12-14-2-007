@@ -1731,6 +1731,28 @@ select {
   border-color: #d3ddc7;
   box-shadow: var(--shadow);
 }
+.submission-row.is-deleted {
+  background: var(--cream);
+  color: var(--muted);
+}
+.submission-row.is-deleted h3,
+.deleted-event-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.submission-row.is-deleted > img {
+  filter: grayscale(1);
+}
+.festival-deletion-notice {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 20px 0;
+  color: var(--muted);
+}
+.festival-deletion-notice p {
+  overflow-wrap: anywhere;
+}
 .submission-row > img,
 .submission-row > .photo-fallback {
   width: 165px;
@@ -1779,6 +1801,17 @@ select {
 }
 .back-link:hover {
   color: var(--orange);
+}
+.form-topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  margin-bottom: 14px;
+}
+.form-topline .eyebrow,
+.form-topline .back-link {
+  margin-bottom: 0;
 }
 .form-layout {
   display: grid;
@@ -1987,26 +2020,40 @@ select {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.rich-text-editor-content img,
+.rich-text-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.rich-text-editor-content img.ProseMirror-selectednode {
+  outline: 3px solid #d8a77f;
+}
 .rich-text-content {
   white-space: normal;
 }
 .rich-text-content > * + * {
   margin-top: 12px;
 }
-.community-page,
 .community-detail-page,
 .community-form-page {
   max-width: 1050px;
+}
+.community-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 .community-categories {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
-}
-.community-categories {
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--line);
 }
 .community-categories button {
   padding: 10px 16px;
@@ -2043,17 +2090,14 @@ select {
   outline: 0;
 }
 .community-list {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
+  border-top: 1px solid var(--line);
 }
 .community-row {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  padding: 15px 18px;
+  padding: 18px 3px;
   border-bottom: 1px solid #edf0e9;
   color: inherit;
   transition: background 0.15s;
@@ -2163,24 +2207,32 @@ select {
   width: 22px;
   height: 22px;
 }
-.community-detail {
-  margin-top: 28px;
-  border-top: 2px solid #31463a;
-}
 .community-detail > header {
   position: relative;
-  padding: 30px 6px 26px;
+  padding: 4px 0 22px;
   border-bottom: 1px solid var(--line);
 }
 .community-detail h1 {
   margin: 15px 0 13px;
   color: #1f3328;
-  font-size: clamp(25px, 4vw, 34px);
+  font-size: clamp(21px, 3vw, 27px);
+}
+.community-detail .community-category {
+  padding: 6px 13px;
+  font-size: 13px;
+}
+.community-detail .community-detail-meta {
+  font-size: 14px;
+}
+.community-detail .community-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
 }
 .community-owner-actions {
   position: absolute;
   right: 0;
-  bottom: 24px;
+  bottom: 22px;
   display: flex;
   gap: 12px;
 }
@@ -2200,11 +2252,14 @@ select {
   color: #657064;
 }
 .community-content {
-  min-height: 260px;
-  padding: 40px 6px 60px;
+  min-height: 140px;
+  padding: 28px 0 40px;
   color: #37473c;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.9;
+}
+.community-content h2 {
+  font-size: 18px;
 }
 .community-comments {
   padding-top: 28px;
@@ -2213,10 +2268,34 @@ select {
 .community-comments > h2 {
   margin-bottom: 18px;
   color: #26392e;
-  font-size: 20px;
+  font-size: 16px;
 }
 .community-comments > h2 span {
   color: var(--orange);
+}
+/* 커뮤니티 대댓글: 부모 댓글 아래 들여쓰기 */
+.community-comment-replies {
+  margin-left: 32px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+.community-comment.deleted p {
+  color: var(--muted);
+  font-style: italic;
+}
+.community-comment-form.community-reply-form {
+  margin: 12px 0;
+}
+.community-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .community-comment-replies {
+    margin-left: 8px;
+    padding-left: 12px;
+  }
 }
 .community-comment-form {
   display: flex;
@@ -2300,7 +2379,7 @@ select {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
     gap: 10px;
-    padding: 13px 14px;
+    padding: 13px 3px;
   }
   .community-owner-actions {
     position: static;
@@ -3401,6 +3480,9 @@ select {
 .festival-posts {
   padding-top: 25px;
 }
+.page-heading + .festival-posts {
+  padding-top: 0;
+}
 .festival-posts .section-heading h2 {
   font-size: 20px;
 }
@@ -3569,13 +3651,6 @@ button.post-thumbnail {
 .article-meta .text-button {
   font-size: 13px;
 }
-.article-image {
-  width: 100%;
-  aspect-ratio: 7 / 6;
-  object-fit: cover;
-  border-radius: 8px;
-  margin: 0 0 29px;
-}
 .review-article .prose {
   font-size: 15px;
   min-height: 140px;
@@ -3674,6 +3749,38 @@ button.post-thumbnail {
 .comment-row .prose {
   font-size: 12px;
   line-height: 1.9;
+}
+/* 대댓글: 부모 댓글 아래 들여쓰기 */
+.comment-replies {
+  margin-left: 44px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+.comment-replies .comment-row {
+  padding: 16px 0;
+}
+.comment-replies .comment-row:last-child {
+  border-bottom: 0;
+}
+.comment-row.deleted .prose {
+  color: var(--muted);
+  font-style: italic;
+}
+.comment-row.deleted .avatar {
+  background: var(--line);
+}
+.reply-form {
+  margin: 12px 0 16px;
+}
+.reply-form .form-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .comment-replies {
+    margin-left: 12px;
+    padding-left: 12px;
+  }
 }
 .empty-comments {
   text-align: center;
@@ -6308,4 +6415,37 @@ textarea::placeholder {
 .festival-picker-thumb.photo-fallback svg {
   width: 22px;
   height: 22px;
+}
+/* 마이페이지 본인 작성 이력: 삭제된 콘텐츠도 이력으로 남긴다. */
+.my-content-table-wrap {
+  overflow-x: auto;
+}
+.my-content-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.my-content-table th,
+.my-content-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #e6ebe3;
+  text-align: left;
+}
+.my-content-title {
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+.my-content-deleted {
+  color: #737b72;
+  background: #f6f7f4;
+}
+.my-content-deleted .my-content-title {
+  text-decoration: line-through;
+}
+.my-content-pagination {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
 }

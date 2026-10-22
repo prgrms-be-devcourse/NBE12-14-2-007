@@ -1437,8 +1437,37 @@ img.adm-avatar {
   border-bottom: 1px solid #eef1e8;
   padding: 8px 0;
 }
+.adm-review-comment-list li.is-reply {
+  padding-left: 20px;
+}
+.adm-review-comment-list li.is-deleted p {
+  color: #8a9480;
+  font-style: italic;
+}
 .adm-review-comment-body {
   min-width: 0;
+}
+.adm-review-comment-removed .adm-review-comment-content {
+  color: #7b8278;
+  text-decoration: line-through;
+}
+.adm-review-comment-deletion {
+  margin-top: 8px;
+  color: #65745b;
+  font-size: 12px;
+}
+.adm-review-comment-restore {
+  flex: none;
+  border: 1px solid #65745b;
+  color: #40583b;
+  background: transparent;
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.adm-review-comment-restore:disabled {
+  opacity: .5;
+  cursor: not-allowed;
 }
 .adm-review-comment-list p {
   margin: 4px 0 0;
@@ -1469,7 +1498,13 @@ img.adm-avatar {
 }
 .adm-review-comment-confirm {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  max-width: 360px;
   gap: 6px;
+}
+.adm-review-comment-confirm .field {
+  flex: 1 0 100%;
 }
 
 /* 관리자 로그인 */
@@ -1524,3 +1559,58 @@ img.adm-avatar {
   font-size: 13px;
   color: #54734b;
 }
+.badge.admin-event-ended {
+  background: #fcebea;
+  color: #a83232;
+}
+.badge.admin-event-deleted {
+  background: #fff3c4;
+  color: #795b00;
+}
+.adm-row-action-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.adm-restore-hint {
+  display: block;
+  margin-top: 6px;
+  color: #795b00;
+  font-size: 12px;
+}
+.adm-event-state-summary {
+  margin: 20px 0 0;
+  padding: 18px 20px;
+  border: 1px solid #e5e9df;
+  border-radius: 12px;
+  background: #f8faf6;
+  color: #596550;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.adm-event-state-summary > p { margin: 0; }
+.adm-event-state-summary .adm-event-deletion-reason {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e9df;
+}
+.adm-event-deletion-reason strong { color: #344532; font-weight: 600; }
+.adm-event-action-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid #f0c8c4;
+  border-radius: 10px;
+  background: #fff5f4;
+  color: #a83232;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.adm-event-action-error > svg { flex-shrink: 0; margin-top: 1px; }
+.adm-event-action-error strong { font-weight: 600; }
+.adm-event-action-error p { margin: 4px 0 0; overflow-wrap: anywhere; }

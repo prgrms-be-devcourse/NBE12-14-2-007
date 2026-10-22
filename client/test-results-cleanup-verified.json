@@ -1,0 +1,2750 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--reporter=json"
+    ],
+    "configFile": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\playwright.config.ts",
+    "rootDir": "C:/Users/ster1/lec/NBE12-14-2-007/client/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/ster1/lec/NBE12-14-2-007/client/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/ster1/lec/NBE12-14-2-007/client/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 2,
+    "webServer": {
+      "command": "corepack pnpm dev --port 3023",
+      "url": "http://localhost:3023",
+      "env": {
+        "VITE_CONTENT_MODE": "preview"
+      },
+      "reuseExistingServer": false,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "admin-auth.spec.ts",
+      "file": "admin-auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "protected administrator pages require explicit login without requesting protected data",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4786,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:00.963Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4030f0bfef91ae700c6b-e58184d41c0b608a0ab2",
+          "file": "admin-auth.spec.ts",
+          "line": 12,
+          "column": 1
+        },
+        {
+          "title": "administrator login rejects ordinary members and does not expose protected data",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2218,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:00.993Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4030f0bfef91ae700c6b-11d7b38df17fbbc19ff6",
+          "file": "admin-auth.spec.ts",
+          "line": 41,
+          "column": 1
+        },
+        {
+          "title": "administrator login opens its original destination but reload requires login again",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2554,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:03.687Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4030f0bfef91ae700c6b-ce645a3afb9fd4215683",
+          "file": "admin-auth.spec.ts",
+          "line": 65,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "community-comments.spec.ts",
+      "file": "community-comments.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "community comments show oldest first, keep deleted comments as placeholders and post replies",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1723,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:06.263Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "309746ba37a42a4bf241-5f53a4ca0583098b0836",
+          "file": "community-comments.spec.ts",
+          "line": 170,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "community.spec.ts",
+      "file": "community.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "API mode retrieves the public review feed without private browse APIs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 976,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:06.309Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6cf8406558519b2971af-d0daea5410ae7869785b",
+          "file": "community.spec.ts",
+          "line": 7,
+          "column": 1
+        },
+        {
+          "title": "review feed includes multiple events and keeps review and event links separate",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1903,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:07.304Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6cf8406558519b2971af-0092bc3b20bb4a66e871",
+          "file": "community.spec.ts",
+          "line": 68,
+          "column": 1
+        },
+        {
+          "title": "submission menu opens the registration form",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1309,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:08.023Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6cf8406558519b2971af-244617551a27eebe098c",
+          "file": "community.spec.ts",
+          "line": 111,
+          "column": 1
+        },
+        {
+          "title": "comment timestamps show Seoul hours and minutes for local and UTC data",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3229,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:09.239Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6cf8406558519b2971af-767317ab20fe7548cbbd",
+          "file": "community.spec.ts",
+          "line": 121,
+          "column": 1
+        },
+        {
+          "title": "active navigation underline stays below the text at desktop and tablet widths",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 14872,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:09.358Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6cf8406558519b2971af-89142e5a5a18470f219e",
+          "file": "community.spec.ts",
+          "line": 160,
+          "column": 1
+        },
+        {
+          "title": "community pages remain accessible and fit small screens",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "failed",
+                  "duration": 6273,
+                  "error": {
+                    "message": "Error: /submissions/new\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 42\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"description\": \"Ensure an element's role supports its ARIA attributes\",\u001b[39m\n\u001b[31m+     \"help\": \"Elements must only use supported ARIA attributes\",\u001b[39m\n\u001b[31m+     \"helpUrl\": \"https://dequeuniversity.com/rules/axe/4.13/aria-allowed-attr?application=playwright\",\u001b[39m\n\u001b[31m+     \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+     \"impact\": \"critical\",\u001b[39m\n\u001b[31m+     \"nodes\": Array [\u001b[39m\n\u001b[31m+       Object {\u001b[39m\n\u001b[31m+         \"all\": Array [\u001b[39m\n\u001b[31m+           Object {\u001b[39m\n\u001b[31m+             \"data\": Array [\u001b[39m\n\u001b[31m+               \"aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+             ],\u001b[39m\n\u001b[31m+             \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+             \"impact\": \"critical\",\u001b[39m\n\u001b[31m+             \"message\": \"ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+             \"relatedNodes\": Array [],\u001b[39m\n\u001b[31m+           },\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+         \"any\": Array [],\u001b[39m\n\u001b[31m+         \"failureSummary\": \"Fix all of the following:\u001b[39m\n\u001b[31m+   ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+         \"html\": \"<input required=\\\"\\\" placeholder=\\\"행사 이름을 알려주세요\\\" autocomplete=\\\"off\\\" aria-autocomplete=\\\"list\\\" aria-expanded=\\\"false\\\" aria-controls=\\\"festival-title-suggestions\\\" value=\\\"\\\">\",\u001b[39m\n\u001b[31m+         \"impact\": \"critical\",\u001b[39m\n\u001b[31m+         \"none\": Array [],\u001b[39m\n\u001b[31m+         \"target\": Array [\u001b[39m\n\u001b[31m+           \"input[placeholder=\\\"행사 이름을 알려주세요\\\"]\",\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+       },\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+     \"tags\": Array [\u001b[39m\n\u001b[31m+       \"cat.aria\",\u001b[39m\n\u001b[31m+       \"wcag2a\",\u001b[39m\n\u001b[31m+       \"wcag412\",\u001b[39m\n\u001b[31m+       \"EN-301-549\",\u001b[39m\n\u001b[31m+       \"EN-9.4.1.2\",\u001b[39m\n\u001b[31m+       \"RGAAv4\",\u001b[39m\n\u001b[31m+       \"RGAA-7.1.1\",\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                    "stack": "Error: /submissions/new\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 42\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"description\": \"Ensure an element's role supports its ARIA attributes\",\u001b[39m\n\u001b[31m+     \"help\": \"Elements must only use supported ARIA attributes\",\u001b[39m\n\u001b[31m+     \"helpUrl\": \"https://dequeuniversity.com/rules/axe/4.13/aria-allowed-attr?application=playwright\",\u001b[39m\n\u001b[31m+     \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+     \"impact\": \"critical\",\u001b[39m\n\u001b[31m+     \"nodes\": Array [\u001b[39m\n\u001b[31m+       Object {\u001b[39m\n\u001b[31m+         \"all\": Array [\u001b[39m\n\u001b[31m+           Object {\u001b[39m\n\u001b[31m+             \"data\": Array [\u001b[39m\n\u001b[31m+               \"aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+             ],\u001b[39m\n\u001b[31m+             \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+             \"impact\": \"critical\",\u001b[39m\n\u001b[31m+             \"message\": \"ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+             \"relatedNodes\": Array [],\u001b[39m\n\u001b[31m+           },\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+         \"any\": Array [],\u001b[39m\n\u001b[31m+         \"failureSummary\": \"Fix all of the following:\u001b[39m\n\u001b[31m+   ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+         \"html\": \"<input required=\\\"\\\" placeholder=\\\"행사 이름을 알려주세요\\\" autocomplete=\\\"off\\\" aria-autocomplete=\\\"list\\\" aria-expanded=\\\"false\\\" aria-controls=\\\"festival-title-suggestions\\\" value=\\\"\\\">\",\u001b[39m\n\u001b[31m+         \"impact\": \"critical\",\u001b[39m\n\u001b[31m+         \"none\": Array [],\u001b[39m\n\u001b[31m+         \"target\": Array [\u001b[39m\n\u001b[31m+           \"input[placeholder=\\\"행사 이름을 알려주세요\\\"]\",\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+       },\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+     \"tags\": Array [\u001b[39m\n\u001b[31m+       \"cat.aria\",\u001b[39m\n\u001b[31m+       \"wcag2a\",\u001b[39m\n\u001b[31m+       \"wcag412\",\u001b[39m\n\u001b[31m+       \"EN-301-549\",\u001b[39m\n\u001b[31m+       \"EN-9.4.1.2\",\u001b[39m\n\u001b[31m+       \"RGAAv4\",\u001b[39m\n\u001b[31m+       \"RGAA-7.1.1\",\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\community.spec.ts:207:37",
+                    "location": {
+                      "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\community.spec.ts",
+                      "column": 37,
+                      "line": 207
+                    },
+                    "snippet": "  205 |       .withTags([\"wcag2a\", \"wcag2aa\", \"wcag21aa\"])\n  206 |       .analyze();\n> 207 |     expect(result.violations, path).toEqual([]);\n      |                                     ^\n  208 |     await page.screenshot({\n  209 |       path: `test-results/${name}.png`,\n  210 |       fullPage: true,"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\community.spec.ts",
+                        "column": 37,
+                        "line": 207
+                      },
+                      "message": "Error: /submissions/new\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 42\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"description\": \"Ensure an element's role supports its ARIA attributes\",\u001b[39m\n\u001b[31m+     \"help\": \"Elements must only use supported ARIA attributes\",\u001b[39m\n\u001b[31m+     \"helpUrl\": \"https://dequeuniversity.com/rules/axe/4.13/aria-allowed-attr?application=playwright\",\u001b[39m\n\u001b[31m+     \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+     \"impact\": \"critical\",\u001b[39m\n\u001b[31m+     \"nodes\": Array [\u001b[39m\n\u001b[31m+       Object {\u001b[39m\n\u001b[31m+         \"all\": Array [\u001b[39m\n\u001b[31m+           Object {\u001b[39m\n\u001b[31m+             \"data\": Array [\u001b[39m\n\u001b[31m+               \"aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+             ],\u001b[39m\n\u001b[31m+             \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+             \"impact\": \"critical\",\u001b[39m\n\u001b[31m+             \"message\": \"ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+             \"relatedNodes\": Array [],\u001b[39m\n\u001b[31m+           },\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+         \"any\": Array [],\u001b[39m\n\u001b[31m+         \"failureSummary\": \"Fix all of the following:\u001b[39m\n\u001b[31m+   ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+         \"html\": \"<input required=\\\"\\\" placeholder=\\\"행사 이름을 알려주세요\\\" autocomplete=\\\"off\\\" aria-autocomplete=\\\"list\\\" aria-expanded=\\\"false\\\" aria-controls=\\\"festival-title-suggestions\\\" value=\\\"\\\">\",\u001b[39m\n\u001b[31m+         \"impact\": \"critical\",\u001b[39m\n\u001b[31m+         \"none\": Array [],\u001b[39m\n\u001b[31m+         \"target\": Array [\u001b[39m\n\u001b[31m+           \"input[placeholder=\\\"행사 이름을 알려주세요\\\"]\",\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+       },\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+     \"tags\": Array [\u001b[39m\n\u001b[31m+       \"cat.aria\",\u001b[39m\n\u001b[31m+       \"wcag2a\",\u001b[39m\n\u001b[31m+       \"wcag412\",\u001b[39m\n\u001b[31m+       \"EN-301-549\",\u001b[39m\n\u001b[31m+       \"EN-9.4.1.2\",\u001b[39m\n\u001b[31m+       \"RGAAv4\",\u001b[39m\n\u001b[31m+       \"RGAA-7.1.1\",\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  205 |       .withTags([\"wcag2a\", \"wcag2aa\", \"wcag21aa\"])\n  206 |       .analyze();\n> 207 |     expect(result.violations, path).toEqual([]);\n      |                                     ^\n  208 |     await page.screenshot({\n  209 |       path: `test-results/${name}.png`,\n  210 |       fullPage: true,\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\community.spec.ts:207:37"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:12.512Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\community-community-pages--93be2-sible-and-fit-small-screens\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\community-community-pages--93be2-sible-and-fit-small-screens\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\community-community-pages--93be2-sible-and-fit-small-screens\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\community.spec.ts",
+                    "column": 37,
+                    "line": 207
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "6cf8406558519b2971af-43b7109f1b0d113b1b41",
+          "file": "community.spec.ts",
+          "line": 194,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "deletion-admin.spec.ts",
+      "file": "deletion-admin.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "admin deletion requires reason and sends it to server",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2336,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:20.810Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-16cfc510e9fbe7c57d08",
+          "file": "deletion-admin.spec.ts",
+          "line": 132,
+          "column": 1
+        },
+        {
+          "title": "failed deletion keeps the dialog open for correction",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2669,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:23.452Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-9b65988ffc65f52dc415",
+          "file": "deletion-admin.spec.ts",
+          "line": 156,
+          "column": 1
+        },
+        {
+          "title": "classified deletion does not require optional detail",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2965,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:24.294Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-a030597e78bb9f369d85",
+          "file": "deletion-admin.spec.ts",
+          "line": 188,
+          "column": 1
+        },
+        {
+          "title": "review and reply deletion preserve threads and use common deletion APIs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3685,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:26.171Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-32d2fbae17d6108049ff",
+          "file": "deletion-admin.spec.ts",
+          "line": 207,
+          "column": 1
+        },
+        {
+          "title": "deleted comments explain why restoration is unavailable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1710,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:27.290Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-26325327f7d86ede0225",
+          "file": "deletion-admin.spec.ts",
+          "line": 335,
+          "column": 1
+        },
+        {
+          "title": "public administrator deletion uses classified history API for POST",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2221,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:29.024Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-9c551bc28e23ca6c716d",
+          "file": "deletion-admin.spec.ts",
+          "line": 433,
+          "column": 3
+        },
+        {
+          "title": "public administrator deletion uses classified history API for COMMENT",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2263,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:29.885Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-ee8808deb739dbe4abf0",
+          "file": "deletion-admin.spec.ts",
+          "line": 433,
+          "column": 3
+        },
+        {
+          "title": "public administrator deletion uses classified history API for COMMUNITY_POST",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1980,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:31.274Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-8182929c86d37d35623d",
+          "file": "deletion-admin.spec.ts",
+          "line": 433,
+          "column": 3
+        },
+        {
+          "title": "public administrator deletion uses classified history API for COMMUNITY_COMMENT",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2016,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:32.177Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-5afc1f529f5319918b20",
+          "file": "deletion-admin.spec.ts",
+          "line": 433,
+          "column": 3
+        },
+        {
+          "title": "deleted review restoration is based on server history ADMIN",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1918,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:33.280Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-b03d69b360f0912e0aef",
+          "file": "deletion-admin.spec.ts",
+          "line": 544,
+          "column": 3
+        },
+        {
+          "title": "deleted review restoration is based on server history AUTHOR",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1609,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:34.215Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-db3c00c4adf4334d654c",
+          "file": "deletion-admin.spec.ts",
+          "line": 544,
+          "column": 3
+        },
+        {
+          "title": "deleted review restoration is based on server history RESTORED",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1632,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:35.219Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-ccd0b583cc585943b3d7",
+          "file": "deletion-admin.spec.ts",
+          "line": 544,
+          "column": 3
+        },
+        {
+          "title": "deleted review restoration is based on server history NO_HISTORY",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1570,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:35.850Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-f18ff51d82b39ea5eca8",
+          "file": "deletion-admin.spec.ts",
+          "line": 544,
+          "column": 3
+        },
+        {
+          "title": "report deletion sends inquiryId and refreshes answer for FESTIVAL",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2624,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:36.868Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-59c3e796d6418b31d1ea",
+          "file": "deletion-admin.spec.ts",
+          "line": 614,
+          "column": 3
+        },
+        {
+          "title": "report deletion sends inquiryId and refreshes answer for POST",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2982,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:37.439Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-af2d173d670b30a07496",
+          "file": "deletion-admin.spec.ts",
+          "line": 614,
+          "column": 3
+        },
+        {
+          "title": "report deletion sends inquiryId and refreshes answer for COMMENT",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4316,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:39.513Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-ea41500ff6e357cdace1",
+          "file": "deletion-admin.spec.ts",
+          "line": 614,
+          "column": 3
+        },
+        {
+          "title": "report deletion sends inquiryId and refreshes answer for COMMUNITY_POST",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3441,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:40.447Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-25e647cd6a21b46056d2",
+          "file": "deletion-admin.spec.ts",
+          "line": 614,
+          "column": 3
+        },
+        {
+          "title": "report deletion sends inquiryId and refreshes answer for COMMUNITY_COMMENT",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2428,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:43.851Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-829f9391623a1dfb6ded",
+          "file": "deletion-admin.spec.ts",
+          "line": 614,
+          "column": 3
+        },
+        {
+          "title": "duplicate restoration error stays visible inside event management dialog",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2398,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:43.913Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-e83054e78d172d8547b8",
+          "file": "deletion-admin.spec.ts",
+          "line": 762,
+          "column": 1
+        },
+        {
+          "title": "restore is based on deletion actor ADMIN, not event source",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1785,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:46.293Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-67e786ea6459019004a4",
+          "file": "deletion-admin.spec.ts",
+          "line": 792,
+          "column": 3
+        },
+        {
+          "title": "restore is based on deletion actor AUTHOR, not event source",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2276,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:46.324Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-a4233467522091587e41",
+          "file": "deletion-admin.spec.ts",
+          "line": 792,
+          "column": 3
+        },
+        {
+          "title": "restore is based on deletion actor UNKNOWN, not event source",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2189,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:48.091Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ddb892f6ef49229063f1-c9f77dbe60366cf6eabf",
+          "file": "deletion-admin.spec.ts",
+          "line": 792,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "filters.spec.ts",
+      "file": "filters.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "province filters carry from home, restore URLs and reset",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "failed",
+                  "duration": 8153,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.event-card')\nExpected: \u001b[32m4\u001b[39m\nReceived: \u001b[31m6\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('.event-card') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.event-card')\u001b[22m\n\u001b[2m    14 × locator resolved to 6 elements\u001b[22m\n\u001b[2m       - unexpected value \"6\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.event-card')\nExpected: \u001b[32m4\u001b[39m\nReceived: \u001b[31m6\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('.event-card') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.event-card')\u001b[22m\n\u001b[2m    14 × locator resolved to 6 elements\u001b[22m\n\u001b[2m       - unexpected value \"6\"\u001b[22m\n\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts:20:45",
+                    "location": {
+                      "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts",
+                      "column": 45,
+                      "line": 20
+                    },
+                    "snippet": "  18 |   await page.getByRole(\"button\", { name: \"필터 초기화\" }).click();\n  19 |   await expect(page.getByLabel(\"시·도 선택\")).toHaveValue(\"\");\n> 20 |   await expect(page.locator(\".event-card\")).toHaveCount(4);\n     |                                             ^\n  21 | });\n  22 |\n  23 | test(\"popular reviews sort before pagination, break ties by date and reflect likes\", async ({"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts",
+                        "column": 45,
+                        "line": 20
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.event-card')\nExpected: \u001b[32m4\u001b[39m\nReceived: \u001b[31m6\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('.event-card') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.event-card')\u001b[22m\n\u001b[2m    14 × locator resolved to 6 elements\u001b[22m\n\u001b[2m       - unexpected value \"6\"\u001b[22m\n\n\n  18 |   await page.getByRole(\"button\", { name: \"필터 초기화\" }).click();\n  19 |   await expect(page.getByLabel(\"시·도 선택\")).toHaveValue(\"\");\n> 20 |   await expect(page.locator(\".event-card\")).toHaveCount(4);\n     |                                             ^\n  21 | });\n  22 |\n  23 | test(\"popular reviews sort before pagination, break ties by date and reflect likes\", async ({\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts:20:45"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:48.730Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\filters-province-filters-c-e42bb-home-restore-URLs-and-reset\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\filters-province-filters-c-e42bb-home-restore-URLs-and-reset\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\filters-province-filters-c-e42bb-home-restore-URLs-and-reset\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts",
+                    "column": 45,
+                    "line": 20
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "6174a577dcf149f42c01-8b65edfc36c421a53053",
+          "file": "filters.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "popular reviews sort before pagination, break ties by date and reflect likes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2845,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:50.320Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6174a577dcf149f42c01-27ea38ca5ef816999de4",
+          "file": "filters.spec.ts",
+          "line": 23,
+          "column": 1
+        },
+        {
+          "title": "province controls fit small screens and remain accessible",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1091,
+                  "error": {
+                    "message": "Error: overflow at 320px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: overflow at 320px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts:86:7",
+                    "location": {
+                      "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts",
+                      "column": 7,
+                      "line": 86
+                    },
+                    "snippet": "  84 |       ),\n  85 |       `overflow at ${width}px`,\n> 86 |     ).toBe(true);\n     |       ^\n  87 |     for (const label of [\"시·도 선택\"]) {\n  88 |       await expect(page.getByLabel(label)).toBeInViewport();\n  89 |       expect("
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts",
+                        "column": 7,
+                        "line": 86
+                      },
+                      "message": "Error: overflow at 320px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  84 |       ),\n  85 |       `overflow at ${width}px`,\n> 86 |     ).toBe(true);\n     |       ^\n  87 |     for (const label of [\"시·도 선택\"]) {\n  88 |       await expect(page.getByLabel(label)).toBeInViewport();\n  89 |       expect(\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts:86:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:53.182Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\filters-province-controls--c383e-reens-and-remain-accessible\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\filters-province-controls--c383e-reens-and-remain-accessible\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\filters-province-controls--c383e-reens-and-remain-accessible\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\filters.spec.ts",
+                    "column": 7,
+                    "line": 86
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "6174a577dcf149f42c01-ce28ba872e7985a2bf36",
+          "file": "filters.spec.ts",
+          "line": 74,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "frontend.spec.ts",
+      "file": "frontend.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "deleted submission cannot be edited by opening its edit URL directly",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1215,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:56.255Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-0327f61a3440f5fc139e",
+          "file": "frontend.spec.ts",
+          "line": 58,
+          "column": 1
+        },
+        {
+          "title": "preview stays isolated and all home images render",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2989,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:58.984Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-5fb835f0b0f895bf34ce",
+          "file": "frontend.spec.ts",
+          "line": 161,
+          "column": 1
+        },
+        {
+          "title": "search, category, region, dates and URL navigation work",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3019,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:15:57.988Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-9a71bbd69a7e6b5c8eae",
+          "file": "frontend.spec.ts",
+          "line": 198,
+          "column": 1
+        },
+        {
+          "title": "submission creation, editing and deletion retain an own-content history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5180,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:01.042Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-8c18af4d40b3229e01cd",
+          "file": "frontend.spec.ts",
+          "line": 221,
+          "column": 1
+        },
+        {
+          "title": "preview review, comment and like lifecycle works",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5113,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:02.341Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-71905c36a37c7b375092",
+          "file": "frontend.spec.ts",
+          "line": 328,
+          "column": 1
+        },
+        {
+          "title": "live mode keeps private submissions in mypage and loads the festival catalog",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3577,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:06.253Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-2c6b76d0976500d4ddcf",
+          "file": "frontend.spec.ts",
+          "line": 391,
+          "column": 1
+        },
+        {
+          "title": "live festival search displays nine events per page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2462,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:07.494Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-8ce901eeb1168882e3e5",
+          "file": "frontend.spec.ts",
+          "line": 468,
+          "column": 1
+        },
+        {
+          "title": "live festival reviews send the selected sort to the server",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3357,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:09.872Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-1ab82cff1fca1506f1c1",
+          "file": "frontend.spec.ts",
+          "line": 515,
+          "column": 1
+        },
+        {
+          "title": "live festival search sorts by likes and shows like counts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2847,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:10.004Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-2dc97f5db5e2794cffb5",
+          "file": "frontend.spec.ts",
+          "line": 542,
+          "column": 1
+        },
+        {
+          "title": "live form sends actual DTO names and ISO local datetimes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3659,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:12.888Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-775ef984b2cda0c50efd",
+          "file": "frontend.spec.ts",
+          "line": 585,
+          "column": 1
+        },
+        {
+          "title": "submission accepts required fields only and sends optional fields as null",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4237,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:13.268Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-605f7144d73ff2a83439",
+          "file": "frontend.spec.ts",
+          "line": 621,
+          "column": 1
+        },
+        {
+          "title": "server failure stays an error, with no demo fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1564,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:16.592Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-6496c44398df98e8777f",
+          "file": "frontend.spec.ts",
+          "line": 673,
+          "column": 1
+        },
+        {
+          "title": "401 renews access token and retries the authorized request",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1425,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:17.540Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-36bbb727c885c5c421e8",
+          "file": "frontend.spec.ts",
+          "line": 700,
+          "column": 1
+        },
+        {
+          "title": "login sends exact credentials and does not persist access tokens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1682,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:18.191Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-d5e273a8be8897c69105",
+          "file": "frontend.spec.ts",
+          "line": 732,
+          "column": 1
+        },
+        {
+          "title": "restricted members cannot enter the submission editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1432,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:18.987Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-3d6e159d8a9ecf173a6f",
+          "file": "frontend.spec.ts",
+          "line": 783,
+          "column": 1
+        },
+        {
+          "title": "inquiries use QUESTION/REPORT and answered inquiries cannot be edited",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1774,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:19.899Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-08b893d6efb1e25ed48b",
+          "file": "frontend.spec.ts",
+          "line": 800,
+          "column": 1
+        },
+        {
+          "title": "mobile pages have no horizontal overflow and navigation works",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9711,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:20.439Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-6c5244ff0f6bd5ea50b4",
+          "file": "frontend.spec.ts",
+          "line": 859,
+          "column": 1
+        },
+        {
+          "title": "desktop detail, submissions and profile render cleanly",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4640,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:21.697Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-069c396871f1bead55a9",
+          "file": "frontend.spec.ts",
+          "line": 900,
+          "column": 1
+        },
+        {
+          "title": "essential pages meet automated accessibility checks",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 1,
+                  "status": "failed",
+                  "duration": 4962,
+                  "error": {
+                    "message": "Error: /submissions/new\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 14\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+     \"nodes\": Array [\u001b[39m\n\u001b[31m+       Object {\u001b[39m\n\u001b[31m+         \"summary\": \"Fix all of the following:\u001b[39m\n\u001b[31m+   ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+         \"target\": Array [\u001b[39m\n\u001b[31m+           \"input[placeholder=\\\"행사 이름을 알려주세요\\\"]\",\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+       },\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                    "stack": "Error: /submissions/new\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 14\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+     \"nodes\": Array [\u001b[39m\n\u001b[31m+       Object {\u001b[39m\n\u001b[31m+         \"summary\": \"Fix all of the following:\u001b[39m\n\u001b[31m+   ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+         \"target\": Array [\u001b[39m\n\u001b[31m+           \"input[placeholder=\\\"행사 이름을 알려주세요\\\"]\",\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+       },\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts:949:7",
+                    "location": {
+                      "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts",
+                      "column": 7,
+                      "line": 949
+                    },
+                    "snippet": "  947 |       })),\n  948 |       path,\n> 949 |     ).toEqual([]);\n      |       ^\n  950 |   }\n  951 | });\n  952 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts",
+                        "column": 7,
+                        "line": 949
+                      },
+                      "message": "Error: /submissions/new\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 14\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"id\": \"aria-allowed-attr\",\u001b[39m\n\u001b[31m+     \"nodes\": Array [\u001b[39m\n\u001b[31m+       Object {\u001b[39m\n\u001b[31m+         \"summary\": \"Fix all of the following:\u001b[39m\n\u001b[31m+   ARIA attribute is not allowed: aria-expanded=\\\"false\\\"\",\u001b[39m\n\u001b[31m+         \"target\": Array [\u001b[39m\n\u001b[31m+           \"input[placeholder=\\\"행사 이름을 알려주세요\\\"]\",\u001b[39m\n\u001b[31m+         ],\u001b[39m\n\u001b[31m+       },\u001b[39m\n\u001b[31m+     ],\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  947 |       })),\n  948 |       path,\n> 949 |     ).toEqual([]);\n      |       ^\n  950 |   }\n  951 | });\n  952 |\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts:949:7"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:26.360Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "accessibility-_submissions_new",
+                      "contentType": "application/json",
+                      "body": "WwogIHsKICAgICJpZCI6ICJhcmlhLWFsbG93ZWQtYXR0ciIsCiAgICAiaW1wYWN0IjogImNyaXRpY2FsIiwKICAgICJ0YWdzIjogWwogICAgICAiY2F0LmFyaWEiLAogICAgICAid2NhZzJhIiwKICAgICAgIndjYWc0MTIiLAogICAgICAiRU4tMzAxLTU0OSIsCiAgICAgICJFTi05LjQuMS4yIiwKICAgICAgIlJHQUF2NCIsCiAgICAgICJSR0FBLTcuMS4xIgogICAgXSwKICAgICJkZXNjcmlwdGlvbiI6ICJFbnN1cmUgYW4gZWxlbWVudCdzIHJvbGUgc3VwcG9ydHMgaXRzIEFSSUEgYXR0cmlidXRlcyIsCiAgICAiaGVscCI6ICJFbGVtZW50cyBtdXN0IG9ubHkgdXNlIHN1cHBvcnRlZCBBUklBIGF0dHJpYnV0ZXMiLAogICAgImhlbHBVcmwiOiAiaHR0cHM6Ly9kZXF1ZXVuaXZlcnNpdHkuY29tL3J1bGVzL2F4ZS80LjEzL2FyaWEtYWxsb3dlZC1hdHRyP2FwcGxpY2F0aW9uPXBsYXl3cmlnaHQiLAogICAgIm5vZGVzIjogWwogICAgICB7CiAgICAgICAgImFueSI6IFtdLAogICAgICAgICJhbGwiOiBbCiAgICAgICAgICB7CiAgICAgICAgICAgICJpZCI6ICJhcmlhLWFsbG93ZWQtYXR0ciIsCiAgICAgICAgICAgICJkYXRhIjogWwogICAgICAgICAgICAgICJhcmlhLWV4cGFuZGVkPVwiZmFsc2VcIiIKICAgICAgICAgICAgXSwKICAgICAgICAgICAgInJlbGF0ZWROb2RlcyI6IFtdLAogICAgICAgICAgICAiaW1wYWN0IjogImNyaXRpY2FsIiwKICAgICAgICAgICAgIm1lc3NhZ2UiOiAiQVJJQSBhdHRyaWJ1dGUgaXMgbm90IGFsbG93ZWQ6IGFyaWEtZXhwYW5kZWQ9XCJmYWxzZVwiIgogICAgICAgICAgfQogICAgICAgIF0sCiAgICAgICAgIm5vbmUiOiBbXSwKICAgICAgICAiaW1wYWN0IjogImNyaXRpY2FsIiwKICAgICAgICAiaHRtbCI6ICI8aW5wdXQgcmVxdWlyZWQ9XCJcIiBwbGFjZWhvbGRlcj1cIu2WieyCrCDsnbTrpoTsnYQg7JWM66Ck7KO87IS47JqUXCIgYXV0b2NvbXBsZXRlPVwib2ZmXCIgYXJpYS1hdXRvY29tcGxldGU9XCJsaXN0XCIgYXJpYS1leHBhbmRlZD1cImZhbHNlXCIgYXJpYS1jb250cm9scz1cImZlc3RpdmFsLXRpdGxlLXN1Z2dlc3Rpb25zXCIgdmFsdWU9XCJcIj4iLAogICAgICAgICJ0YXJnZXQiOiBbCiAgICAgICAgICAiaW5wdXRbcGxhY2Vob2xkZXI9XCLtlonsgqwg7J2066aE7J2EIOyVjOugpOyjvOyEuOyalFwiXSIKICAgICAgICBdLAogICAgICAgICJmYWlsdXJlU3VtbWFyeSI6ICJGaXggYWxsIG9mIHRoZSBmb2xsb3dpbmc6XG4gIEFSSUEgYXR0cmlidXRlIGlzIG5vdCBhbGxvd2VkOiBhcmlhLWV4cGFuZGVkPVwiZmFsc2VcIiIKICAgICAgfQogICAgXQogIH0KXQ=="
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\frontend-essential-pages-meet-automated-accessibility-checks\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\frontend-essential-pages-meet-automated-accessibility-checks\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\frontend-essential-pages-meet-automated-accessibility-checks\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts",
+                    "column": 7,
+                    "line": 949
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-f42cb7928d067cc175fe",
+          "file": "frontend.spec.ts",
+          "line": 920,
+          "column": 1
+        },
+        {
+          "title": "compact phone and tablet layouts keep controls within the viewport",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 2430,
+                  "error": {
+                    "message": "Error: 320px /explore\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: 320px /explore\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts:972:9",
+                    "location": {
+                      "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts",
+                      "column": 9,
+                      "line": 972
+                    },
+                    "snippet": "  970 |         ),\n  971 |         `${width}px ${path}`,\n> 972 |       ).toBeTruthy();\n      |         ^\n  973 |     }\n  974 |   }\n  975 | });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts",
+                        "column": 9,
+                        "line": 972
+                      },
+                      "message": "Error: 320px /explore\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n\n  970 |         ),\n  971 |         `${width}px ${path}`,\n> 972 |       ).toBeTruthy();\n      |         ^\n  973 |     }\n  974 |   }\n  975 | });\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts:972:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:30.166Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\frontend-compact-phone-and-c87d3-ontrols-within-the-viewport\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\frontend-compact-phone-and-c87d3-ontrols-within-the-viewport\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\frontend-compact-phone-and-c87d3-ontrols-within-the-viewport\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\frontend.spec.ts",
+                    "column": 9,
+                    "line": 972
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "60aee255112e33b2be9f-3f527e401a70bf7c49ca",
+          "file": "frontend.spec.ts",
+          "line": 953,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "home-layout.spec.ts",
+      "file": "home-layout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "search fields remain readable across the flex regression breakpoints",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "failed",
+                  "duration": 1368,
+                  "error": {
+                    "message": "Error: field crushed at 320px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m100\u001b[39m\nReceived:    \u001b[31m75\u001b[39m",
+                    "stack": "Error: field crushed at 320px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m100\u001b[39m\nReceived:    \u001b[31m75\u001b[39m\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\home-layout.spec.ts:27:9",
+                    "location": {
+                      "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\home-layout.spec.ts",
+                      "column": 9,
+                      "line": 27
+                    },
+                    "snippet": "  25 |         field.inputWidth,\n  26 |         `field crushed at ${width}px`,\n> 27 |       ).toBeGreaterThanOrEqual(100);\n     |         ^\n  28 |     }\n  29 |     expect(\n  30 |       await page.evaluate("
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\home-layout.spec.ts",
+                        "column": 9,
+                        "line": 27
+                      },
+                      "message": "Error: field crushed at 320px\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m100\u001b[39m\nReceived:    \u001b[31m75\u001b[39m\n\n  25 |         field.inputWidth,\n  26 |         `field crushed at ${width}px`,\n> 27 |       ).toBeGreaterThanOrEqual(100);\n     |         ^\n  28 |     }\n  29 |     expect(\n  30 |       await page.evaluate(\n    at C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\home-layout.spec.ts:27:9"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:32.502Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\home-layout-search-fields--efe19-flex-regression-breakpoints\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\home-layout-search-fields--efe19-flex-regression-breakpoints\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\test-results\\home-layout-search-fields--efe19-flex-regression-breakpoints\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\ster1\\lec\\NBE12-14-2-007\\client\\tests\\home-layout.spec.ts",
+                    "column": 9,
+                    "line": 27
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "843dbd5c749186b380e0-fc3f5807bb52e5eb111c",
+          "file": "home-layout.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "my-content.spec.ts",
+      "file": "my-content.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "my posts and comments show classifications, deletion reasons and only available original links",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1560,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:33.733Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b959e249a666c07588d-fb27fafa3bcb1b430c7d",
+          "file": "my-content.spec.ts",
+          "line": 53,
+          "column": 1
+        },
+        {
+          "title": "failed own-content query shows an error and permits retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1294,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:35.243Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b959e249a666c07588d-b7bdc0f101455130961a",
+          "file": "my-content.spec.ts",
+          "line": 126,
+          "column": 1
+        },
+        {
+          "title": "author can delete a submission from its public original reached through my page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1524,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:35.561Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b959e249a666c07588d-6fe0f06df5ac296d09af",
+          "file": "my-content.spec.ts",
+          "line": 194,
+          "column": 1
+        },
+        {
+          "title": "author can open submission editing from the public event",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1160,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:36.906Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b959e249a666c07588d-c9766faf14e67e003743",
+          "file": "my-content.spec.ts",
+          "line": 228,
+          "column": 1
+        },
+        {
+          "title": "another member has no submission deletion control",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1106,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:37.121Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b959e249a666c07588d-ddd374c5ce42da81291c",
+          "file": "my-content.spec.ts",
+          "line": 237,
+          "column": 1
+        },
+        {
+          "title": "admin deletes another member's event through the common reason-based API",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1734,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:38.083Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5b959e249a666c07588d-7807256d38df1a26ffec",
+          "file": "my-content.spec.ts",
+          "line": 248,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "review-comments.spec.ts",
+      "file": "review-comments.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "review comments show oldest first, keep deleted comments as placeholders and post replies",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1971,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:38.264Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c019468aee4672295ecd-e7466b31609fdaa88ec1",
+          "file": "review-comments.spec.ts",
+          "line": 164,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "review-lists.spec.ts",
+      "file": "review-lists.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "public review list supports anonymous search, server pagination, sorting and URL restoration",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3542,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:39.967Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c7b00dd6c95afeb60aa7-05aeddfe8bec03dc7f7a",
+          "file": "review-lists.spec.ts",
+          "line": 89,
+          "column": 1
+        },
+        {
+          "title": "list failures clear prior data, retry the API and show an empty search without preview fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1519,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:40.383Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c7b00dd6c95afeb60aa7-efe95079680556fba6f7",
+          "file": "review-lists.spec.ts",
+          "line": 149,
+          "column": 1
+        },
+        {
+          "title": "preview searches before pagination and preserves likes sorting",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2173,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:41.924Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c7b00dd6c95afeb60aa7-ab8e18585b519e68ea2c",
+          "file": "review-lists.spec.ts",
+          "line": 173,
+          "column": 1
+        },
+        {
+          "title": "administrator review list supports search, pagination and original detail",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2462,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:43.561Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c7b00dd6c95afeb60aa7-c9304863289487c38707",
+          "file": "review-lists.spec.ts",
+          "line": 190,
+          "column": 1
+        },
+        {
+          "title": "administrator list reports query failure and missing detail without claiming restoration is available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1811,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:44.140Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c7b00dd6c95afeb60aa7-f06a1c2880b61e7744b1",
+          "file": "review-lists.spec.ts",
+          "line": 236,
+          "column": 1
+        },
+        {
+          "title": "deleted review rows remain manageable and administrator search is accessible on small screens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2415,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T07:16:45.970Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c7b00dd6c95afeb60aa7-c2459a63560a5e86018d",
+          "file": "review-lists.spec.ts",
+          "line": 260,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T07:14:57.734Z",
+    "duration": 111125.51299999999,
+    "expected": 63,
+    "skipped": 0,
+    "unexpected": 6,
+    "flaky": 0
+  }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
+  ArrowRight,
   CalendarDays,
   Check,
   ChevronRight,
@@ -16,6 +16,7 @@ import { dateText, errorText, period, regions } from "../lib/format";
 import { selectedRegion } from "../lib/regions";
 import { RegionSelects } from "../components/RegionSelects";
 import { LazyRichTextEditor } from "../components/LazyRichTextEditor";
+import { FestivalDeletionNotice } from "../components/FestivalDeletionNotice";
 import type {
   EventView,
   SubmissionInput,
@@ -89,7 +90,7 @@ export function SubmissionList({ compact = false }: { compact?: boolean }) {
           {list.map((s) => {
             return (
               <Link
-                className="submission-row"
+                className={`submission-row${s.deletion ? " is-deleted" : ""}`}
                 key={s.festivalSubmissionId}
                 to={`/submissions/${s.festivalSubmissionId}`}
               >
@@ -101,10 +102,20 @@ export function SubmissionList({ compact = false }: { compact?: boolean }) {
                 <div className="submission-row-copy">
                   <div>
                     <Badge tone={s.status === "CLOSED" ? "gray" : "green"}>
-                      {s.status === "CLOSED" ? "종료" : "종료 전"}
+                      {s.deletion
+                        ? "삭제된 행사"
+                        : s.status === "CLOSED"
+                          ? "종료"
+                          : "종료 전"}
                     </Badge>
                   </div>
                   <h3>{s.title}</h3>
+                  {s.deletion && (
+                    <p>
+                      삭제 사유:{" "}
+                      {s.deletion.reason || "기록된 사유가 없습니다."}
+                    </p>
+                  )}
                   <p>
                     <MapPin size={14} />
                     {regions[s.region] || s.region} {s.regionDetail}
@@ -145,15 +156,17 @@ export function SubmissionFormPage() {
   const { member, authLoading } = useApp();
   return (
     <div className="container page-space">
-      <Link
-        className="back-link"
-        to={submissionId ? `/submissions/${submissionId}` : "/explore"}
-      >
-        <ArrowLeft size={16} />
-        {submissionId ? "제보 상세로" : "행사 목록으로"}
-      </Link>
+      <div className="form-topline">
+        <p className="eyebrow">SHARE A LITTLE JOY</p>
+        <Link
+          className="back-link"
+          to={submissionId ? `/submissions/${submissionId}` : "/explore"}
+        >
+          {submissionId ? "제보 상세로" : "행사 목록으로"}
+          <ArrowRight size={16} />
+        </Link>
+      </div>
       <PageTitle
-        eyebrow="SHARE A LITTLE JOY"
         title={
           submissionId
             ? "행사 제보 수정"
@@ -194,7 +207,14 @@ function EditSubmission({ id }: { id: string }) {
   ) : error ? (
     <ErrorState message={error} retry={reload} />
   ) : data ? (
-    <SubmissionForm existing={data} />
+    data.submission.festival.deletion ? (
+      <>
+        <FestivalDeletionNotice deletion={data.submission.festival.deletion} />
+        <p className="muted">삭제된 행사는 수정할 수 없어요</p>
+      </>
+    ) : (
+      <SubmissionForm existing={data} />
+    )
   ) : null;
 }
 function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
@@ -448,6 +468,9 @@ function SubmissionForm({ existing }: { existing?: SubmissionDetail }) {
                 onChange={(value) => change("festivalContent", value)}
                 placeholder="행사의 내용과 즐길 거리를 자세히 소개해 주세요."
                 ariaLabel="행사 소개"
+                onUploadImage={async (file) =>
+                  (await api.upload(file, "FESTIVAL")).url
+                }
               />
             </Field>
             <div className="wide">

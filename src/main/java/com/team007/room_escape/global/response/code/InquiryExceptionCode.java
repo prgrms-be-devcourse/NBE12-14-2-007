@@ -17,7 +17,13 @@ public enum InquiryExceptionCode implements ExceptionCode {
 	/** 작성자가 지운 문의에 답변해도 작성자에게 보이지 않는다 */
 	INQUIRY_ALREADY_DELETED("INQUIRY004", HttpStatus.CONFLICT, "삭제된 문의에는 답변할 수 없습니다."),
 	/** ID 형식이 대상 종류와 맞지 않는 경우도 존재하지 않는 대상으로 본다 */
-	INQUIRY_TARGET_NOT_FOUND("INQUIRY005", HttpStatus.NOT_FOUND, "신고·제보 대상을 찾을 수 없습니다.");
+	INQUIRY_TARGET_NOT_FOUND("INQUIRY005", HttpStatus.NOT_FOUND, "신고·제보 대상을 찾을 수 없습니다."),
+	/**
+	 * 콘텐츠 삭제와 함께 처리하려는 문의가 그 콘텐츠에 대한 미처리 신고가 아닐 때.
+	 * 엉뚱한 신고가 삭제 사유로 자동 답변되는 것을 막는다.
+	 */
+	INQUIRY_TARGET_MISMATCH("INQUIRY006", HttpStatus.CONFLICT,
+		"삭제한 콘텐츠에 대한 미처리 신고가 아닙니다.");
 
 	private final String code;
 	private final HttpStatus status;

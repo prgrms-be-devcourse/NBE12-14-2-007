@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.festival.service;
 
-import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteRequest.CreateOrUpdateFestivalAccuracyVoteRequest;
-import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteResponse.AccuracyVoteResponse;
+import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteRequest;
+import com.team007.room_escape.domain.festival.dto.FestivalAccuracyVoteResponse;
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVote;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalAccuracyVoteType;
@@ -22,93 +22,93 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FestivalAccuracyVoteService {
 
-    private final FestivalAccuracyVoteRepository accuracyVoteRepository;
-    private final FestivalRepository festivalRepository;
-    private final MemberReader memberReader;
-    private final MemberTrustGradeService memberTrustGradeService;
+	private final FestivalAccuracyVoteRepository accuracyVoteRepository;
+	private final FestivalRepository festivalRepository;
+	private final MemberReader memberReader;
+	private final MemberTrustGradeService memberTrustGradeService;
 
-    @Transactional
-    public AccuracyVoteResponse vote(
-            UUID memberId,
-            Long festivalId,
-            CreateOrUpdateFestivalAccuracyVoteRequest request
-    ) {
-        Member member = memberReader.getActiveMember(memberId);
-        Festival festival = findUserSubmittedFestival(festivalId);
+	@Transactional
+	public FestivalAccuracyVoteResponse.Info vote(
+			UUID memberId,
+			Long festivalId,
+			FestivalAccuracyVoteRequest.Upsert request
+	) {
+		Member member = memberReader.getActiveMember(memberId);
+		Festival festival = findUserSubmittedFestival(festivalId);
 
-        if (festival.getMember() != null
-                && festival.getMember().getId().equals(memberId)) {
-            throw new BusinessException(
-                    FestivalExceptionCode.SELF_ACCURACY_VOTE_NOT_ALLOWED
-            );
-        }
+		if (festival.getMember() != null
+				&& festival.getMember().getId().equals(memberId)) {
+			throw new BusinessException(
+					FestivalExceptionCode.SELF_ACCURACY_VOTE_NOT_ALLOWED
+			);
+		}
 
-        FestivalAccuracyVote vote = accuracyVoteRepository
-                .findByFestivalAndMember(festival, member)
-                .orElseGet(() -> FestivalAccuracyVote.builder()
-                        .festival(festival)
-                        .member(member)
-                        .voteType(request.voteType())
-                        .build());
+		FestivalAccuracyVote vote = accuracyVoteRepository
+				.findByFestivalAndMember(festival, member)
+				.orElseGet(() -> FestivalAccuracyVote.builder()
+						.festival(festival)
+						.member(member)
+						.voteType(request.voteType())
+						.build());
 
-        vote.changeVote(request.voteType());
-        accuracyVoteRepository.save(vote);
+		vote.changeVote(request.voteType());
+		accuracyVoteRepository.save(vote);
 
-        AccuracyVoteResponse response = buildResponse(festival, vote.getVoteType());
-        memberTrustGradeService.refreshForFestival(festival);
-        return response;
-    }
+		FestivalAccuracyVoteResponse.Info response = buildResponse(festival, vote.getVoteType());
+		memberTrustGradeService.refreshForFestival(festival);
+		return response;
+	}
 
-    @Transactional
-    public AccuracyVoteResponse cancelVote(
-            UUID memberId,
-            Long festivalId
-    ) {
-        Member member = memberReader.getActiveMember(memberId);
-        Festival festival = findUserSubmittedFestival(festivalId);
+	@Transactional
+	public FestivalAccuracyVoteResponse.Info cancelVote(
+			UUID memberId,
+			Long festivalId
+	) {
+		Member member = memberReader.getActiveMember(memberId);
+		Festival festival = findUserSubmittedFestival(festivalId);
 
-        accuracyVoteRepository
-                .findByFestivalAndMember(festival, member)
-                .ifPresent(accuracyVoteRepository::delete);
+		accuracyVoteRepository
+				.findByFestivalAndMember(festival, member)
+				.ifPresent(accuracyVoteRepository::delete);
 
-        AccuracyVoteResponse response = buildResponse(festival, null);
-        memberTrustGradeService.refreshForFestival(festival);
-        return response;
-    }
+		FestivalAccuracyVoteResponse.Info response = buildResponse(festival, null);
+		memberTrustGradeService.refreshForFestival(festival);
+		return response;
+	}
 
-    private AccuracyVoteResponse buildResponse(
-            Festival festival,
-            FestivalAccuracyVoteType myVote
-    ) {
-        accuracyVoteRepository.flush();
+	private FestivalAccuracyVoteResponse.Info buildResponse(
+			Festival festival,
+			FestivalAccuracyVoteType myVote
+	) {
+		accuracyVoteRepository.flush();
 
-        long accurateCount = accuracyVoteRepository
-                .countByFestivalAndVoteType(
-                        festival,
-                        FestivalAccuracyVoteType.ACCURATE
-                );
+		long accurateCount = accuracyVoteRepository
+				.countByFestivalAndVoteType(
+						festival,
+						FestivalAccuracyVoteType.ACCURATE
+				);
 
-        long inaccurateCount = accuracyVoteRepository
-                .countByFestivalAndVoteType(
-                        festival,
-                        FestivalAccuracyVoteType.INACCURATE
-                );
+		long inaccurateCount = accuracyVoteRepository
+				.countByFestivalAndVoteType(
+						festival,
+						FestivalAccuracyVoteType.INACCURATE
+				);
 
-        return AccuracyVoteResponse.of(
-                accurateCount,
-                inaccurateCount,
-                myVote
-        );
-    }
+		return FestivalAccuracyVoteResponse.Info.from(
+				accurateCount,
+				inaccurateCount,
+				myVote
+		);
+	}
 
-    private Festival findUserSubmittedFestival(Long festivalId) {
-        return festivalRepository
-                .findByIdAndProviderTypeAndDeletedAtIsNull(
-                        festivalId,
-                        ProviderType.MEMBER
-                )
-                .orElseThrow(() -> new BusinessException(
-                        FestivalExceptionCode.FESTIVAL_NOT_FOUND
-                ));
-    }
+	private Festival findUserSubmittedFestival(Long festivalId) {
+		return festivalRepository
+				.findByIdAndProviderTypeAndDeletedAtIsNull(
+						festivalId,
+						ProviderType.MEMBER
+				)
+				.orElseThrow(() -> new BusinessException(
+						FestivalExceptionCode.FESTIVAL_NOT_FOUND
+				));
+	}
 }

@@ -1,7 +1,7 @@
 package com.team007.room_escape.domain.post.controller;
 
-import com.team007.room_escape.domain.post.infra.dto.PostRequest;
-import com.team007.room_escape.domain.post.infra.dto.PostResponse;
+import com.team007.room_escape.domain.post.dto.PostRequest;
+import com.team007.room_escape.domain.post.dto.PostResponse;
 import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.domain.post.service.PostService;
 import com.team007.room_escape.global.response.ApiResponse;
@@ -32,26 +32,26 @@ public class PostController {
 	@Operation(summary = "후기 작성", description = "특정 행사에 후기를 작성합니다.")
 	@PostMapping("/festivals/{id}/posts")
 	@PreAuthorize("hasRole('UNVERIFIED')")
-	public ResponseEntity<ApiResponse<PostResponse.CreateResponse>> createPost(
+	public ResponseEntity<ApiResponse<PostResponse.Create>> createPost(
 			@PathVariable Long id,
 			@Valid @RequestBody PostRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 			) {
 
-		PostResponse.CreateResponse response = postService.createPost(id, request, user.getId());
+		PostResponse.Create response = postService.createPost(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
 	@Operation(summary = "후기 검색", description = "후기를 검색합니다. sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다.")
 	@GetMapping("/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> searchPosts(
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListItem>>> searchPosts(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
 			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.ListResponse> posts = postService.searchPosts(type, keyword, page);
+		Page<PostResponse.ListItem> posts = postService.searchPosts(type, keyword, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
@@ -59,38 +59,38 @@ public class PostController {
 	@Operation(summary = "관리자 후기 조회", description = "삭제된 후기를 포함하여 후기 목록을 조회하거나 검색합니다.")
 	@GetMapping("/admin/posts")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse<Page<PostResponse.AdminListResponse>>> searchPostsForAdmin(
+	public ResponseEntity<ApiResponse<Page<PostResponse.AdminListItem>>> searchPostsForAdmin(
 			@RequestParam(required = false) PostSearchType type,
 			@RequestParam(required = false) String keyword,
 			@PageableDefault(size = 9, sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.AdminListResponse> posts = postService.searchPostsForAdmin(type, keyword, page);
+		Page<PostResponse.AdminListItem> posts = postService.searchPostsForAdmin(type, keyword, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
 
 	@Operation(summary = "행사별 후기 다건 조회", description = "행사별 후기를 검색합니다. sort=likeCount,desc 로 좋아요순 정렬할 수 있습니다.")
 	@GetMapping("/festivals/{id}/posts")
-	public ResponseEntity<ApiResponse<Page<PostResponse.ListResponse>>> getPostsByFestival(
+	public ResponseEntity<ApiResponse<Page<PostResponse.ListItem>>> getPostsByFestival(
 			@PathVariable Long id,
 			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
 			Pageable page
 	) {
-		Page<PostResponse.ListResponse> posts = postService.getPostsByFestival(id, page);
+		Page<PostResponse.ListItem> posts = postService.getPostsByFestival(id, page);
 
 		return ResponseEntity.ok(ApiResponse.success(posts));
 	}
 
 	@Operation(summary = "후기 단건 조회", description = "후기 상세 정보를 조회합니다.")
 	@GetMapping("/posts/{id}")
-	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> getPostDetail(
+	public ResponseEntity<ApiResponse<PostResponse.Detail>> getPostDetail(
 			@PathVariable UUID id,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
-		// 비회원도 볼 수 있는 API라서 로그인 정보가 없으면 user가 null이다.
-		PostResponse.DetailResponse postDetailDto = postService.getPostDetail(
+		// 비회원이면 user가 null이다.
+		PostResponse.Detail postDetailDto = postService.getPostDetail(
 				id,
 				user == null ? null : user.getId()
 		);
@@ -101,24 +101,24 @@ public class PostController {
 	@Operation(summary = "후기 수정", description = "본인이 작성한 후기를 수정합니다.")
 	@PatchMapping("/posts/{id}")
 	@PreAuthorize("hasRole('UNVERIFIED')")
-	public ResponseEntity<ApiResponse<PostResponse.DetailResponse>> updatePost(
+	public ResponseEntity<ApiResponse<PostResponse.Detail>> updatePost(
 			@PathVariable UUID id,
 			@Valid @RequestBody PostRequest request,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
 
-		PostResponse.DetailResponse response = postService.updatePost(id, request, user.getId());
+		PostResponse.Detail response = postService.updatePost(id, request, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
 	}
 
-	@Operation(summary = "후기 삭제", description = "작성자 본인 또는 관리자가 후기를 삭제합니다")
+	@Operation(summary = "후기 삭제", description = "작성자 본인이 삭제합니다. 관리자의 타인 후기 삭제는 공통 관리자 조치 API를 사용합니다.")
 	@DeleteMapping("/posts/{id}")
 	public ResponseEntity<ApiResponse<Void>> deletePost(
 			@PathVariable UUID id,
 			@AuthenticationPrincipal CustomUserDetails user
 	) {
-		postService.deletePost(id, user.getId(), user.isAdmin());
+		postService.deletePost(id, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.noContentSuccess());
 	}

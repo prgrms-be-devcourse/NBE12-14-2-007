@@ -6,19 +6,21 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 
 public interface FestivalSubmissionRepository extends JpaRepository<FestivalSubmission, UUID> {
 
-    List<FestivalSubmission>
+	@EntityGraph(attributePaths = "festival")
+	List<FestivalSubmission>
+	findAllByFestival_Member_IdAndFestival_ProviderTypeOrderByCreatedAtDesc(
+			UUID memberId,
+			ProviderType providerType
+	);
 
-    findAllByFestival_Member_IdAndFestival_ProviderTypeAndDeletedAtIsNullOrderByCreatedAtDesc(
-            UUID memberId,
-            ProviderType providerType
-    );
-
-    Optional<FestivalSubmission>
-    findByIdAndFestival_Member_IdAndDeletedAtIsNull(
-            UUID submissionId,
-            UUID memberId
-    );
+	@EntityGraph(attributePaths = "festival")
+	Optional<FestivalSubmission>
+	findByIdAndFestival_Member_Id(
+			UUID submissionId,
+			UUID memberId
+	);
 }

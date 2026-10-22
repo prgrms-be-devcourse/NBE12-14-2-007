@@ -3,11 +3,24 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ChevronRight, Search } from "lucide-react";
 import { RichTextContent } from "../components/RichText";
 import { useReviewQuery } from "../components/ReviewSearch";
-import { Badge, Empty, ErrorState, Loading, Modal, Photo } from "../components/ui";
+import {
+  Badge,
+  Empty,
+  ErrorState,
+  Loading,
+  Modal,
+  Photo,
+} from "../components/ui";
 import { ApiError } from "../lib/api";
+import type { AdminDeletionReason } from "../lib/deletion";
+import { DeletionReasonFields } from "./DeletionReasonFields";
 import { useApp, useLoad } from "../lib/context";
 import { dateText, dateTimeText, errorText } from "../lib/format";
-import type { AdminPostSummary, Comment, PostSearchType } from "../lib/types";
+import type {
+  AdminPostSummary,
+  AdminComment,
+  PostSearchType,
+} from "../lib/types";
 
 const searchTypes: { value: PostSearchType; label: string }[] = [
   { value: "TITLE", label: "후기 제목" },
@@ -278,9 +291,25 @@ function AdminReviewDetail({
     }
   }, [api, id, knownDeleted]);
   const [confirmPost, setConfirmPost] = useState(false);
+  const [reasonCode, setReasonCode] = useState<AdminDeletionReason>(
+    "INCORRECT_INFORMATION",
+  );
+  const [reasonDetail, setReasonDetail] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
-  const removed = knownDeleted || (!detail.loading && !detail.error && !detail.data);
+  const removed =
+    knownDeleted || (!detail.loading && !detail.error && !detail.data);
+  const history = useLoad(
+    () =>
+      removed ? api.adminLatestDeletion("POST", id) : Promise.resolve(null),
+    [api, id, removed],
+  );
+  const canRestore =
+    removed &&
+    !history.loading &&
+    !history.error &&
+    history.data?.action === "DELETE" &&
+    history.data.actorType === "ADMIN";
   const title = detail.data?.title ?? summary?.title ?? "후기";
   const author = detail.data?.member.nickname ?? summary?.member.nickname;
   const when = detail.data?.date ?? summary?.date;
@@ -291,8 +320,23 @@ function AdminReviewDetail({
     setBusy(true);
     setActionError("");
     try {
-      await api.deletePost(id);
+      await api.adminDeleteContent("POST", id, reasonCode, reasonDetail);
       toast("후기를 삭제했습니다.");
+      onChanged();
+      onClose();
+    } catch (error) {
+      setActionError(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restorePost() {
+    setBusy(true);
+    setActionError("");
+    try {
+      await api.adminRestoreContent("POST", id);
+      toast("후기를 복구했습니다.");
       onChanged();
       onClose();
     } catch (error) {
@@ -316,7 +360,8 @@ function AdminReviewDetail({
               {author && <span>작성자 : {author}</span>}
               <span className="adm-review-date">
                 {when && dateTimeText(when)}
-                {removed && summary?.deletedAt &&
+                {removed &&
+                  summary?.deletedAt &&
                   `${when ? " · " : ""}삭제 ${dateTimeText(summary.deletedAt)}`}
               </span>
             </div>
@@ -328,8 +373,8 @@ function AdminReviewDetail({
           )}
           {removed ? (
             <p className="adm-dialog-note">
-              삭제된 후기입니다. 일반 사용자 목록에는 보이지 않고, 본문과
-              댓글도 더 이상 조회되지 않습니다.
+              삭제된 후기입니다. 일반 사용자에게는 보이지 않습니다. 관리자는
+              아래에서 댓글 상태와 삭제 이력을 확인할 수 있습니다.
             </p>
           ) : (
             detail.data && (
@@ -341,33 +386,63 @@ function AdminReviewDetail({
                   content={detail.data.content}
                   className="adm-content-body rich-text-content"
                 />
-                <ReviewComments postId={id} />
               </>
             )
           )}
+          <ReviewComments postId={id} />
           {actionError && (
             <p className="adm-dialog-note" role="alert">
               {actionError}
             </p>
           )}
+          {removed &&
+            (history.loading ? (
+              <p className="adm-dialog-note">삭제 이력을 확인하는 중…</p>
+            ) : history.error ? (
+              <ErrorState message={history.error} retry={history.reload} />
+            ) : history.data?.action === "DELETE" ? (
+              <p className="adm-dialog-note">
+                {history.data.actorType === "ADMIN"
+                  ? "관리자 삭제"
+                  : "작성자 삭제"}{" "}
+                · 사유: {history.data.reasonLabel}
+                {history.data.reasonDetail && ` — ${history.data.reasonDetail}`}
+                {!canRestore && " · 작성자 삭제는 복구할 수 없습니다."}
+              </p>
+            ) : (
+              <p className="adm-dialog-note">
+                복구 가능한 관리자 삭제 이력이 없습니다.
+              </p>
+            ))}
           {confirmPost ? (
-            <div className="adm-dialog-actions">
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() => setConfirmPost(false)}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                className="btn danger"
+            <>
+              <DeletionReasonFields
+                code={reasonCode}
+                detail={reasonDetail}
                 disabled={busy}
-                onClick={removePost}
-              >
-                {busy ? "삭제 중…" : "후기를 삭제합니다"}
-              </button>
-            </div>
+                onCode={setReasonCode}
+                onDetail={setReasonDetail}
+              />
+              <div className="adm-dialog-actions">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={() => setConfirmPost(false)}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="btn danger"
+                  disabled={
+                    busy || (reasonCode === "OTHER" && !reasonDetail.trim())
+                  }
+                  onClick={removePost}
+                >
+                  {busy ? "삭제 중…" : "후기를 삭제합니다"}
+                </button>
+              </div>
+            </>
           ) : (
             <div className="adm-dialog-actions">
               <button type="button" className="btn secondary" onClick={onClose}>
@@ -382,6 +457,16 @@ function AdminReviewDetail({
                   후기 삭제
                 </button>
               )}
+              {removed && (
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={!canRestore || busy}
+                  onClick={restorePost}
+                >
+                  {busy ? "복구 중…" : "후기 복구"}
+                </button>
+              )}
             </div>
           )}
         </>
@@ -394,7 +479,7 @@ function ReviewComments({ postId }: { postId: string }) {
   const { api } = useApp();
   const [page, setPage] = useState(0);
   const { data, loading, error, reload } = useLoad(
-    () => api.comments(postId, page),
+    () => api.adminComments(postId, page),
     [api, postId, page],
   );
   return (
@@ -409,22 +494,29 @@ function ReviewComments({ postId }: { postId: string }) {
             다시 시도
           </button>
         </p>
-      ) : data?.length ? (
+      ) : data?.content.length ? (
         <>
           <ul className="adm-review-comment-list">
-            {data.map((comment) => (
+            {data.content.flatMap((root) => [
               <ReviewCommentRow
-                key={comment.id}
-                comment={comment}
+                key={root.id}
+                comment={root}
                 onDeleted={reload}
-              />
-            ))}
+              />,
+              ...root.replies.map((reply) => (
+                <ReviewCommentRow
+                  key={reply.id}
+                  comment={reply}
+                  onDeleted={reload}
+                />
+              )),
+            ])}
           </ul>
           <div className="adm-dialog-actions">
             <button
               type="button"
               className="btn secondary"
-              disabled={page === 0}
+              disabled={data.first}
               onClick={() => setPage(page - 1)}
             >
               이전
@@ -432,7 +524,7 @@ function ReviewComments({ postId }: { postId: string }) {
             <button
               type="button"
               className="btn secondary"
-              disabled={data.length < 20}
+              disabled={data.last}
               onClick={() => setPage(page + 1)}
             >
               다음
@@ -452,19 +544,47 @@ function ReviewCommentRow({
   comment,
   onDeleted,
 }: {
-  comment: Comment;
+  comment: AdminComment;
   onDeleted: () => void;
 }) {
   const { api, toast } = useApp();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [reasonCode, setReasonCode] =
+    useState<AdminDeletionReason>("ABUSIVE_CONTENT");
+  const [reasonDetail, setReasonDetail] = useState("");
+  const removed = !!comment.deletedAt;
+  const canRestore =
+    removed &&
+    comment.deletion?.action === "DELETE" &&
+    comment.deletion.actorType === "ADMIN" &&
+    !comment.parentDeleted;
+
+  async function restore() {
+    setBusy(true);
+    setError("");
+    try {
+      await api.adminRestoreContent("COMMENT", comment.id);
+      toast("댓글을 복구했습니다.");
+      onDeleted();
+    } catch (restoreError) {
+      setError(errorText(restoreError));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function remove() {
     setBusy(true);
     setError("");
     try {
-      await api.deleteComment(comment.id);
+      await api.adminDeleteContent(
+        "COMMENT",
+        comment.id,
+        reasonCode,
+        reasonDetail,
+      );
       toast("댓글을 삭제했습니다.");
       setConfirming(false);
       onDeleted();
@@ -475,29 +595,80 @@ function ReviewCommentRow({
     }
   }
 
+  const reply = comment.parentId != null;
+
   return (
-    <li>
+    <li
+      className={[reply && "is-reply", removed && "adm-review-comment-removed"]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="adm-review-comment-body">
         <div className="adm-review-comment-meta">
-          <strong>{comment.nickname}</strong>
+          {reply && <span aria-label="답글">↳</span>}
+          <strong>{comment.member.nickname}</strong>
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
         </div>
-        <p>{comment.content}</p>
+        <p className="adm-review-comment-content">{comment.content}</p>
+        {removed && (
+          <div className="adm-review-comment-deletion">
+            <Badge>삭제됨</Badge>
+            <p>삭제 시각: {dateTimeText(comment.deletedAt!)}</p>
+            {comment.deletion?.action === "DELETE" ? (
+              <>
+                <p>
+                  {comment.deletion.actorType === "ADMIN"
+                    ? "관리자 삭제"
+                    : "작성자 삭제"}{" "}
+                  · 사유: {comment.deletion.reasonLabel}
+                  {comment.deletion.reasonDetail &&
+                    ` — ${comment.deletion.reasonDetail}`}
+                </p>
+                {comment.deletion.actorType === "AUTHOR" && (
+                  <p>작성자 삭제 · 복구 불가</p>
+                )}
+              </>
+            ) : (
+              <p>삭제 이력이 없어 복구할 수 없습니다.</p>
+            )}
+            {comment.parentDeleted && <p>후기를 먼저 복구해 주세요.</p>}
+          </div>
+        )}
         {error && (
           <p className="adm-dialog-note" role="alert">
             {error}
           </p>
         )}
       </div>
-      {confirming ? (
-        <span className="adm-review-comment-confirm">
+      {removed ? (
+        <button
+          type="button"
+          className="adm-review-comment-restore"
+          disabled={!canRestore || busy}
+          onClick={restore}
+        >
+          {busy ? "복구 중…" : "댓글 복구"}
+        </button>
+      ) : confirming ? (
+        <div className="adm-review-comment-confirm">
+          <DeletionReasonFields
+            code={reasonCode}
+            detail={reasonDetail}
+            disabled={busy}
+            onCode={setReasonCode}
+            onDetail={setReasonDetail}
+          />
           <button type="button" onClick={() => setConfirming(false)}>
             취소
           </button>
-          <button type="button" disabled={busy} onClick={remove}>
+          <button
+            type="button"
+            disabled={busy || (reasonCode === "OTHER" && !reasonDetail.trim())}
+            onClick={remove}
+          >
             {busy ? "삭제 중" : "삭제"}
           </button>
-        </span>
+        </div>
       ) : (
         <button
           type="button"

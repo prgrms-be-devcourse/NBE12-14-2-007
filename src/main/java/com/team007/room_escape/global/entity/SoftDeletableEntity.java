@@ -20,12 +20,7 @@ public abstract class SoftDeletableEntity extends BaseTimeEntity {
 		this.deletedAt = LocalDateTime.now();
 	}
 
-	/**
-	 * 삭제를 되돌린다. 관리자가 잘못 지운 것을 복구할 때 쓴다.
-	 *
-	 * 주의: 작성자가 스스로 지운 것과 관리자가 지운 것을 deletedAt 하나로는 구분할 수 없다.
-	 * 작성자가 지운 글을 관리자가 되살리면 안 되므로, 호출하는 쪽에서 그 판단을 해야 한다.
-	 */
+	/** 삭제를 되돌린다. 누가 지웠는지 구분할 수 없으니 작성자가 지운 글인지는 호출하는 쪽이 판단한다. */
 	public void restore() {
 		this.deletedAt = null;
 	}

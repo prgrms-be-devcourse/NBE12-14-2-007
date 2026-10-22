@@ -6,6 +6,9 @@ import com.team007.room_escape.domain.festival.infra.repository.FestivalAccuracy
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
+import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
+import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,8 @@ public class MemberTrustGradeService {
 
 	private final LikeRepository likeRepository;
 	private final FestivalAccuracyVoteRepository accuracyVoteRepository;
+	private final MemberRepository memberRepository;
+	private final EntityManager entityManager;
 
 	/** 행사 반응이 바뀔 때 작성자의 현재 신뢰 등급을 다시 계산한다. */
 	@Transactional
@@ -45,6 +50,10 @@ public class MemberTrustGradeService {
 				? MemberRole.ROLE_RECOGNIZED
 				: MemberRole.ROLE_UNVERIFIED;
 
-		author.applyTrustGrade(grade);
+		memberRepository.updateTrustGrade(author.getId(), grade, LocalDateTime.now());
+		// 직접 UPDATE는 이미 조회한 객체를 바꾸지 않는다. 전체 clear 없이 이 회원만 갱신한다.
+		if (entityManager.contains(author)) {
+			entityManager.refresh(author);
+		}
 	}
 }

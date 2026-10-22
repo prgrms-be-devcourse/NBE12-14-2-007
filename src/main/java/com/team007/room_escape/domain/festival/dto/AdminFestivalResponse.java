@@ -1,6 +1,8 @@
 package com.team007.room_escape.domain.festival.dto;
 
 import java.time.LocalDateTime;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionHistory;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionAction;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
 import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
@@ -15,12 +17,7 @@ public class AdminFestivalResponse {
 	private AdminFestivalResponse() {
 	}
 
-	/**
-	 * 관리자 행사 목록의 한 줄.
-	 * 공개 목록(FestivalResponse.ListResponse)과 같은 모양에 deletedAt 만 더했다.
-	 * 삭제 시각이 없으면 공개 목록에 그대로 쓸 수 있는데, 그러면 삭제 여부를
-	 * 화면에서 알 수 없어 복구 버튼을 어디에 붙일지 판단할 수 없다.
-	 */
+	/** 관리자 행사 목록 항목. 삭제 정보로 안내 사유와 복구 가능 여부를 판단한다. */
 	@Builder
 	@Schema(name = "AdminFestivalListItem", description = "관리자 행사 목록 항목")
 	public record ListItem(
@@ -37,9 +34,6 @@ public class AdminFestivalResponse {
 		@Schema(description = "행사 종류")
 		String category,
 
-		@Schema(description = "기관명")
-		String instNm,
-
 		@Schema(description = "행사 이미지 URL")
 		String imgUrl,
 
@@ -49,6 +43,9 @@ public class AdminFestivalResponse {
 		@Schema(description = "행사 종료 일시")
 		LocalDateTime endDe,
 
+		@Schema(description = "행사 등록 일시")
+		LocalDateTime createdAt,
+
 		@Schema(description = "행사 지역")
 		FestivalRegion region,
 
@@ -56,23 +53,34 @@ public class AdminFestivalResponse {
 		FestivalStatus status,
 
 		@Schema(description = "삭제 시각. 삭제되지 않았으면 null")
-		LocalDateTime deletedAt
+		LocalDateTime deletedAt,
+
+		@Schema(description = "삭제 주체 구분 및 안내 사유")
+		FestivalResponse.DeletionInfo deletion
 	) {
 
-		public static ListItem from(Festival festival) {
+		public static ListItem from(Festival festival, DeletionHistory latest) {
 			return ListItem.builder()
 				.festivalId(festival.getId())
 				.providerType(festival.getProviderType())
 				.title(festival.getTitle())
 				.category(festival.getCategory())
-				.instNm(festival.getInstNm())
 				.imgUrl(festival.getImgUrl())
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
+				.createdAt(festival.getCreatedAt())
 				.region(festival.getRegion())
 				.status(festival.getStatus())
 				.deletedAt(festival.getDeletedAt())
+				.deletion(deletionFromHistory(festival, latest))
 				.build();
+		}
+
+		private static FestivalResponse.DeletionInfo deletionFromHistory(Festival festival, DeletionHistory latest) {
+			if (!festival.isDeleted() || latest == null || latest.getAction() != DeletionAction.DELETE) {
+				return null;
+			}
+			return FestivalResponse.DeletionInfo.from(festival, latest);
 		}
 	}
 }

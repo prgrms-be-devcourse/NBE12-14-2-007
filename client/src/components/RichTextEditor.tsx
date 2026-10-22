@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
+import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import {
   Bold as BoldIcon,
   Heading2,
+  ImagePlus,
   Link2,
   List,
   ListOrdered,
@@ -13,13 +15,17 @@ import {
   Redo2,
   Undo2,
 } from "lucide-react";
+import { errorText } from "../lib/format";
 import { richTextEditorHtml } from "./RichText";
+import { FormError } from "./ui";
 
 export interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   ariaLabel: string;
+  /** 넘기면 툴바에 이미지 버튼이 생긴다. 업로드한 이미지의 공개 URL을 돌려줘야 한다. */
+  onUploadImage?: (file: File) => Promise<string>;
 }
 
 export default function RichTextEditor({
@@ -27,7 +33,11 @@ export default function RichTextEditor({
   onChange,
   placeholder,
   ariaLabel,
+  onUploadImage,
 }: RichTextEditorProps) {
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -44,6 +54,7 @@ export default function RichTextEditor({
         },
       }),
       Placeholder.configure({ placeholder }),
+      Image,
     ],
     content: richTextEditorHtml(value),
     editorProps: {
@@ -83,6 +94,20 @@ export default function RichTextEditor({
       .extendMarkRange("link")
       .setLink({ href: url.trim() })
       .run();
+  }
+
+  async function insertImage(file: File) {
+    if (!onUploadImage) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const src = await onUploadImage(file);
+      editor?.chain().focus().setImage({ src }).run();
+    } catch (err) {
+      setUploadError(errorText(err));
+    } finally {
+      setUploading(false);
+    }
   }
 
   const toolbarButtons = [
@@ -135,6 +160,17 @@ export default function RichTextEditor({
       disabled: false,
       action: editLink,
     },
+    ...(onUploadImage
+      ? [
+          {
+            label: uploading ? "이미지 업로드 중" : "이미지",
+            icon: <ImagePlus size={16} />,
+            active: false,
+            disabled: uploading,
+            action: () => fileInput.current?.click(),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -174,7 +210,21 @@ export default function RichTextEditor({
           <Redo2 size={16} />
         </button>
       </div>
+      {onUploadImage && (
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) insertImage(file);
+          }}
+        />
+      )}
       <EditorContent editor={editor} />
+      <FormError message={uploadError} />
     </div>
   );
 }

@@ -15,13 +15,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import com.team007.room_escape.global.exception.BusinessException;
+import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 
 import lombok.*;
 
-// Post, FestivalSubmission 이 이 엔티티를 @ManyToOne 으로 참조한다.
-// @SQLRestriction 을 걸면 삭제된 행사를 참조하는 후기·제보를 조회할 때 예외가 나므로 걸지 않는다.
-// 목록/상세 조회는 리포지토리에서 deletedAtIsNull 로 직접 걸러야 한다.
-//TODO : 삭제시 "삭제된 행사입니다" 로 응답에 표시하기
+// 삭제된 행사를 참조하는 후기·제보 조회가 깨지지 않게 @SQLRestriction을 걸지 않는다. 목록·상세는 deletedAtIsNull로 거른다.
 @Entity
 @Table(name = "festival")
 @Getter
@@ -41,9 +40,6 @@ public class Festival extends SoftDeletableEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "provider_type", nullable = false, length = 32)
 	private ProviderType providerType;
-
-	@Column(name = "inst_nm")
-	private String instNm;
 
 	private String title;
 
@@ -66,23 +62,11 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "end_de")
 	private LocalDateTime endDe;
 
-	@Column(name = "event_tm_info")
-	private String eventTmInfo;
-
 	@Column(name = "partcpt_expn_info")
 	private String partcptExpnInfo;
 
 	@Column(name = "telno_info")
 	private String telnoInfo;
-
-	@Column(name = "host_inst_nm")
-	private String hostInstNm;
-
-	@Column(name = "hmpg_url", length = 2048)
-	private String hmpgUrl;
-
-	@Column(name = "writng_de")
-	private LocalDateTime writngDe;
 
 	@Enumerated(EnumType.STRING)
 	@Column(length = 32)
@@ -95,16 +79,31 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "region_detail", length = 255)
 	private String regionDetail;
 
-	//TODO 로 나중에 코드를 좀더 이쁘게 해봅시다
+	/** 삭제 주체·사유는 공통 이력에 기록하며 행사는 현재 삭제 상태만 관리한다. */
+	@Override
+	public void delete() {
+		if (isDeleted()) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_FOUND);
+		}
+		super.delete();
+	}
+
+	@Override
+	public void restore() {
+		if (!isDeleted()) {
+			throw new BusinessException(FestivalExceptionCode.FESTIVAL_NOT_DELETED);
+		}
+		super.restore();
+	}
+
+	// TODO 인자가 많아서 정리 필요
 	public void updateDetails(
-			String instNm, String title, String category,
+			String title, String category,
 			String content, String referenceUrl,
 			FestivalRegion region, String regionDetail, String imgUrl,
 			LocalDateTime beginDe, LocalDateTime endDe,
-			String eventTmInfo, String partcptExpnInfo,
-			String telnoInfo, String hostInstNm
+			String partcptExpnInfo, String telnoInfo
 	) {
-		this.instNm = instNm;
 		this.title = title;
 		this.category = category;
 		this.content = content;
@@ -115,10 +114,8 @@ public class Festival extends SoftDeletableEntity {
 		this.beginDe = beginDe;
 		this.endDe = endDe;
 		this.status = FestivalStatus.from(endDe);
-		this.eventTmInfo = eventTmInfo;
 		this.partcptExpnInfo = partcptExpnInfo;
 		this.telnoInfo = telnoInfo;
-		this.hostInstNm = hostInstNm;
 	}
 
 	/** 이관 배치에서 원본 URL을 R2 URL로 교체할 때 쓴다. 다른 필드는 건드리지 않는다. */

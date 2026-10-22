@@ -211,19 +211,17 @@ class FestivalServiceTest {
 
 		Festival festival = captureSaved().get(0);
 		assertThat(festival.getProviderType()).isEqualTo(ProviderType.PUBLIC);
-		assertThat(festival.getInstNm()).isEqualTo("경기문화재단");
 		assertThat(festival.getTitle()).isEqualTo("남한산성문화제");
 		assertThat(festival.getCategory()).isEqualTo("행사");
 		assertThat(festival.getUrl()).isEqualTo("https://example.com/1");
 		assertThat(festival.getImgUrl()).isEqualTo("https://example.com/img.jpg");
-		assertThat(festival.getHostInstNm()).isEqualTo("광주시");
 		assertThat(festival.getBeginDe()).isEqualTo(LocalDateTime.of(CURRENT_YEAR, 9, 18, 0, 0));
 		assertThat(festival.getEndDe()).isEqualTo(LocalDateTime.of(2999, 12, 31, 0, 0));
 	}
 
 	/**
 	 * endDe를 "어제" 날짜로 동적으로 만들어서, 테스트를 언제 실행하든
-	 * resolveStatus()가 CLOSED를 반환하는지 안정적으로 확인한다.
+	 * FestivalStatus.from()이 CLOSED를 반환하는지 안정적으로 확인한다.
 	 */
 	@Test
 	@DisplayName("종료일이 지난 행사는 CLOSED 상태로 저장된다")
@@ -243,7 +241,7 @@ class FestivalServiceTest {
 	/**
 	 * 실제 API 응답에서도 일부 필드가 빈 값으로 오는 걸 확인했었는데,
 	 * 날짜 필드가 빈 문자열("")로 와도 parseDate()가 예외 없이 null을 반환하고,
-	 * resolveStatus(null)은 기본값 OPEN을 반환하는지 확인한다.
+	 * FestivalStatus.from(null)은 기본값 OPEN을 반환하는지 확인한다.
 	 */
 	@Test
 	@DisplayName("종료일이 비어 있으면 날짜는 null이고 상태는 OPEN으로 저장된다")
@@ -377,7 +375,6 @@ class FestivalServiceTest {
 				.providerType(ProviderType.PUBLIC)
 				.title("경기 행사")
 				.category("행사")
-				.instNm("경기문화재단")
 				.beginDe(beginDe)
 				.endDe(endDe)
 				.region(region)
@@ -447,7 +444,7 @@ class FestivalServiceTest {
 				pageable
 		)).thenReturn(festivalPage);
 
-		Page<FestivalResponse.ListResponse> result =
+		Page<FestivalResponse.ListItem> result =
 				festivalService.searchFestivals(request, pageable);
 
 		assertThat(result.getTotalElements()).isEqualTo(1);
@@ -509,7 +506,7 @@ class FestivalServiceTest {
 				pageable
 		)).thenReturn(festivalPage);
 
-		Page<FestivalResponse.ListResponse> result =
+		Page<FestivalResponse.ListItem> result =
 				festivalService.searchFestivals(request, pageable);
 
 		assertThat(result.getContent().get(0).status())
@@ -518,7 +515,7 @@ class FestivalServiceTest {
 
 	@Test
 	@DisplayName("검색 결과에 제목과 지역 등 주요 필드가 매핑된다")
-	void mapsFestivalFieldsToListResponse() {
+	void mapsFestivalFieldsToListItem() {
 		LocalDate date = LocalDate.now();
 		FestivalSearchRequest request = searchRequest(date);
 		Pageable pageable = searchPageable();
@@ -549,7 +546,7 @@ class FestivalServiceTest {
 				pageable
 		)).thenReturn(festivalPage);
 
-		FestivalResponse.ListResponse response =
+		FestivalResponse.ListItem response =
 				festivalService.searchFestivals(request, pageable)
 						.getContent()
 						.get(0);
@@ -571,13 +568,9 @@ class FestivalServiceTest {
 			.providerType(ProviderType.PUBLIC)
 			.title("남한산성문화제")
 			.category("행사")
-			.instNm("경기문화재단")
-			.hostInstNm("광주시")
-			.eventTmInfo("10:00~18:00")
 			.partcptExpnInfo("무료")
 			.telnoInfo("031-000-0000")
 			.url("https://example.com/1")
-			.hmpgUrl("https://example.com")
 			.imgUrl("https://example.com/img.jpg")
 			.beginDe(today.minusDays(1).atStartOfDay())
 			.endDe(today.plusDays(1).atStartOfDay())
@@ -585,16 +578,13 @@ class FestivalServiceTest {
 			.build();
 		when(festivalRepository.findByIdAndDeletedAtIsNull(7L)).thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(7L, null);
+		FestivalResponse.Detail detail = festivalService.getFestival(7L, null);
 
 		assertThat(detail.festivalId()).isEqualTo(7L);
 		assertThat(detail.providerType()).isEqualTo(ProviderType.PUBLIC);
 		assertThat(detail.title()).isEqualTo("남한산성문화제");
-		assertThat(detail.hostInstNm()).isEqualTo("광주시");
-		assertThat(detail.eventTmInfo()).isEqualTo("10:00~18:00");
 		assertThat(detail.partcptExpnInfo()).isEqualTo("무료");
 		assertThat(detail.telnoInfo()).isEqualTo("031-000-0000");
-		assertThat(detail.hmpgUrl()).isEqualTo("https://example.com");
 		assertThat(detail.region()).isEqualTo(FestivalRegion.GYEONGGI);
 		assertThat(detail.status()).isEqualTo(FestivalStatus.OPEN);
 	}
@@ -613,22 +603,18 @@ class FestivalServiceTest {
 			.regionDetail("수원시 중앙공원")
 			.beginDe(LocalDate.now().atStartOfDay())
 			.endDe(LocalDate.now().plusDays(1).atStartOfDay())
-			.eventTmInfo("10:00~17:00")
 			.partcptExpnInfo("무료")
-			.hostInstNm("우리동네 모임")
 			.build();
 		when(festivalRepository.findByIdAndDeletedAtIsNull(8L))
 			.thenReturn(java.util.Optional.of(festival));
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L, null);
+		FestivalResponse.Detail detail = festivalService.getFestival(8L, null);
 
 		assertThat(detail.providerType()).isEqualTo(ProviderType.MEMBER);
 		assertThat(detail.festivalContent()).isEqualTo("이웃과 함께하는 주말 장터");
 		assertThat(detail.referenceUrl()).isEqualTo("https://example.com/market");
 		assertThat(detail.regionDetail()).isEqualTo("수원시 중앙공원");
-		assertThat(detail.eventTmInfo()).isEqualTo("10:00~17:00");
 		assertThat(detail.partcptExpnInfo()).isEqualTo("무료");
-		assertThat(detail.hostInstNm()).isEqualTo("우리동네 모임");
 	}
 
 	@Test
@@ -660,7 +646,7 @@ class FestivalServiceTest {
 		when(likeRepository.countByFestivalId(8L)).thenReturn(5L);
 		when(likeRepository.existsByFestivalIdAndMemberId(8L, memberId)).thenReturn(true);
 
-		FestivalResponse.DetailResponse detail = festivalService.getFestival(8L, memberId);
+		FestivalResponse.Detail detail = festivalService.getFestival(8L, memberId);
 
 		assertThat(detail.accurateCount()).isEqualTo(3);
 		assertThat(detail.inaccurateCount()).isEqualTo(1);
@@ -716,10 +702,10 @@ class FestivalServiceTest {
 				unsorted
 		)).thenReturn(new PageImpl<>(List.of(festival), unsorted, 1));
 
-		Page<FestivalResponse.ListResponse> result = festivalService.searchFestivals(request, unsorted);
+		Page<FestivalResponse.ListItem> result = festivalService.searchFestivals(request, unsorted);
 
 		assertThat(result.getContent())
-				.extracting(FestivalResponse.ListResponse::festivalId)
+				.extracting(FestivalResponse.ListItem::festivalId)
 				.containsExactly(10L);
 		verify(festivalRepository, never()).searchFestivals(
 				anyBoolean(), any(), anyBoolean(), any(), anyBoolean(), any(),
@@ -749,11 +735,11 @@ class FestivalServiceTest {
 		when(likeRepository.countByFestivalIds(List.of(10L, 11L)))
 				.thenReturn(List.of(new FestivalLikeCount(10L, 7L)));
 
-		Page<FestivalResponse.ListResponse> result = festivalService.searchFestivals(request, pageable);
+		Page<FestivalResponse.ListItem> result = festivalService.searchFestivals(request, pageable);
 
 		// 좋아요가 하나도 없는 행사는 집계 결과에 없으므로 0으로 채운다
 		assertThat(result.getContent())
-				.extracting(FestivalResponse.ListResponse::festivalId, FestivalResponse.ListResponse::likeCount)
+				.extracting(FestivalResponse.ListItem::festivalId, FestivalResponse.ListItem::likeCount)
 				.containsExactly(tuple(10L, 7L), tuple(11L, 0L));
 		assertThat(result.getTotalElements()).isEqualTo(11);
 		verify(festivalRepository, never()).searchFestivals(

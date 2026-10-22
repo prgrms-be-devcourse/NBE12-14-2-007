@@ -15,7 +15,8 @@ import {
   ThumbsUp,
   Trash2,
 } from "lucide-react";
-import { ApiError } from "../lib/api";
+import { ApiError, COMMENT_PAGE_SIZE } from "../lib/api";
+import { AdminDeletionModal } from "../components/AdminDeletionModal";
 import { ReviewSearch, useReviewQuery } from "../components/ReviewSearch";
 import { ReviewRow } from "../components/ReviewRow";
 import { FestivalPicker } from "../components/FestivalPicker";
@@ -37,7 +38,6 @@ import {
   Modal,
   PageTitle,
   Pagination,
-  Photo,
   SubmitButton,
   Upload,
 } from "../components/ui";
@@ -184,9 +184,10 @@ function ReviewDetail({ id }: { id: string }) {
     error,
     reload,
   } = useLoad(() => api.post(id), [api, id]);
-  const likes = useLoad(() => api.likeCount(id), [api, id]);
   // 누르기 전에는 서버가 알려준 상태를 쓰고, 누른 뒤에는 그 결과를 쓴다.
   const [likedOverride, setLiked] = useState<boolean | null>(null);
+  const [likeCountOverride, setLikeCount] = useState<number | null>(null);
+  const likeCount = likeCountOverride ?? post?.likeCount ?? 0;
   const liked =
     likedOverride ??
     (mode === "preview"
@@ -204,12 +205,16 @@ function ReviewDetail({ id }: { id: string }) {
     setActionError("");
     try {
       const result = await api.like(id, remove);
-      likes.setData(result.likeCount);
+      setLikeCount(result.likeCount);
       setLiked(!remove);
     } catch (e) {
       if (e instanceof ApiError && e.code === "LIKE000") {
         setLiked(true);
-        likes.reload();
+        // 다른 곳에서 이미 누른 경우라 지금 개수를 다시 받아 온다
+        api
+          .post(id)
+          .then((latest) => setLikeCount(latest.likeCount ?? null))
+          .catch(() => undefined);
         toast("이미 좋아요를 남긴 후기예요. 다시 누르면 취소할 수 있어요.");
       } else setActionError(errorText(e));
     } finally {
@@ -261,24 +266,17 @@ function ReviewDetail({ id }: { id: string }) {
             )}
           </div>
         </div>
-        {post.thumbnail && (
-          <Photo
-            className="article-image"
-            src={post.thumbnail}
-            alt={post.title}
-          />
-        )}
         <RichTextContent content={post.content} />
         <div className="review-reactions">
           <button
-            disabled={busy || likes.loading}
+            disabled={busy}
             className={`btn ${liked ? "liked" : "secondary"}`}
             onClick={() => like(liked)}
             aria-pressed={liked}
           >
             <ThumbsUp size={18} />
             {liked ? "도움이 됐어요" : "도움돼요"}
-            {likes.data !== null && <strong>{likes.data}</strong>}
+            <strong>{likeCount}</strong>
           </button>
           {!own && (
             <ReportButton
@@ -296,43 +294,55 @@ function ReviewDetail({ id }: { id: string }) {
             </ReportButton>
           )}
         </div>
-        {likes.error && (
-          <ErrorState message={likes.error} retry={likes.reload} />
-        )}
         <FormError message={actionError} />
       </article>
       <Comments postId={id} />
-      {deleteOpen && (
-        <Modal title="후기를 삭제할까요?" onClose={() => setDeleteOpen(false)}>
-          <p className="muted">삭제한 후기는 목록에서 사라져요.</p>
-          <FormError message={actionError} />
-          <div className="form-actions">
-            <button
-              className="btn secondary"
-              onClick={() => setDeleteOpen(false)}
-            >
-              취소
-            </button>
-            <button
-              className="btn danger"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await api.deletePost(id);
-                  toast("후기를 삭제했어요.");
-                  navigate(`/reviews?festival=${post.festivalId}`);
-                } catch (e) {
-                  setActionError(errorText(e));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              삭제하기
-            </button>
-          </div>
-        </Modal>
+      {deleteOpen && !own ? (
+        <AdminDeletionModal
+          targetType="POST"
+          targetId={id}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => {
+            toast("후기를 삭제했어요.");
+            navigate(`/reviews?festival=${post.festivalId}`);
+          }}
+        />
+      ) : (
+        deleteOpen && (
+          <Modal
+            title="후기를 삭제할까요?"
+            onClose={() => setDeleteOpen(false)}
+          >
+            <p className="muted">삭제한 후기는 목록에서 사라져요.</p>
+            <FormError message={actionError} />
+            <div className="form-actions">
+              <button
+                className="btn secondary"
+                onClick={() => setDeleteOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api.deletePost(id);
+                    toast("후기를 삭제했어요.");
+                    navigate(`/reviews?festival=${post.festivalId}`);
+                  } catch (e) {
+                    setActionError(errorText(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                삭제하기
+              </button>
+            </div>
+          </Modal>
+        )
       )}
     </>
   );
@@ -348,6 +358,11 @@ function Comments({ postId }: { postId: string }) {
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
+  // 답글 입력창이 열린 일반 댓글. 한 번에 하나만 연다.
+  const [replyTo, setReplyTo] = useState<{
+    rootId: number;
+    mention: string;
+  } | null>(null);
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!content.trim()) return;
@@ -356,14 +371,24 @@ function Comments({ postId }: { postId: string }) {
     try {
       await api.createComment(postId, content.trim());
       setContent("");
-      setPage(0);
-      reload();
+      // 오래된 순이라 새 댓글은 마지막 페이지 끝에 붙는다.
+      const lastPage = Math.floor(
+        (data?.totalElements ?? 0) / COMMENT_PAGE_SIZE,
+      );
+      if (lastPage === page) reload();
+      else setPage(lastPage);
     } catch (e) {
       setFormError(errorText(e));
     } finally {
       setBusy(false);
     }
   }
+  const rowProps = (comment: Comment) => ({
+    comment,
+    own: Boolean(member && comment.member?.id === member.id),
+    admin: member?.role === "ROLE_ADMIN",
+    reload,
+  });
   return (
     <section className="comments-section">
       <h2>
@@ -398,29 +423,68 @@ function Comments({ postId }: { postId: string }) {
         <Loading />
       ) : error ? (
         <ErrorState message={error} retry={reload} />
-      ) : data?.length ? (
+      ) : data?.content.length ? (
         <div className="comment-list">
-          {data.map((comment) => (
-            <CommentRow
-              key={comment.id}
-              comment={comment}
-              own={comment.memberId === member?.id}
-              admin={member?.role === "ROLE_ADMIN"}
-              reload={reload}
-            />
+          {data.content.map((root) => (
+            <div key={root.id} className="comment-thread">
+              <CommentRow
+                {...rowProps(root)}
+                onReply={
+                  member
+                    ? () => setReplyTo({ rootId: root.id, mention: "" })
+                    : undefined
+                }
+              />
+              {(root.replies.length > 0 || replyTo?.rootId === root.id) && (
+                <div className="comment-replies">
+                  {root.replies.map((reply) => (
+                    <CommentRow
+                      key={reply.id}
+                      {...rowProps(reply)}
+                      onReply={
+                        member
+                          ? () =>
+                              setReplyTo({
+                                rootId: root.id,
+                                mention: reply.member
+                                  ? `@${reply.member.nickname} `
+                                  : "",
+                              })
+                          : undefined
+                      }
+                    />
+                  ))}
+                  {replyTo?.rootId === root.id && (
+                    <ReplyForm
+                      key={`${root.id}-${replyTo.mention}`}
+                      postId={postId}
+                      parentId={root.id}
+                      mention={replyTo.mention}
+                      onClose={() => setReplyTo(null)}
+                      onDone={() => {
+                        setReplyTo(null);
+                        reload();
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
           ))}
           <div className="comment-pagination">
             <button
               className="text-button"
-              disabled={page === 0}
+              disabled={data.first}
               onClick={() => setPage(page - 1)}
             >
               이전 댓글
             </button>
-            <span>{page + 1} 페이지</span>
+            <span>
+              {page + 1} / {Math.max(1, data.totalPages)} 페이지
+            </span>
             <button
               className="text-button"
-              disabled={data.length < 20}
+              disabled={data.last}
               onClick={() => setPage(page + 1)}
             >
               다음 댓글
@@ -440,16 +504,78 @@ function Comments({ postId }: { postId: string }) {
     </section>
   );
 }
+function ReplyForm({
+  postId,
+  parentId,
+  mention,
+  onClose,
+  onDone,
+}: {
+  postId: string;
+  parentId: number;
+  mention: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { api } = useApp();
+  const [value, setValue] = useState(mention);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!value.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api.createComment(postId, value.trim(), parentId);
+      onDone();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form className="comment-form reply-form" onSubmit={submit}>
+      <textarea
+        aria-label="답글 내용"
+        required
+        autoFocus
+        maxLength={500}
+        rows={2}
+        placeholder="답글을 남겨주세요."
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <div>
+        <span className="muted small-text">{value.length} / 500</span>
+        <span className="form-actions">
+          <button
+            type="button"
+            className="btn secondary small"
+            onClick={onClose}
+          >
+            취소
+          </button>
+          <SubmitButton busy={busy}>답글 남기기</SubmitButton>
+        </span>
+      </div>
+      <FormError message={error} />
+    </form>
+  );
+}
 function CommentRow({
   comment,
   own,
   admin,
   reload,
+  onReply,
 }: {
   comment: Comment;
   own: boolean;
   admin: boolean;
   reload: () => void;
+  onReply?: () => void;
 }) {
   const { api } = useApp();
   const [editing, setEditing] = useState(false);
@@ -472,24 +598,37 @@ function CommentRow({
       setBusy(false);
     }
   }
+  // 삭제된 댓글은 서버가 내려준 문구만 보여 준다. 작성자도 버튼도 없다.
+  if (comment.deleted || !comment.member)
+    return (
+      <div className="comment-row deleted">
+        <span className="avatar small" aria-hidden="true" />
+        <div>
+          <p className="prose">{comment.content}</p>
+        </div>
+      </div>
+    );
+  const author = comment.member;
   return (
     <div className="comment-row">
-      <span className="avatar small">{comment.nickname[0]}</span>
+      <span className="avatar small">{author.nickname[0]}</span>
       <div>
         <div className="comment-meta">
-          <ReportableName
-            memberId={comment.memberId}
-            nickname={comment.nickname}
-          />
+          <ReportableName memberId={author.id} nickname={author.nickname} />
           <time dateTime={comment.date}>{dateTimeText(comment.date)}</time>
           <span />
+          {onReply && (
+            <button className="text-button" onClick={onReply}>
+              답글
+            </button>
+          )}
           {!own && (
             <ReportButton
-              ariaLabel={`${comment.nickname} 님의 댓글 신고`}
+              ariaLabel={`${author.nickname} 님의 댓글 신고`}
               target={{
                 type: "COMMENT",
                 id: String(comment.id),
-                name: `${comment.nickname} 님의 댓글 "${comment.content.slice(0, 30)}${comment.content.length > 30 ? "…" : ""}"`,
+                name: `${author.nickname} 님의 댓글 "${comment.content.slice(0, 30)}${comment.content.length > 30 ? "…" : ""}"`,
                 details: [
                   `후기 주소: ${window.location.origin}/reviews/${comment.postId}`,
                   `댓글 내용: ${comment.content}`,
@@ -543,26 +682,38 @@ function CommentRow({
         )}
         <FormError message={error} />
       </div>
-      {deleting && (
-        <Modal title="댓글을 삭제할까요?" onClose={() => setDeleting(false)}>
-          <p className="muted">작성한 댓글이 삭제됩니다.</p>
-          <FormError message={error} />
-          <div className="form-actions">
-            <button
-              className="btn secondary"
-              onClick={() => setDeleting(false)}
-            >
-              취소
-            </button>
-            <button
-              className="btn danger"
-              disabled={busy}
-              onClick={() => save(true)}
-            >
-              삭제
-            </button>
-          </div>
-        </Modal>
+      {deleting && admin && !own ? (
+        <AdminDeletionModal
+          targetType="COMMENT"
+          targetId={comment.id}
+          onClose={() => setDeleting(false)}
+          onDeleted={reload}
+        />
+      ) : (
+        deleting && (
+          <Modal title="댓글을 삭제할까요?" onClose={() => setDeleting(false)}>
+            <p className="muted">
+              삭제한 댓글은 "삭제된 댓글입니다"로 표시되고, 달린 답글은 그대로
+              남아요.
+            </p>
+            <FormError message={error} />
+            <div className="form-actions">
+              <button
+                className="btn secondary"
+                onClick={() => setDeleting(false)}
+              >
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={busy}
+                onClick={() => save(true)}
+              >
+                삭제
+              </button>
+            </div>
+          </Modal>
+        )
       )}
     </div>
   );
@@ -720,17 +871,20 @@ function ReviewForm({
             placeholder="오늘의 경험을 한 문장으로 표현해 주세요"
           />
         </Field>
+        <span className="upload-label">썸네일 이미지</span>
+        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
+        <p className="upload-hint">
+          후기 목록에서 대표 사진으로 보여요. 본문에는 들어가지 않아요.
+        </p>
         <Field label="후기 내용" required>
           <LazyRichTextEditor
             value={content}
             onChange={setContent}
             placeholder="어떤 점이 좋았나요? 다음에 방문할 이웃에게 전하고 싶은 팁도 좋아요."
             ariaLabel="후기 내용"
+            onUploadImage={async (file) => (await api.upload(file, "POST")).url}
           />
         </Field>
-        <span className="upload-label">기억에 남은 사진</span>
-        <Upload type="POST" value={thumbnail} onChange={setThumbnail} useKey />
-        <p className="upload-hint">사진은 7:6 비율로 표시돼요.</p>
       </div>
       <FormError message={error} />
       <div className="form-actions">

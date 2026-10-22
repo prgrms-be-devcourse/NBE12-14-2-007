@@ -16,12 +16,13 @@ import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
-import com.team007.room_escape.domain.post.infra.dto.PostResponse;
+import com.team007.room_escape.domain.post.dto.PostResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
 import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.global.storage.ImageUrlResolver;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,10 +71,10 @@ class PostServiceTest {
 		when(postRepository.searchPostsOrderByLikeCount("MEMBER_NICKNAME", "닉", UNSORTED))
 				.thenReturn(new PageImpl<>(List.of(post), UNSORTED, 13));
 
-		Page<PostResponse.ListResponse> result =
+		Page<PostResponse.ListItem> result =
 				postService.searchPosts(PostSearchType.MEMBER_NICKNAME, "닉", LIKE_SORT);
 
-		assertThat(result.getContent()).extracting(PostResponse.ListResponse::likeCount).containsExactly(4L);
+		assertThat(result.getContent()).extracting(PostResponse.ListItem::likeCount).containsExactly(4L);
 		assertThat(result.getTotalElements()).isEqualTo(13);
 		verify(postRepository, never()).searchPosts(any(), any(), any());
 		verify(postRepository, never()).findAllNotDeleted(any());
@@ -86,7 +87,7 @@ class PostServiceTest {
 		when(postRepository.findAllOrderByLikeCount(UNSORTED))
 				.thenReturn(Page.empty(UNSORTED));
 
-		Page<PostResponse.ListResponse> result =
+		Page<PostResponse.ListItem> result =
 				postService.searchPosts(PostSearchType.TITLE, "  ", LIKE_SORT);
 
 		assertThat(result.getContent()).isEmpty();
@@ -102,9 +103,9 @@ class PostServiceTest {
 		when(postRepository.findAllByFestivalIdOrderByLikeCount(3L, UNSORTED))
 				.thenReturn(new PageImpl<>(List.of(post), UNSORTED, 1));
 
-		Page<PostResponse.ListResponse> result = postService.getPostsByFestival(3L, LIKE_SORT);
+		Page<PostResponse.ListItem> result = postService.getPostsByFestival(3L, LIKE_SORT);
 
-		assertThat(result.getContent()).extracting(PostResponse.ListResponse::likeCount).containsExactly(0L);
+		assertThat(result.getContent()).extracting(PostResponse.ListItem::likeCount).containsExactly(0L);
 		verify(postRepository, never()).findAllByFestivalId(anyLong(), any());
 	}
 
@@ -117,13 +118,40 @@ class PostServiceTest {
 		when(postRepository.findAllNotDeleted(latest))
 				.thenReturn(new PageImpl<>(List.of(first, second), latest, 2));
 
-		Page<PostResponse.ListResponse> result = postService.searchPosts(null, null, latest);
+		Page<PostResponse.ListItem> result = postService.searchPosts(null, null, latest);
 
 		assertThat(result.getContent())
-				.extracting(PostResponse.ListResponse::id, PostResponse.ListResponse::likeCount)
+				.extracting(PostResponse.ListItem::id, PostResponse.ListItem::likeCount)
 				.containsExactly(tuple(first.getId(), 0L), tuple(second.getId(), 2L));
 		verify(postRepository, never()).findAllOrderByLikeCount(any());
 		verify(postRepository, never()).searchPostsOrderByLikeCount(any(), any(), any());
+		verifyNoInteractions(likeRepository);
+	}
+
+	@Test
+	@DisplayName("상세 응답에 후기에 저장된 좋아요 수와 내가 눌렀는지를 함께 담는다")
+	void detailIncludesLikeCount() {
+		Post post = post(7L);
+		UUID memberId = UUID.randomUUID();
+		when(postRepository.findByIdAndDeletedAtIsNull(post.getId())).thenReturn(Optional.of(post));
+		when(likeRepository.existsByPostIdAndMemberId(post.getId(), memberId)).thenReturn(true);
+
+		PostResponse.Detail result = postService.getPostDetail(post.getId(), memberId);
+
+		assertThat(result.likeCount()).isEqualTo(7L);
+		assertThat(result.likedByMe()).isTrue();
+	}
+
+	@Test
+	@DisplayName("비회원 상세 조회도 좋아요 수는 보이고, 누른 여부는 묻지 않는다")
+	void guestDetailIncludesLikeCount() {
+		Post post = post(3L);
+		when(postRepository.findByIdAndDeletedAtIsNull(post.getId())).thenReturn(Optional.of(post));
+
+		PostResponse.Detail result = postService.getPostDetail(post.getId(), null);
+
+		assertThat(result.likeCount()).isEqualTo(3L);
+		assertThat(result.likedByMe()).isFalse();
 		verifyNoInteractions(likeRepository);
 	}
 

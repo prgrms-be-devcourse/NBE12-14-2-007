@@ -1,13 +1,15 @@
 package com.team007.room_escape.domain.post.service;
 
 import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.deletion.infra.entity.DeletionTargetType;
+import com.team007.room_escape.domain.deletion.service.DeletionHistoryService;
 import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.like.infra.repository.LikeRepository;
 import com.team007.room_escape.domain.like.type.LikeSort;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.service.MemberReader;
-import com.team007.room_escape.domain.post.infra.dto.PostRequest;
-import com.team007.room_escape.domain.post.infra.dto.PostResponse;
+import com.team007.room_escape.domain.post.dto.PostRequest;
+import com.team007.room_escape.domain.post.dto.PostResponse;
 import com.team007.room_escape.domain.post.infra.entity.Post;
 import com.team007.room_escape.domain.post.type.PostSearchType;
 import com.team007.room_escape.domain.post.infra.repository.PostRepository;
@@ -37,10 +39,11 @@ public class PostService {
 	private final LikeRepository likeRepository;
 	private final ImageUrlResolver imageUrlResolver;
 	private final R2StorageService r2StorageService;
+	private final DeletionHistoryService deletionHistoryService;
 
 
 	@Transactional
-	public PostResponse.CreateResponse createPost(
+	public PostResponse.Create createPost(
 			Long festivalId,
 			PostRequest request,
 			UUID memberId
@@ -63,11 +66,11 @@ public class PostService {
 
 		postRepository.save(post);
 
-		return PostResponse.CreateResponse.from(post);
+		return PostResponse.Create.from(post);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> searchPosts(
+	public Page<PostResponse.ListItem> searchPosts(
 			PostSearchType type,
 			String keyword,
 			Pageable page
@@ -76,60 +79,60 @@ public class PostService {
 
 		if(LikeSort.isRequested(page)) {
 			Pageable unsorted = LikeSort.withoutSort(page);
-			return toListResponses(hasKeyword
+			return toListItems(hasKeyword
 					? postRepository.searchPostsOrderByLikeCount(type.name(), keyword, unsorted)
 					: postRepository.findAllOrderByLikeCount(unsorted));
 		}
 		if(!hasKeyword) {
-			return toListResponses(postRepository.findAllNotDeleted(page));
+			return toListItems(postRepository.findAllNotDeleted(page));
 		}
-		return toListResponses(postRepository.searchPosts(type, keyword, page));
+		return toListItems(postRepository.searchPosts(type, keyword, page));
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.AdminListResponse> searchPostsForAdmin(
+	public Page<PostResponse.AdminListItem> searchPostsForAdmin(
 			PostSearchType type,
 			String keyword,
 			Pageable page
 	) {
 		if(type == null || keyword == null || keyword.isBlank()) {
 			return postRepository.findAllIncludingDeleted(page)
-					.map(post -> PostResponse.AdminListResponse.from(post, imageUrlResolver));
+					.map(post -> PostResponse.AdminListItem.from(post, imageUrlResolver));
 		}
 
 		return postRepository.searchPostsIncludingDeleted(type, keyword, page)
-					.map(post -> PostResponse.AdminListResponse.from(post, imageUrlResolver));
+					.map(post -> PostResponse.AdminListItem.from(post, imageUrlResolver));
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PostResponse.ListResponse> getPostsByFestival(Long festivalId, Pageable page) {
+	public Page<PostResponse.ListItem> getPostsByFestival(Long festivalId, Pageable page) {
 		if(LikeSort.isRequested(page)) {
-			return toListResponses(postRepository.findAllByFestivalIdOrderByLikeCount(
+			return toListItems(postRepository.findAllByFestivalIdOrderByLikeCount(
 					festivalId, LikeSort.withoutSort(page)
 			));
 		}
-		return toListResponses(postRepository.findAllByFestivalId(festivalId, page));
+		return toListItems(postRepository.findAllByFestivalId(festivalId, page));
 	}
 
-	private Page<PostResponse.ListResponse> toListResponses(Page<Post> posts) {
-		return posts.map(post -> PostResponse.ListResponse.from(post, post.getLikeCount(), imageUrlResolver));
+	private Page<PostResponse.ListItem> toListItems(Page<Post> posts) {
+		return posts.map(post -> PostResponse.ListItem.from(post, post.getLikeCount(), imageUrlResolver));
 	}
 
 	@Transactional(readOnly = true)
-	public PostResponse.DetailResponse getPostDetail(UUID id, UUID memberId) {
+	public PostResponse.Detail getPostDetail(UUID id, UUID memberId) {
 
 		Post post = postRepository.findByIdAndDeletedAtIsNull(id)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
-		// 화면이 좋아요 버튼 상태를 복원할 수 있도록 내가 눌렀는지 함께 내려준다. 비회원은 항상 false.
+		// 좋아요 버튼 상태용. 비회원은 항상 false.
 		boolean likedByMe = memberId != null
 				&& likeRepository.existsByPostIdAndMemberId(id, memberId);
 
-		return PostResponse.DetailResponse.from(post, likedByMe, imageUrlResolver);
+		return PostResponse.Detail.from(post, likedByMe, imageUrlResolver);
 	}
 
 	@Transactional
-	public PostResponse.DetailResponse updatePost(
+	public PostResponse.Detail updatePost(
 			UUID postId,
 			PostRequest request,
 			UUID memberId
@@ -144,7 +147,7 @@ public class PostService {
 
 		}
 		String sanitizedContent = sanitizeRequiredContent(request.content());
-		// 화면은 썸네일을 안 바꿔도 응답에서 받은 URL을 그대로 다시 보내므로, 양쪽을 key로 맞춰 비교한다.
+		// 화면은 썸네일을 안 바꿔도 URL을 다시 보내서 양쪽을 key로 맞춰 비교한다.
 		String previousThumbnail = imageUrlResolver.toKey(post.getThumbnail());
 		String thumbnail = imageUrlResolver.toKey(request.thumbnail());
 		r2StorageService.requireOwnedBy(thumbnail, previousThumbnail, memberId);
@@ -156,7 +159,7 @@ public class PostService {
 		);
 		deleteReplacedThumbnail(previousThumbnail, thumbnail, memberId);
 
-		return PostResponse.DetailResponse.from(
+		return PostResponse.Detail.from(
 				post,
 				likeRepository.existsByPostIdAndMemberId(postId, memberId),
 				imageUrlResolver
@@ -164,20 +167,21 @@ public class PostService {
 	}
 
 	@Transactional
-	public void deletePost(UUID postId, UUID memberId, boolean isAdmin) {
-		Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
+	public void deletePost(UUID postId, UUID memberId) {
+		Post post = postRepository.findForDeletion(postId)
 				.orElseThrow(() -> new BusinessException(PostExceptionCode.POST_NOT_FOUND));
 
 		boolean isAuthor = post.getMember().getId().equals(memberId);
 
-		if(!isAuthor && !isAdmin) {
+		if(!isAuthor) {
 			throw new BusinessException(PostExceptionCode.POST_FORBIDDEN);
 		}
 
 		post.delete();
+		deletionHistoryService.recordAuthorDeletion(DeletionTargetType.POST, postId.toString(), memberId);
 	}
 
-	/** 교체된 옛 썸네일은 R2에서 지운다. 안 지우면 쓰지 않는 파일이 계속 쌓인다. */
+	/** 교체된 옛 썸네일을 R2에서 지운다. */
 	private void deleteReplacedThumbnail(String previousKey, String currentKey, UUID memberId) {
 		if (previousKey == null || previousKey.equals(currentKey)) {
 			return;

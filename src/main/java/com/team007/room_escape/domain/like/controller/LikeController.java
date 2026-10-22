@@ -1,6 +1,6 @@
 package com.team007.room_escape.domain.like.controller;
 
-import com.team007.room_escape.domain.like.infra.dto.LikeResponse;
+import com.team007.room_escape.domain.like.dto.LikeResponse;
 import com.team007.room_escape.domain.like.infra.entity.Like;
 import com.team007.room_escape.domain.like.service.LikeService;
 import com.team007.room_escape.global.response.ApiResponse;
@@ -33,16 +33,6 @@ public class LikeController {
 		LikeResponse response = likeService.createPostLike(id, user.getId());
 
 		return ResponseEntity.ok(ApiResponse.success(response));
-	}
-
-	// TODO 추후에 API따로 작성안하고 개수 조회는 Post로 이동 시킬지 결정
-
-	@Operation(summary = "후기 좋아요 개수 조회", description = "특정 후기의 좋아요 개수를 조회합니다.")
-	@GetMapping("/posts/{id}/likes")
-	public ResponseEntity<ApiResponse<Long>> getPostLikeCount(@PathVariable UUID id) {
-		long likeCount = likeService.getPostLikeCount(id);
-
-		return ResponseEntity.ok(ApiResponse.success(likeCount));
 	}
 
 	@Operation(summary = "후기 좋아요 취소", description = "특정 후기에 좋아요를 취소합니다.")

@@ -6,6 +6,7 @@ import com.team007.room_escape.domain.inquiry.infra.entity.InquiryStatus;
 import com.team007.room_escape.domain.inquiry.infra.entity.InquiryTargetType;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 public class InquiryResponse {
@@ -13,9 +14,36 @@ public class InquiryResponse {
 	private InquiryResponse() {
 	}
 
-	/** 문의 등록·수정 응답. 두 경우의 모양이 같아 하나로 쓴다. */
+	/** 내 문의 목록 항목. 본문과 답변은 상세에서만 내려준다. */
 	@Builder
-	public record Info(
+	@Schema(name = "InquiryListItem", description = "내 문의 목록 항목")
+	public record ListItem(
+		UUID id,
+		InquiryCategory category,
+		InquiryTargetType targetType,
+		String targetId,
+		String title,
+		InquiryStatus status,
+		LocalDateTime createdAt
+	) {
+
+		public static ListItem from(Inquiry inquiry) {
+			return ListItem.builder()
+				.id(inquiry.getId())
+				.category(inquiry.getCategory())
+				.targetType(inquiry.getTargetType())
+				.targetId(inquiry.getTargetId())
+				.title(inquiry.getTitle())
+				.status(inquiry.getStatus())
+				.createdAt(inquiry.getCreatedAt())
+				.build();
+		}
+	}
+
+	/** 문의 상세. 등록·수정 응답도 같은 모양이다. */
+	@Builder
+	@Schema(name = "InquiryDetail", description = "문의 상세")
+	public record Detail(
 		UUID id,
 		InquiryCategory category,
 		InquiryTargetType targetType,
@@ -30,11 +58,8 @@ public class InquiryResponse {
 		LocalDateTime createdAt
 	) {
 
-		/**
-		 * @param imgUrl 저장 key를 변환한 공개 URL. 첨부가 없으면 null
-		 */
-		public static Info from(Inquiry inquiry, String imgUrl) {
-			return Info.builder()
+		public static Detail from(Inquiry inquiry, String imgUrl) {
+			return Detail.builder()
 				.id(inquiry.getId())
 				.category(inquiry.getCategory())
 				.targetType(inquiry.getTargetType())

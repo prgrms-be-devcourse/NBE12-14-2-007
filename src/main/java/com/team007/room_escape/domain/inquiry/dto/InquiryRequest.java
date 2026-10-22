@@ -38,11 +38,7 @@ public class InquiryRequest {
 		String content,
 
 		@Size(max = 2048)
-		@Schema(
-			description = "첨부 이미지 key. 업로드 API(/api/v1/images)가 돌려준 key를 넣는다. "
-				+ "URL이 아니라 key다. 선택 항목",
-			example = "inquiries/0befc150-badb-4674-a99d-ded96f03814a.png"
-		)
+		@Schema(description = "첨부 이미지 key. 업로드 API가 돌려준 key", example = "inquiries/0befc150-badb-4674-a99d-ded96f03814a.png")
 		String img
 	) {
 		@JsonIgnore
@@ -59,10 +55,7 @@ public class InquiryRequest {
 		}
 	}
 
-	/**
-	 * 문의 수정 요청. PATCH라서 보낸 필드만 반영한다.
-	 * 답변이 달린 뒤에는 수정할 수 없다(INQUIRY003).
-	 */
+	/** 문의 수정 요청. 보낸 필드만 반영한다. */
 	@Schema(name = "InquiryUpdateRequest", description = "문의 수정 요청")
 	public record Update(
 
@@ -77,10 +70,7 @@ public class InquiryRequest {
 		String content,
 
 		@Size(max = 2048)
-		@Schema(
-			description = "첨부 이미지 key. 생략하면 변경하지 않고, 빈 문자열이면 첨부를 지운다",
-			example = "inquiries/0befc150-badb-4674-a99d-ded96f03814a.png"
-		)
+		@Schema(description = "첨부 이미지 key. 빈 문자열이면 첨부를 지운다", example = "inquiries/0befc150-badb-4674-a99d-ded96f03814a.png")
 		String img
 	) {
 	}

@@ -14,15 +14,16 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.hibernate.query.sqm.UnknownPathException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-/**
- * 컨트롤러·필터에서 발생한 예외를 ApiResponse 형식으로 통일해 응답한다.
- * 필터 단계 예외도 HandlerExceptionResolver를 통해 여기로 들어온다.
- */
+/** 컨트롤러·필터 예외를 ApiResponse 형식으로 통일해 응답한다. 필터 예외도 HandlerExceptionResolver로 들어온다. */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -84,10 +85,7 @@ public class GlobalExceptionHandler {
 			.body(ApiResponse.error(ec.getMessage(), ec.getCode()));
 	}
 
-	/**
-	 * 업로드 파일이 spring.servlet.multipart.max-file-size 를 넘은 경우.
-	 * 안 잡으면 500이 나가서 사용자가 "서버 오류"로 오해한다.
-	 */
+	/** 업로드 파일이 max-file-size를 넘은 경우. 안 잡으면 500이 나간다. */
 	@ExceptionHandler(MaxUploadSizeExceededException.class)
 	public ResponseEntity<ApiResponse<Void>> handleFileTooLarge(MaxUploadSizeExceededException e) {
 		CommonExceptionCode ec = CommonExceptionCode.FILE_TOO_LARGE;
@@ -96,12 +94,7 @@ public class GlobalExceptionHandler {
 			.body(ApiResponse.error(ec.getMessage(), ec.getCode()));
 	}
 
-	/**
-	 * 요청 본문을 읽지 못한 경우. 깨진 JSON, 잘못된 enum 값, 날짜 형식 오류 등.
-	 * 서버 잘못이 아니라 요청이 잘못된 것이므로 400으로 돌려준다.
-	 *
-	 * 원문 메시지에는 패키지명과 필드 구조가 들어 있어 그대로 노출하지 않는다.
-	 */
+	/** 요청 본문을 읽지 못한 경우(깨진 JSON, 잘못된 enum 등). 원문 메시지는 노출하지 않는다. */
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiResponse<Void>> handleUnreadableBody(HttpMessageNotReadableException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -110,10 +103,7 @@ public class GlobalExceptionHandler {
 			.body(ApiResponse.error("요청 형식이 올바르지 않습니다.", ec.getCode()));
 	}
 
-	/**
-	 * 경로 변수·쿼리 파라미터의 타입이 맞지 않는 경우.
-	 * 예: /posts/{UUID} 자리에 문자열, ?status=아무거나 처럼 없는 enum 값.
-	 */
+	/** 경로 변수·쿼리 파라미터 타입이 맞지 않는 경우. (예: UUID 자리에 문자열) */
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -123,9 +113,7 @@ public class GlobalExceptionHandler {
 				"'" + e.getName() + "' 값이 올바르지 않습니다.", ec.getCode()));
 	}
 
-	/**
-	 * 필수 쿼리 파라미터가 빠진 경우.
-	 */
+	/** 필수 쿼리 파라미터가 빠진 경우 */
 	@ExceptionHandler(MissingServletRequestParameterException.class)
 	public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -135,12 +123,7 @@ public class GlobalExceptionHandler {
 				"'" + e.getParameterName() + "' 값이 필요합니다.", ec.getCode()));
 	}
 
-	/**
-	 * Pageable 의 sort 에 엔티티에 없는 필드가 들어온 경우.
-	 * Spring Data 가 던지는 예외라 안 잡으면 500이 된다.
-	 *
-	 * 서비스마다 정렬 화이트리스트를 두는 대신 여기서 한 번에 400으로 바꾼다.
-	 */
+	/** sort에 엔티티에 없는 필드가 들어온 경우. 안 잡으면 500이라 여기서 400으로 바꾼다. */
 	@ExceptionHandler(PropertyReferenceException.class)
 	public ResponseEntity<ApiResponse<Void>> handleBadSort(PropertyReferenceException e) {
 		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
@@ -148,6 +131,53 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ec.getStatus())
 			.body(ApiResponse.error(
 				"'" + e.getPropertyName() + "' 으로는 정렬할 수 없습니다.", ec.getCode()));
+	}
+
+	/** 경로는 맞지만 메서드가 틀린 경우. 안 잡으면 500이라 여기서 405로 바꾼다. */
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e) {
+		CommonExceptionCode ec = CommonExceptionCode.METHOD_NOT_ALLOWED;
+		log.warn("[{}] 지원하지 않는 메서드: {}", ec.getCode(), e.getMethod());
+		return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec.getMessage(), ec.getCode()));
+	}
+
+	/** 매핑되지 않은 경로. 안 잡으면 500이라 여기서 404로 바꾼다. */
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException e) {
+		CommonExceptionCode ec = CommonExceptionCode.ENDPOINT_NOT_FOUND;
+		log.warn("[{}] 없는 경로: {}", ec.getCode(), e.getResourcePath());
+		return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec.getMessage(), ec.getCode()));
+	}
+
+	/**
+	 * @Query 로 직접 쓴 쿼리에 없는 정렬 필드가 들어온 경우.
+	 * Spring Data 는 이때 정렬 필드를 검증하지 않고 JPQL 에 그대로 붙이므로
+	 * PropertyReferenceException 이 아니라 Hibernate 예외가 래핑되어 올라온다.
+	 * 공개 목록에서도 ?sort= 만으로 500이 나던 것을 400으로 바꾼다.
+	 *
+	 * 같은 예외 타입이 진짜 서버 버그일 수도 있어, 원인이 경로 해석 실패일 때만 400으로 본다.
+	 */
+	@ExceptionHandler(InvalidDataAccessApiUsageException.class)
+	public ResponseEntity<ApiResponse<Void>> handleInvalidDataAccess(InvalidDataAccessApiUsageException e) {
+		if (!hasUnknownPathCause(e)) {
+			return handleUnknown(e);
+		}
+		CommonExceptionCode ec = CommonExceptionCode.INVALID_INPUT;
+		log.warn("[{}] 잘못된 정렬 필드: {}", ec.getCode(), e.getMessage());
+		return ResponseEntity.status(ec.getStatus())
+			.body(ApiResponse.error("정렬할 수 없는 필드입니다.", ec.getCode()));
+	}
+
+	private boolean hasUnknownPathCause(Throwable e) {
+		for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+			if (cause instanceof UnknownPathException) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	/** 위에서 못 잡은 모든 예외. 원문 메시지는 노출하지 않는다 */

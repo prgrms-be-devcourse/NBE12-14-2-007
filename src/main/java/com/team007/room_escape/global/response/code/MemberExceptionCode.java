@@ -17,10 +17,7 @@ public enum MemberExceptionCode implements ExceptionCode {
 	MEMBER_NOT_FOUND("MEMBER000", HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
 	/** 탈퇴하지 않은 계정이 같은 이메일을 이미 사용 중 */
 	EMAIL_DUPLICATED("MEMBER001", HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
-	/**
-	 * 탈퇴한 계정이 아직 보관 기간 중이라 이메일 자리가 비어 있지 않은 경우.
-	 * 보관 기간이 지나 파기 배치가 돌면 같은 이메일로 다시 가입할 수 있다.
-	 */
+	/** 탈퇴 계정의 보관 기간 중이라 같은 이메일로 아직 가입할 수 없는 경우 */
 	EMAIL_WITHDRAWN("MEMBER010", HttpStatus.CONFLICT,
 		"탈퇴한 계정에서 사용 중인 이메일입니다. 개인정보 보관 기간이 지난 뒤에 다시 가입할 수 있습니다."),
 	/** 탈퇴하지 않은 계정이 같은 닉네임을 이미 사용 중 */
