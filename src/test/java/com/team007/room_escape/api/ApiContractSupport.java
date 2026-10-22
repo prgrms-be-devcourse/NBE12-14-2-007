@@ -1,11 +1,16 @@
 package com.team007.room_escape.api;
 
+import com.team007.room_escape.domain.festival.infra.entity.Festival;
+import com.team007.room_escape.domain.festival.infra.entity.FestivalRegion;
+import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
+import com.team007.room_escape.domain.festival.infra.repository.FestivalRepository;
 import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.jwt.JwtProvider;
 import jakarta.persistence.EntityManager;
 import tools.jackson.databind.json.JsonMapper;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,6 +51,11 @@ public abstract class ApiContractSupport {
 	@Autowired
 	protected JsonMapper objectMapper;
 
+	@Autowired
+	protected FestivalRepository festivalRepository;
+
+	private Long festivalId;
+
 	/** 회원을 만들고 그 회원의 액세스 토큰을 돌려준다. */
 	protected String tokenOf(MemberRole role) {
 		return bearer(saveMember(role));
@@ -70,6 +80,20 @@ public abstract class ApiContractSupport {
 	protected String bearerWithRole(Member member, MemberRole role) {
 		return "Bearer " + jwtProvider.createAccessToken(
 			member.getId(), member.getNickname(), role.name(), member.getProfileImg());
+	}
+
+	/** 후기·댓글이 매달릴 행사 하나. 테스트마다 새로 만들어 서로 간섭하지 않는다. */
+	protected Long festivalId() {
+		if (festivalId == null) {
+			festivalId = festivalRepository.saveAndFlush(Festival.builder()
+				.providerType(ProviderType.PUBLIC)
+				.title("계약테스트 행사 " + UUID.randomUUID().toString().substring(0, 8))
+				.region(FestivalRegion.SEOUL)
+				.beginDe(LocalDateTime.of(2026, 10, 1, 10, 0))
+				.endDe(LocalDateTime.of(2026, 10, 5, 18, 0))
+				.build()).getId();
+		}
+		return festivalId;
 	}
 
 	protected MockHttpServletRequestBuilder as(MockHttpServletRequestBuilder request, String bearerToken) {
