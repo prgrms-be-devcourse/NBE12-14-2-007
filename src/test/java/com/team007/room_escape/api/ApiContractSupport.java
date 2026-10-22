@@ -4,6 +4,8 @@ import com.team007.room_escape.domain.member.infra.entity.Member;
 import com.team007.room_escape.domain.member.infra.entity.MemberRole;
 import com.team007.room_escape.domain.member.infra.repository.MemberRepository;
 import com.team007.room_escape.global.jwt.JwtProvider;
+import jakarta.persistence.EntityManager;
+import tools.jackson.databind.json.JsonMapper;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,10 +35,16 @@ public abstract class ApiContractSupport {
 	protected MockMvc mvc;
 
 	@Autowired
-	private JwtProvider jwtProvider;
+	protected JwtProvider jwtProvider;
 
 	@Autowired
-	private MemberRepository memberRepository;
+	protected MemberRepository memberRepository;
+
+	@Autowired
+	protected EntityManager entityManager;
+
+	@Autowired
+	protected JsonMapper objectMapper;
 
 	/** 회원을 만들고 그 회원의 액세스 토큰을 돌려준다. */
 	protected String tokenOf(MemberRole role) {
