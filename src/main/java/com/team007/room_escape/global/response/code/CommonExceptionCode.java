@@ -18,6 +18,12 @@ public enum CommonExceptionCode implements ExceptionCode {
 	/** spring.servlet.multipart.max-file-size 를 넘는 파일을 올린 경우 (413) */
 	FILE_TOO_LARGE("COMMON_FILE_TOO_LARGE", HttpStatus.PAYLOAD_TOO_LARGE,
 		"파일 크기가 너무 큽니다. 5MB 이하로 올려 주세요."),
+	/** 경로는 맞지만 허용되지 않는 HTTP 메서드로 요청한 경우 (405) */
+	METHOD_NOT_ALLOWED("COMMON_METHOD_NOT_ALLOWED", HttpStatus.METHOD_NOT_ALLOWED,
+		"이 경로에서 지원하지 않는 요청 방식입니다."),
+	/** 존재하지 않는 경로로 요청한 경우 (404) */
+	ENDPOINT_NOT_FOUND("COMMON_ENDPOINT_NOT_FOUND", HttpStatus.NOT_FOUND,
+		"존재하지 않는 경로입니다."),
 	/** 예상하지 못한 서버 예외. 원문 메시지는 클라이언트에 노출하지 않는다 (500) */
 	INTERNAL_ERROR("COMMON_INTERNAL_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
 

@@ -14,6 +14,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -127,6 +129,22 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ec.getStatus())
 			.body(ApiResponse.error(
 				"'" + e.getPropertyName() + "' 으로는 정렬할 수 없습니다.", ec.getCode()));
+	}
+
+	/** 경로는 맞지만 메서드가 틀린 경우. 안 잡으면 500이라 여기서 405로 바꾼다. */
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e) {
+		CommonExceptionCode ec = CommonExceptionCode.METHOD_NOT_ALLOWED;
+		log.warn("[{}] 지원하지 않는 메서드: {}", ec.getCode(), e.getMethod());
+		return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec.getMessage(), ec.getCode()));
+	}
+
+	/** 매핑되지 않은 경로. 안 잡으면 500이라 여기서 404로 바꾼다. */
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException e) {
+		CommonExceptionCode ec = CommonExceptionCode.ENDPOINT_NOT_FOUND;
+		log.warn("[{}] 없는 경로: {}", ec.getCode(), e.getResourcePath());
+		return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec.getMessage(), ec.getCode()));
 	}
 
 	/** 위에서 못 잡은 모든 예외. 원문 메시지는 노출하지 않는다 */
