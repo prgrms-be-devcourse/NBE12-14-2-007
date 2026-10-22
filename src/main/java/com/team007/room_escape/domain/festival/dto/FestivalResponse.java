@@ -72,6 +72,9 @@ public class FestivalResponse {
 		@Schema(description = "행사 지역")
 		FestivalRegion region,
 
+		@Schema(description = "행사 지역 상세(시·군·구)", nullable = true)
+		String regionDetail,
+
 		@Schema(description = "행사 상태", example = "OPEN")
 		FestivalStatus status,
 
@@ -104,6 +107,7 @@ public class FestivalResponse {
 				.beginDe(festival.getBeginDe())
 				.endDe(festival.getEndDe())
 				.region(festival.getRegion())
+				.regionDetail(festival.getRegionDetail())
 				.status(FestivalStatus.from(festival.getEndDe()))
 				.likeCount(likeCount)
 				.accurateCount(accurateCount)

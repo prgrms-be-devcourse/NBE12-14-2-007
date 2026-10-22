@@ -226,7 +226,9 @@ export function EventCard({
         )}
         <p>
           <MapPin size={14} />
-          {regions[event.region] || event.regionDetail || "지역 미정"}
+          {[regions[event.region], event.regionDetail]
+            .filter(Boolean)
+            .join(" ") || "지역 미정"}
         </p>
         <p>
           <CalendarDays size={14} />
