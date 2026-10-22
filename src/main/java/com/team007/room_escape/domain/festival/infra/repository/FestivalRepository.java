@@ -6,6 +6,7 @@ import com.team007.room_escape.domain.festival.infra.entity.FestivalStatus;
 import com.team007.room_escape.domain.festival.infra.entity.ProviderType;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +56,12 @@ public interface FestivalRepository extends JpaRepository<Festival, Long> {
 	/** 연도 범위(yearStart 이상 ~ yearEnd 미만)에 해당하는 저장 건수 조회 */
 	long countByProviderTypeAndBeginDeGreaterThanEqualAndBeginDeLessThan(
 		ProviderType providerType, LocalDateTime yearStart, LocalDateTime yearEnd);
+
+	/** 전달한 external_id 중 이미 저장된 것만 돌려준다. 신규 판별(차집합)에 쓴다. */
+	@Query("SELECT f.externalId FROM Festival f WHERE f.providerType = :providerType AND f.externalId IN :externalIds")
+	List<String> findExistingExternalIds(
+			@Param("providerType") ProviderType providerType,
+			@Param("externalIds") Collection<String> externalIds);
 
 	// TODO: PostgreSQL의 null 파라미터 타입 오류로 사용 중인 hasXxx 플래그를 QueryDSL 도입 시 제거
 	/** 목록 카드에 제보자 닉네임·등급을 보여줘서 회원을 함께 불러온다. */

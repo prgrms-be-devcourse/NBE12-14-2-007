@@ -41,6 +41,9 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "provider_type", nullable = false, length = 32)
 	private ProviderType providerType;
 
+	@Column(name = "external_id", length = 64)
+	private String externalId;
+
 	private String title;
 
 	private String category;
@@ -62,10 +65,10 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "end_de")
 	private LocalDateTime endDe;
 
-	@Column(name = "partcpt_expn_info")
+	@Column(name = "partcpt_expn_info", columnDefinition = "text")
 	private String partcptExpnInfo;
 
-	@Column(name = "telno_info")
+	@Column(name = "telno_info", columnDefinition = "text")
 	private String telnoInfo;
 
 	@Enumerated(EnumType.STRING)
@@ -76,8 +79,14 @@ public class Festival extends SoftDeletableEntity {
 	@Column(name = "region", length = 32)
 	private FestivalRegion region;
 
-	@Column(name = "region_detail", length = 255)
+	@Column(name = "region_detail", columnDefinition = "text")
 	private String regionDetail;
+
+	@Column(columnDefinition = "text")
+	private String place;
+
+	@Column(name = "place_address", columnDefinition = "text")
+	private String placeAddress;
 
 	/** 삭제 주체·사유는 공통 이력에 기록하며 행사는 현재 삭제 상태만 관리한다. */
 	@Override

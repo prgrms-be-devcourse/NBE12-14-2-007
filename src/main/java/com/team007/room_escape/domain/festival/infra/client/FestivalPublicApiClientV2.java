@@ -5,6 +5,7 @@ import com.team007.room_escape.domain.festival.infra.dto.CultureInfoPeriodRow;
 import com.team007.room_escape.global.exception.BusinessException;
 import com.team007.room_escape.global.response.code.FestivalExceptionCode;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +63,9 @@ public class FestivalPublicApiClientV2 {
 
 	private String callApi(URI uri) {
 		try {
-			return restClient.get().uri(uri).retrieve().body(String.class);
+			// Content-Type에 charset이 없어서 문자열로 바로 받으면 한글이 깨진다. 바이트로 받아 UTF-8로 직접 디코딩한다.
+			byte[] body = restClient.get().uri(uri).retrieve().body(byte[].class);
+			return body == null ? null : new String(body, StandardCharsets.UTF_8);
 		} catch (Exception e) {
 			log.error("[{}] 전국 문화정보 API 호출 실패", FestivalExceptionCode.PUBLIC_API_CALL_FAILED.getCode(), e);
 			throw new BusinessException(FestivalExceptionCode.PUBLIC_API_CALL_FAILED);
